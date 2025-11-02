@@ -380,6 +380,12 @@ static void MX_SDMMC1_SD_Init(void)
 
   /* USER CODE BEGIN SDMMC1_Init 0 */
 
+  // The following initialization code will fault if there is no SD card inserted.
+  // So provide an option to disable it in case the user doesn't have an SD card.
+#ifndef ULYSSES_USE_SD_CARD
+  return;
+#endif
+
   /* USER CODE END SDMMC1_Init 0 */
 
   /* USER CODE BEGIN SDMMC1_Init 1 */

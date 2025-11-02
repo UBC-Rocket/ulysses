@@ -64,6 +64,11 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
 )
 
+# Add CLI option to disable the SD card peripheral initialization
+if(ULYSSES_USE_SD_CARD)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ULYSSES_USE_SD_CARD)
+endif()
+
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
