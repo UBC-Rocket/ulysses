@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Build artifacts
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.su
+*.axf
+*.lst
+
+# GCC / Makefile builds
+build/
+*.a
+*.so
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
