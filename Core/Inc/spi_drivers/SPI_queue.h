@@ -100,6 +100,7 @@ typedef struct {
     volatile bool spi_busy;
 
     volatile uint8_t spi_rx_staging[SPI_RX_STAGING_SIZE];
+    volatile HAL_StatusTypeDef last_submit_status;
 } spi_job_queue_t;
 
 /* -------------------------------------------------------------------------- */

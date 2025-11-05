@@ -41,6 +41,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
+volatile uint32_t g_hardfault_cfsr;
+volatile uint32_t g_hardfault_hfsr;
+volatile uint32_t g_hardfault_bfar;
+volatile uint32_t g_hardfault_shcsr;
+volatile uint32_t g_hardfault_lr;
+volatile uint32_t g_hardfault_sp;
 
 /* USER CODE END PV */
 
@@ -96,7 +102,13 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  g_hardfault_cfsr = SCB->CFSR;
+  g_hardfault_hfsr = SCB->HFSR;
+  g_hardfault_bfar = SCB->BFAR;
+  g_hardfault_shcsr = SCB->SHCSR;
+  __asm volatile ("mov %0, lr" : "=r" (g_hardfault_lr));
+  g_hardfault_sp = __get_MSP();
+  __BKPT(0);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {

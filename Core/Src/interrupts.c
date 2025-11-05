@@ -11,7 +11,7 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
             return;
         }
         bmi088_accel_interrupt();
-    } else if (GPIO_Pin == BMI_GYRO_INT_2_Pin) {
+    } else if (GPIO_Pin == BMI_GYRO_INT_1_Pin) {
         if (!bmi088_gyro_ready) {
             return;
         }

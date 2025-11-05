@@ -28,19 +28,39 @@ static void start_job(spi_job_t *job, spi_job_queue_t *q) {
     q->spi_busy = true;
     CS_ASSERT(job->cs_port, job->cs_pin);
 
+    /* Some HAL paths leave the SPI handle locked until the ISR unwinds.
+       Manually unlock here so the next DMA submission cannot spuriously
+       return HAL_BUSY inside the ISR. */
+    __HAL_UNLOCK(q->spi_bus);
+
+    HAL_StatusTypeDef status = HAL_ERROR;
+
     switch (job->type) {
     case SPI_XFER_TX:
-        configASSERT(HAL_SPI_Transmit_DMA(q->spi_bus, job->tx, job->len) == HAL_OK);
+        status = HAL_SPI_Transmit_DMA(q->spi_bus, job->tx, job->len);
         break;
     case SPI_XFER_RX:
-        configASSERT(HAL_SPI_Receive_DMA(q->spi_bus, (uint8_t*)q->spi_rx_staging, job->len) == HAL_OK);
+        status = HAL_SPI_Receive_DMA(q->spi_bus,
+                                     (uint8_t*)q->spi_rx_staging,
+                                     job->len);
         break;
     case SPI_XFER_TXRX:
     default:
-        configASSERT(HAL_SPI_TransmitReceive_DMA(q->spi_bus, job->tx,
-                                    (uint8_t*)q->spi_rx_staging,
-                                    job->len) == HAL_OK);
+        status = HAL_SPI_TransmitReceive_DMA(q->spi_bus,
+                                             job->tx,
+                                             (uint8_t*)q->spi_rx_staging,
+                                             job->len);
         break;
+    }
+
+    q->last_submit_status = status;
+
+    if (status != HAL_OK) {
+        CS_DEASSERT(job->cs_port, job->cs_pin);
+        q->spi_busy = false;
+        #if defined(DEBUG)
+        __BKPT(0);
+        #endif
     }
 }
 

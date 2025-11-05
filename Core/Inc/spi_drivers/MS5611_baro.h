@@ -1,129 +1,192 @@
 /*
     Driver for the MS5611-01BA03 barometer.
-    This driver is only used to parse and create register access packages.
-    It is completely bus-agnostic.
+    Bus-agnostic implementation: this driver only builds and parses SPI command frames.
+    Sampling is done via polling (no interrupt pin on device).
 
-    The core functionalities of the device are implemented, as required by the TVR team,
-    but some more specific functionalities are not.
+    References:
+    - TE Connectivity MS5611-01BA03 Datasheet (ENG_DS_MS5611-01BA03_B3)
+      Verified Nov 2025.
 
-    @ UBC Rocket, Sept 29th 2025, Benedikt Howard
+    @ UBC Rocket, Benedikt Howard
 */
 
-#ifndef MS5611_H
-#define MS5611_H
+#ifndef MS5611_BARO_H
+#define MS5611_BARO_H
 
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 /* -------------------------------------------------------------------------- */
-/* Command set (SPI/I2C)                                                      */
+/* SPI Commands (see datasheet Table “Command Set”)                           */
 /* -------------------------------------------------------------------------- */
-#define MS5611_CMD_RESET       0x1E  ///< Reset command, wait ~2.8 ms
-#define MS5611_CMD_ADC_READ    0x00  ///< Read ADC result (24 bits)
-#define MS5611_CMD_CONV_D1     0x40  ///< Convert pressure (add OSR bits)
-#define MS5611_CMD_CONV_D2     0x50  ///< Convert temperature (add OSR bits)
-#define MS5611_CMD_PROM_BASE   0xA0  ///< Base address for PROM reads
-
-/* PROM addresses (16-bit words) */
-#define MS5611_PROM_FACTORY    0xA0
-#define MS5611_PROM_C1         0xA2  ///< Pressure sensitivity
-#define MS5611_PROM_C2         0xA4  ///< Pressure offset
-#define MS5611_PROM_C3         0xA6  ///< Temp coeff of pressure sensitivity
-#define MS5611_PROM_C4         0xA8  ///< Temp coeff of pressure offset
-#define MS5611_PROM_C5         0xAA  ///< Reference temperature
-#define MS5611_PROM_C6         0xAC  ///< Temp coeff of temperature
-#define MS5611_PROM_CRC        0xAE  ///< CRC + serial bits
+/*
+   Reset:                   0x1E
+   Conversion D1 (Pressure): 0x40 | osr_bits
+   Conversion D2 (Temp):     0x50 | osr_bits
+   ADC Read (24-bit result): 0x00
+   PROM Read (16-bit word):  0xA0 | (addr << 1), where addr = 0..7
+*/
+#define MS5611_CMD_RESET        0x1E
+#define MS5611_CMD_ADC_READ     0x00
+#define MS5611_CMD_CONVERT_D1   0x40
+#define MS5611_CMD_CONVERT_D2   0x50
+#define MS5611_CMD_PROM_READ    0xA0
 
 /* -------------------------------------------------------------------------- */
-/* Device state struct                                                        */
+/* Oversampling settings (OSR)                                                */
 /* -------------------------------------------------------------------------- */
-typedef struct {
-    uint16_t C[8];        ///< Calibration coefficients C0..C7 (C0=factory, C7=CRC)
-    uint8_t osr;          ///< Selected OSR setting (256–4096)
-    uint32_t D1_raw;      ///< Last raw pressure conversion
-    uint32_t D2_raw;      ///< Last raw temperature conversion
-    int32_t TEMP_centi;   ///< Last compensated temperature (0.01 °C units)
-    int32_t P_mbar;       ///< Last compensated pressure (Pa or mbar*100)
-} ms5611_t;
-
-/* -------------------------------------------------------------------------- */
-/* OSR options                                                                */
-/* -------------------------------------------------------------------------- */
+/*
+Typical conversion times tc (ms) from datasheet Table 1:
+ OSR   | Command bits |  Min | Typ | Max | RMS res (mbar)
+ ------|---------------|------|------|------|--------------
+ 256   |   +0x00       | 0.48 | 0.54 | 0.60 | 0.065
+ 512   |   +0x02       | 0.95 | 1.06 | 1.17 | 0.042
+ 1024  |   +0x04       | 1.88 | 2.08 | 2.28 | 0.027
+ 2048  |   +0x06       | 3.72 | 4.13 | 4.54 | 0.018
+ 4096  |   +0x08       | 7.40 | 8.22 | 9.04 | 0.012
+*/
 typedef enum {
-    MS5611_OSR_256  = 0x00, ///< 0.6 ms conversion
-    MS5611_OSR_512  = 0x02, ///< 1.2 ms conversion
-    MS5611_OSR_1024 = 0x04, ///< 2.3 ms conversion
-    MS5611_OSR_2048 = 0x06, ///< 4.6 ms conversion
-    MS5611_OSR_4096 = 0x08  ///< 9.1 ms conversion
+    MS5611_OSR_256  = 0x00, ///< typ 0.54 ms
+    MS5611_OSR_512  = 0x02, ///< typ 1.06 ms
+    MS5611_OSR_1024 = 0x04, ///< typ 2.08 ms
+    MS5611_OSR_2048 = 0x06, ///< typ 4.13 ms
+    MS5611_OSR_4096 = 0x08  ///< typ 8.22 ms
 } ms5611_osr_t;
 
 /* -------------------------------------------------------------------------- */
-/* Command builders (bus-agnostic)                                            */
+/* Device state structure                                                     */
+/* -------------------------------------------------------------------------- */
+typedef struct {
+    uint16_t C[8];       ///< Calibration PROM (C0..C7): C1–C6 coeffs, C0 factory data, C7 serial+CRC
+    uint32_t D1_raw;     ///< Uncompensated pressure (24-bit)
+    uint32_t D2_raw;     ///< Uncompensated temperature (24-bit)
+    int32_t  TEMP_centi; ///< Temperature in 0.01 °C
+    int32_t  P_centi_mbar; ///< Pressure in 0.01 mbar (datasheet pressure unit is mbar/hPa)
+} ms5611_t;
+
+/* -------------------------------------------------------------------------- */
+/* Command builders                                                           */
 /* -------------------------------------------------------------------------- */
 
 /**
- * @brief Build reset command.
- * @param[out] tx_buf Buffer to hold the 1-byte command.
- * @return Number of bytes to send (1).
+ * @brief Build command to reset the MS5611 (0x1E).
+ * @note After issuing reset, wait ≥2.8 ms for PROM reload (datasheet section “Reset Sequence”).
  */
 size_t ms5611_build_reset(uint8_t *tx_buf);
 
 /**
- * @brief Build PROM read command.
- * @param index PROM index [0..7] (C0..C7).
- * @param[out] tx_buf Buffer to hold the command.
- * @return Number of bytes to send (1).
+ * @brief Build command to start pressure conversion (D1).
+ * @param osr Oversampling ratio (MS5611_OSR_xxx)
  */
-size_t ms5611_build_prom_read(uint8_t index, uint8_t *tx_buf);
+size_t ms5611_build_convert_d1(ms5611_osr_t osr, uint8_t *tx_buf);
 
 /**
- * @brief Build convert D1 (pressure) command with chosen OSR.
+ * @brief Build command to start temperature conversion (D2).
+ * @param osr Oversampling ratio (MS5611_OSR_xxx)
  */
-size_t ms5611_build_conv_d1(ms5611_osr_t osr, uint8_t *tx_buf);
+size_t ms5611_build_convert_d2(ms5611_osr_t osr, uint8_t *tx_buf);
 
 /**
- * @brief Build convert D2 (temperature) command with chosen OSR.
- */
-size_t ms5611_build_conv_d2(ms5611_osr_t osr, uint8_t *tx_buf);
-
-/**
- * @brief Build ADC read command (returns 24-bit result).
+ * @brief Build command to read the ADC (24-bit result, MSB first).
  */
 size_t ms5611_build_adc_read(uint8_t *tx_buf);
+
+/**
+ * @brief Build command to read a PROM word (16-bit).
+ * @param index PROM address 0..7
+ */
+size_t ms5611_build_prom_read(uint8_t index, uint8_t *tx_buf);
 
 /* -------------------------------------------------------------------------- */
 /* Parsing helpers                                                            */
 /* -------------------------------------------------------------------------- */
 
 /**
- * @brief Parse PROM coefficient (2-byte response).
- * @param[in] rx_buf 2-byte raw PROM data.
- * @param[out] coeff Decoded coefficient.
- * @return True if parse OK.
+ * @brief Parse raw PROM word (2 bytes MSB first).
  */
-bool ms5611_parse_prom(const uint8_t *rx_buf, uint16_t *coeff);
+bool ms5611_parse_prom_word(const uint8_t *rx_buf, uint16_t *out_word);
 
 /**
- * @brief Parse ADC 24-bit result.
- * @param[in] rx_buf 3-byte raw ADC data.
- * @param[out] value Decoded 24-bit unsigned value.
- * @return True if parse OK.
+ * @brief Parse ADC result (3 bytes MSB first → 24-bit value).
  */
-bool ms5611_parse_adc(const uint8_t *rx_buf, uint32_t *value);
+bool ms5611_parse_adc_result(const uint8_t *rx_buf, uint32_t *out_val);
 
 /**
- * @brief Compute compensated pressure and temperature from raw values.
- * @param[in,out] dev Device state with coefficients + D1/D2.
- * @return True if computation OK.
- */
-bool ms5611_compute(ms5611_t *dev);
-
-/**
- * @brief Validate PROM CRC-4.
- * @param[in] coeff Array of 8 PROM words.
- * @return True if CRC valid.
+ * @brief Verify PROM CRC-4 according to datasheet algorithm.
  */
 bool ms5611_check_crc(const uint16_t *coeff);
 
-#endif /* MS5611_H */
+/* -------------------------------------------------------------------------- */
+/* Computation helpers                                                        */
+/* -------------------------------------------------------------------------- */
+/**
+ * @brief Compute compensated temperature and pressure using first- and
+ *        second-order correction (as per datasheet section “Pressure and
+ *        Temperature Calculation Example”).
+ *
+ *  Equations:
+ *   dT   = D2 - C5 * 2^8
+ *   TEMP = 2000 + dT * C6 / 2^23
+ *   OFF  = C2 * 2^16 + (C4 * dT) / 2^7
+ *   SENS = C1 * 2^15 + (C3 * dT) / 2^8
+ *   P    = (D1 * SENS / 2^21 - OFF) / 2^15
+ *
+ *  If TEMP < 20°C, apply second-order compensation per datasheet Table 2:
+ *   TEMP2, OFF2, SENS2 terms adjust TEMP/OFF/SENS.
+ */
+bool ms5611_compute(ms5611_t *dev);
+
+/* --- Ring buffer for barometer samples ------------------------------------ */
+#ifndef MS5611_SAMPLE_Q_SIZE
+#define MS5611_SAMPLE_Q_SIZE 16
+#endif
+
+typedef struct {
+    uint32_t t_us;            ///< host timestamp when result ready
+    uint32_t d1_raw;          ///< raw pressure conversion (24-bit)
+    uint32_t d2_raw;          ///< raw temperature conversion (24-bit)
+    int32_t  temp_centi;      ///< temperature in 0.01 °C
+    int32_t  pressure_centi;  ///< pressure in 0.01 mbar
+    uint32_t seq;             ///< monotonically increasing sequence
+} ms5611_sample_t;
+
+typedef struct {
+    ms5611_sample_t samples[MS5611_SAMPLE_Q_SIZE];
+    volatile uint8_t head;
+    volatile uint8_t tail;
+} ms5611_sample_queue_t;
+
+static inline bool ms5611_sample_queue_empty(ms5611_sample_queue_t *q) {
+    return q->head == q->tail;
+}
+
+static inline bool ms5611_sample_queue_full(ms5611_sample_queue_t *q) {
+    return ((q->head + 1U) % MS5611_SAMPLE_Q_SIZE) == q->tail;
+}
+
+static inline bool ms5611_sample_queue(ms5611_sample_queue_t *q,
+                                       const ms5611_sample_t *sample) {
+    if (ms5611_sample_queue_full(q)) return false;
+    q->samples[q->head] = *sample;
+    q->head = (uint8_t)((q->head + 1U) % MS5611_SAMPLE_Q_SIZE);
+    return true;
+}
+
+static inline bool ms5611_sample_dequeue(ms5611_sample_queue_t *q,
+                                         ms5611_sample_t *sample) {
+    if (ms5611_sample_queue_empty(q)) return false;
+    *sample = q->samples[q->tail];
+    q->tail = (uint8_t)((q->tail + 1U) % MS5611_SAMPLE_Q_SIZE);
+    return true;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Interface constraints                                                      */
+/* -------------------------------------------------------------------------- */
+/*
+ - No interrupt pin: polling-based sampling required.
+ - Max SPI clock: 20 MHz (datasheet electrical characteristics).
+ - All SPI commands are single-byte followed by readback (16 or 24 bits MSB-first).
+*/
+#endif /* MS5611_BARO_H */
