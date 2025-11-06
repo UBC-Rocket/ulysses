@@ -44,8 +44,11 @@ set(RTOS_TASKS_SRC
 )
 
 set(SPI_DRIVER_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_interactions.c
+       ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_common.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5611_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_accel.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c

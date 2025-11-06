@@ -18,36 +18,23 @@ extern ms5611_sample_queue_t ms5611_sample_ring;
 extern spi_job_queue_t jobq_spi_1;
 extern spi_job_queue_t jobq_spi_2;
 
+extern bmi088_accel_t accel;
+extern bmi088_gyro_t gyro;
+
 extern volatile bool bmi088_accel_ready;
 extern volatile bool bmi088_gyro_ready;
-
 
 uint8_t bmi088_accel_init(SPI_HandleTypeDef *hspi,
                        GPIO_TypeDef *cs_port,
                        uint16_t cs_pin,
                        bmi088_accel_t *dev);
 
-
-/* -------------------------------------------------------------------------- */
-/* Done callback: called after SPI DMA completes                              */
-/* -------------------------------------------------------------------------- */
-static void bmi088_accel_done(spi_job_t *job,
-                              const uint8_t *rx_buf,
-                              void *arg);
-
-/* -------------------------------------------------------------------------- */
-/* Accelerometer interrupt entry point                                        */
-/* -------------------------------------------------------------------------- */
 void bmi088_accel_interrupt(void);
 
 uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
                          GPIO_TypeDef *cs_port,
                          uint16_t cs_pin,
                          bmi088_gyro_t *dev);
-
-static void bmi088_gyro_done(spi_job_t *job,
-                              const uint8_t *rx_buf,
-                              void *arg);
 
 void bmi088_gyro_interrupt(void);
 
