@@ -3,6 +3,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "math.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include "spi_drivers/SPI_queue.h"
 #include "spi_drivers/SPI_device_interactions.h"
 #include "stm32h5xx_hal.h"
@@ -10,6 +12,9 @@
 #include "state_exchange.h"
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
+#ifdef DEBUG
+#include "debug_uart.h"
+#endif
 
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
@@ -100,6 +105,78 @@ void state_estimation_task_start(void *argument)
             baro_samples[num_baro_samples] = baro_sample;
             num_baro_samples++;
         }
+
+#ifdef DEBUG
+        {
+            static const uint8_t max_print = 4;
+            char line[160];
+
+            uint8_t accel_print = num_accel_samples < max_print ? num_accel_samples : max_print;
+            for (uint8_t i = 0; i < accel_print; ++i) {
+                const bmi088_accel_sample_t *sample = &accel_samples[i];
+                uint32_t t_us = (uint32_t)(sample->t_us & 0xFFFFFFFFu);
+                int32_t ax_milli = (int32_t)(sample->ax * 1000.0f);
+                int32_t ay_milli = (int32_t)(sample->ay * 1000.0f);
+                int32_t az_milli = (int32_t)(sample->az * 1000.0f);
+                int32_t ax_frac = ax_milli % 1000;
+                int32_t ay_frac = ay_milli % 1000;
+                int32_t az_frac = az_milli % 1000;
+                if (ax_frac < 0) ax_frac = -ax_frac;
+                if (ay_frac < 0) ay_frac = -ay_frac;
+                if (az_frac < 0) az_frac = -az_frac;
+                int len = snprintf(line, sizeof(line),
+                                   "ACC t=%lu ax=%ld.%03ld ay=%ld.%03ld az=%ld.%03ld\r\n",
+                                   (unsigned long)t_us,
+                                   (long)(ax_milli / 1000), (long)ax_frac,
+                                   (long)(ay_milli / 1000), (long)ay_frac,
+                                   (long)(az_milli / 1000), (long)az_frac);
+                if (len > 0) {
+                    debug_uart_write((const uint8_t *)line, (size_t)len);
+                }
+            }
+
+            uint8_t gyro_print = num_gyro_samples < max_print ? num_gyro_samples : max_print;
+            for (uint8_t i = 0; i < gyro_print; ++i) {
+                const bmi088_gyro_sample_t *sample = &gyro_samples[i];
+                uint32_t t_us = sample->t_us;
+                int32_t gx_milli = (int32_t)(sample->gx * 1000.0f);
+                int32_t gy_milli = (int32_t)(sample->gy * 1000.0f);
+                int32_t gz_milli = (int32_t)(sample->gz * 1000.0f);
+                int32_t gx_frac = gx_milli % 1000;
+                int32_t gy_frac = gy_milli % 1000;
+                int32_t gz_frac = gz_milli % 1000;
+                if (gx_frac < 0) gx_frac = -gx_frac;
+                if (gy_frac < 0) gy_frac = -gy_frac;
+                if (gz_frac < 0) gz_frac = -gz_frac;
+                int len = snprintf(line, sizeof(line),
+                                   "GYR t=%lu gx=%ld.%03ld gy=%ld.%03ld gz=%ld.%03ld\r\n",
+                                   (unsigned long)t_us,
+                                   (long)(gx_milli / 1000), (long)gx_frac,
+                                   (long)(gy_milli / 1000), (long)gy_frac,
+                                   (long)(gz_milli / 1000), (long)gz_frac);
+                if (len > 0) {
+                    debug_uart_write((const uint8_t *)line, (size_t)len);
+                }
+            }
+
+            uint8_t baro_print = num_baro_samples < max_print ? num_baro_samples : max_print;
+            for (uint8_t i = 0; i < baro_print; ++i) {
+                const ms5611_sample_t *sample = &baro_samples[i];
+                int32_t temp_frac = sample->temp_centi % 100;
+                int32_t press_frac = sample->pressure_centi % 100;
+                if (temp_frac < 0) temp_frac = -temp_frac;
+                if (press_frac < 0) press_frac = -press_frac;
+                int len = snprintf(line, sizeof(line),
+                                   "BAR t=%lu temp=%ld.%02ldC press=%ld.%02ldhPa\r\n",
+                                   (unsigned long)sample->t_us,
+                                   (long)(sample->temp_centi / 100), (long)temp_frac,
+                                   (long)(sample->pressure_centi / 100), (long)press_frac);
+                if (len > 0) {
+                    debug_uart_write((const uint8_t *)line, (size_t)len);
+                }
+            }
+        }
+#endif
 
         state_t fused_state = {0};
         fused_state.u_s = timestamp_us();

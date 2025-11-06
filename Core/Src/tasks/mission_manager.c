@@ -3,6 +3,9 @@
 #include "state_exchange.h"
 #include "mission_manager/mission_manager.h"
 #include "state_estimation/state.h"
+#ifdef DEBUG
+#include "debug_uart.h"
+#endif
 
 void mission_manager_task_start(void *argument)
 {
@@ -25,6 +28,10 @@ void mission_manager_task_start(void *argument)
 
             if (dot_product < 0.0f) {
                 flight_state = E_STOP;
+#ifdef DEBUG
+                static const char estop_message[] = "MissionManager: E-STOP (orientation)\r\n";
+                debug_uart_write((const uint8_t *)estop_message, sizeof(estop_message) - 1U);
+#endif
             }
         }
 

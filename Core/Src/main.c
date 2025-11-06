@@ -311,7 +311,9 @@ static void MX_GPDMA2_Init(void)
     HAL_NVIC_EnableIRQ(GPDMA2_Channel5_IRQn);
 
   /* USER CODE BEGIN GPDMA2_Init 1 */
-
+#ifndef DEBUG
+  HAL_NVIC_DisableIRQ(GPDMA2_Channel0_IRQn);
+#endif
   /* USER CODE END GPDMA2_Init 1 */
   /* USER CODE BEGIN GPDMA2_Init 2 */
 
@@ -598,7 +600,9 @@ static void MX_USART1_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART1_Init 0 */
-
+#ifndef DEBUG
+  return;
+#endif
   /* USER CODE END USART1_Init 0 */
 
   /* USER CODE BEGIN USART1_Init 1 */

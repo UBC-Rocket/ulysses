@@ -678,7 +678,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
   else if(huart->Instance==USART1)
   {
     /* USER CODE BEGIN USART1_MspInit 0 */
-
+#ifndef DEBUG
+    return;
+#endif
     /* USER CODE END USART1_MspInit 0 */
 
   /** Initializes the peripherals clock
@@ -870,7 +872,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
   else if(huart->Instance==USART1)
   {
     /* USER CODE BEGIN USART1_MspDeInit 0 */
-
+#ifndef DEBUG
+    return;
+#endif
     /* USER CODE END USART1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_USART1_CLK_DISABLE();
