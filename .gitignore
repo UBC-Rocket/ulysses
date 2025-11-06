@@ -50,3 +50,6 @@ build/
 
 # Mac
 .DS_Store
+
+#logs
+/tools/logs/*

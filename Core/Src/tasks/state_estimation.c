@@ -12,6 +12,7 @@
 #include "state_exchange.h"
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
+
 #ifdef DEBUG
 #include "debug_uart.h"
 #endif
