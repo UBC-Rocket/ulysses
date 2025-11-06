@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "state_exchange.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,24 +44,24 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for RadioCommunication */
-osThreadId_t RadioCommunicationHandle;
-const osThreadAttr_t RadioCommunication_attributes = {
-  .name = "RadioCommunication",
+/* Definitions for MissionManager */
+osThreadId_t MissionManagerHandle;
+const osThreadAttr_t MissionManager_attributes = {
+  .name = "MissionManager",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
-/* Definitions for MotorControl */
-osThreadId_t MotorControlHandle;
-const osThreadAttr_t MotorControl_attributes = {
-  .name = "MotorControl",
+/* Definitions for Controls */
+osThreadId_t ControlsHandle;
+const osThreadAttr_t Controls_attributes = {
+  .name = "Controls",
   .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 128 * 4
 };
-/* Definitions for SensorFusion */
-osThreadId_t SensorFusionHandle;
-const osThreadAttr_t SensorFusion_attributes = {
-  .name = "SensorFusion",
+/* Definitions for StateEstimation */
+osThreadId_t StateEstimationHandle;
+const osThreadAttr_t StateEstimation_attributes = {
+  .name = "StateEstimation",
   .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 512 * 4
 };
@@ -78,7 +78,7 @@ const osThreadAttr_t SensorFusion_attributes = {
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+  state_exchange_init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -96,14 +96,14 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-  /* creation of RadioCommunication */
-  RadioCommunicationHandle = osThreadNew(radio_communication_task_start, NULL, &RadioCommunication_attributes);
+  /* creation of MissionManager */
+  MissionManagerHandle = osThreadNew(mission_manager_task_start, NULL, &MissionManager_attributes);
 
-  /* creation of MotorControl */
-  MotorControlHandle = osThreadNew(motor_control_task_start, NULL, &MotorControl_attributes);
+  /* creation of Controls */
+  ControlsHandle = osThreadNew(controls_task_start, NULL, &Controls_attributes);
 
-  /* creation of SensorFusion */
-  SensorFusionHandle = osThreadNew(sensor_fusion_task_start, NULL, &SensorFusion_attributes);
+  /* creation of StateEstimation */
+  StateEstimationHandle = osThreadNew(state_estimation_task_start, NULL, &StateEstimation_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

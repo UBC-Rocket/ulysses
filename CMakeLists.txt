@@ -38,14 +38,17 @@ add_executable(${CMAKE_PROJECT_NAME})
 add_subdirectory(cmake/stm32cubemx)
 
 set(RTOS_TASKS_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/motor_control.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/radio_communication.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/sensor_fusion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/controls.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/mission_manager.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/state_estimation.c
 )
 
 set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_interactions.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_common.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5611_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_accel.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
@@ -62,6 +65,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
 )
 
