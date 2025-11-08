@@ -37,6 +37,12 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+static bool sd_card_is_inserted(void)
+{
+    GPIO_PinState state = HAL_GPIO_ReadPin(SD_CARD_DETECT_GPIO_Port, SD_CARD_DETECT_Pin);
+    /* Assuming the detect pin is low when a card is present. Adjust if hardware differs. */
+    return state == GPIO_PIN_RESET;
+}
 
 /* USER CODE END PM */
 
@@ -65,6 +71,7 @@ DMA_HandleTypeDef handle_GPDMA2_Channel3;
 DMA_HandleTypeDef handle_GPDMA2_Channel2;
 
 /* USER CODE BEGIN PV */
+bool g_sd_card_initialized = false;
 
 /* USER CODE END PV */
 
@@ -371,13 +378,10 @@ static void MX_SDMMC1_SD_Init(void)
 {
 
   /* USER CODE BEGIN SDMMC1_Init 0 */
-
-  // The following initialization code will fault if there is no SD card inserted.
-  // So provide an option to disable it in case the user doesn't have an SD card.
-#ifndef ULYSSES_USE_SD_CARD
-  return;
-#endif
-
+  g_sd_card_initialized = false;
+  if (!sd_card_is_inserted()) {
+    return;
+  }
   /* USER CODE END SDMMC1_Init 0 */
 
   /* USER CODE BEGIN SDMMC1_Init 1 */
@@ -391,10 +395,10 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockDiv = 0;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
   {
-    Error_Handler();
+    return;
   }
   /* USER CODE BEGIN SDMMC1_Init 2 */
-
+  g_sd_card_initialized = true;
   /* USER CODE END SDMMC1_Init 2 */
 
 }

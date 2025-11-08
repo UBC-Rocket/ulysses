@@ -31,7 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -62,6 +62,7 @@ static inline void delay_us(uint32_t us)
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+extern bool g_sd_card_initialized;
 
 /* USER CODE END EFP */
 
