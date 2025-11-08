@@ -131,6 +131,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  gps_init(&huart4);
 
   /* USER CODE END 2 */
 
@@ -149,6 +150,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	gps_poll();
 
     /* USER CODE BEGIN 3 */
   }
