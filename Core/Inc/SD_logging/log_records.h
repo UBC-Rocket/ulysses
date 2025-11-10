@@ -18,14 +18,23 @@ typedef struct __attribute__((packed)) {
     uint16_t reserved; ///< Padding to keep header aligned on 32-bit boundary
 } log_record_frame_t;
 
-#define LOG_RECORD_FIELDS_IMU_SAMPLE(FIELD) \
+#define LOG_RECORD_FIELDS_ACCEL_SAMPLE(FIELD) \
     FIELD(uint32_t, timestamp_us) \
-    FIELD(int16_t, ax_milli_g) \
-    FIELD(int16_t, ay_milli_g) \
-    FIELD(int16_t, az_milli_g) \
-    FIELD(int16_t, gx_mdps) \
-    FIELD(int16_t, gy_mdps) \
-    FIELD(int16_t, gz_mdps)
+    FIELD(int16_t, ax_mm_s2) \
+    FIELD(int16_t, ay_mm_s2) \
+    FIELD(int16_t, az_mm_s2)
+
+#define LOG_RECORD_FIELDS_GYRO_SAMPLE(FIELD) \
+    FIELD(uint32_t, timestamp_us) \
+    FIELD(int16_t, gx_mrad_s) \
+    FIELD(int16_t, gy_mrad_s) \
+    FIELD(int16_t, gz_mrad_s)
+
+#define LOG_RECORD_FIELDS_BARO_SAMPLE(FIELD) \
+    FIELD(uint32_t, timestamp_us) \
+    FIELD(int32_t, temp_centi) \
+    FIELD(int32_t, pressure_centi) \
+    FIELD(uint32_t, seq)
 
 #define LOG_RECORD_FIELDS_STATE_SNAPSHOT(FIELD) \
     FIELD(uint32_t, timestamp_us) \
@@ -47,9 +56,11 @@ typedef struct __attribute__((packed)) {
     FIELD(uint16_t, data_u16)
 
 #define LOG_RECORD_LIST(APP) \
-    APP(0x01, imu_sample, LOG_RECORD_FIELDS_IMU_SAMPLE) \
-    APP(0x02, state_snapshot, LOG_RECORD_FIELDS_STATE_SNAPSHOT) \
-    APP(0x03, event, LOG_RECORD_FIELDS_EVENT)
+    APP(0x01, accel_sample, LOG_RECORD_FIELDS_ACCEL_SAMPLE) \
+    APP(0x02, gyro_sample, LOG_RECORD_FIELDS_GYRO_SAMPLE) \
+    APP(0x03, baro_sample, LOG_RECORD_FIELDS_BARO_SAMPLE) \
+    APP(0x04, state_snapshot, LOG_RECORD_FIELDS_STATE_SNAPSHOT) \
+    APP(0x05, event, LOG_RECORD_FIELDS_EVENT)
 
 #define DECLARE_ENUM(id, name, fields) LOG_RECORD_TYPE_##name = id,
 typedef enum {

@@ -12,6 +12,8 @@
 #include "state_exchange.h"
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
+#include "SD_logging/log_service.h"
+#include "SD_logging/log_service.h"
 
 #ifdef DEBUG
 #include "debug_uart.h"
@@ -84,6 +86,10 @@ void state_estimation_task_start(void *argument)
             if(!bmi088_acc_sample_dequeue(&bmi088_acc_sample_ring, &accel_sample)) break;
 
             accel_samples[num_accel_samples] = accel_sample;
+            log_service_log_accel_sample(accel_sample.t_us,
+                                         accel_sample.ax,
+                                         accel_sample.ay,
+                                         accel_sample.az);
             num_accel_samples++;
         }
 
@@ -94,6 +100,10 @@ void state_estimation_task_start(void *argument)
             if(!bmi088_gyro_sample_dequeue(&bmi088_gyro_sample_ring, &gyro_sample)) break;
 
             gyro_samples[num_gyro_samples] = gyro_sample;
+            log_service_log_gyro_sample(gyro_sample.t_us,
+                                        gyro_sample.gx,
+                                        gyro_sample.gy,
+                                        gyro_sample.gz);
             num_gyro_samples++;
         }
 
@@ -104,6 +114,10 @@ void state_estimation_task_start(void *argument)
             if(!ms5611_sample_dequeue(&ms5611_sample_ring, &baro_sample)) break;
 
             baro_samples[num_baro_samples] = baro_sample;
+            log_service_log_baro_sample(baro_sample.t_us,
+                                        baro_sample.temp_centi,
+                                        baro_sample.pressure_centi,
+                                        baro_sample.seq);
             num_baro_samples++;
         }
 
@@ -185,6 +199,7 @@ void state_estimation_task_start(void *argument)
 
         flight_state_t flight_state;
         state_exchange_get_flight_state(&flight_state);
+        log_service_log_state(&fused_state, flight_state);
 
         ms5611_poller_tick_1khz(&baro_poll);
 

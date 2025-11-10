@@ -12,23 +12,44 @@ TYPE_FORMATS = {'uint8_t': 'B', 'int8_t': 'b', 'uint16_t': 'H', 'int16_t': 'h', 
 
 RECORDS = {
 
-    "imu_sample": {
+    "accel_sample": {
         "id": 1,
-        "enum": "LOG_RECORD_TYPE_imu_sample",
+        "enum": "LOG_RECORD_TYPE_accel_sample",
         "fields": [
             ("uint32_t", "timestamp_us"),
-            ("int16_t", "ax_milli_g"),
-            ("int16_t", "ay_milli_g"),
-            ("int16_t", "az_milli_g"),
-            ("int16_t", "gx_mdps"),
-            ("int16_t", "gy_mdps"),
-            ("int16_t", "gz_mdps"),
+            ("int16_t", "ax_mm_s2"),
+            ("int16_t", "ay_mm_s2"),
+            ("int16_t", "az_mm_s2"),
         ],
-        "format": "<Ihhhhhh",
-        "struct": struct.Struct("<Ihhhhhh"),
+        "format": "<Ihhh",
+        "struct": struct.Struct("<Ihhh"),
+    },
+    "gyro_sample": {
+        "id": 2,
+        "enum": "LOG_RECORD_TYPE_gyro_sample",
+        "fields": [
+            ("uint32_t", "timestamp_us"),
+            ("int16_t", "gx_mrad_s"),
+            ("int16_t", "gy_mrad_s"),
+            ("int16_t", "gz_mrad_s"),
+        ],
+        "format": "<Ihhh",
+        "struct": struct.Struct("<Ihhh"),
+    },
+    "baro_sample": {
+        "id": 3,
+        "enum": "LOG_RECORD_TYPE_baro_sample",
+        "fields": [
+            ("uint32_t", "timestamp_us"),
+            ("int32_t", "temp_centi"),
+            ("int32_t", "pressure_centi"),
+            ("uint32_t", "seq"),
+        ],
+        "format": "<IiiI",
+        "struct": struct.Struct("<IiiI"),
     },
     "state_snapshot": {
-        "id": 2,
+        "id": 4,
         "enum": "LOG_RECORD_TYPE_state_snapshot",
         "fields": [
             ("uint32_t", "timestamp_us"),
@@ -48,7 +69,7 @@ RECORDS = {
         "struct": struct.Struct("<IffffffffBBH"),
     },
     "event": {
-        "id": 3,
+        "id": 5,
         "enum": "LOG_RECORD_TYPE_event",
         "fields": [
             ("uint32_t", "timestamp_us"),

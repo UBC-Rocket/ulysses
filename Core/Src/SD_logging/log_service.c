@@ -5,6 +5,11 @@
 #include "mission_manager/mission_manager.h"
 #include "state_estimation/state.h"
 #include "main.h"
+#include <math.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
 
 #define LOG_FLUSH_INTERVAL 100U
 
@@ -53,6 +58,69 @@ void log_service_log_state(const state_t *state, flight_state_t flight_state)
     log_writer_append_record(LOG_RECORD_TYPE_state_snapshot,
                              &snapshot,
                              sizeof(snapshot));
+}
+
+void log_service_log_accel_sample(uint32_t timestamp_us,
+                                  float ax_mps2, float ay_mps2, float az_mps2)
+{
+    if (!log_service_ready()) {
+        return;
+    }
+
+    const float accel_scale = 1000.0f; /* m/s^2 -> mm/s^2 */
+
+    log_record_accel_sample_t record = {
+        .timestamp_us = timestamp_us,
+        .ax_mm_s2 = (int16_t)(ax_mps2 * accel_scale),
+        .ay_mm_s2 = (int16_t)(ay_mps2 * accel_scale),
+        .az_mm_s2 = (int16_t)(az_mps2 * accel_scale),
+    };
+
+    log_writer_append_record(LOG_RECORD_TYPE_accel_sample,
+                             &record,
+                             sizeof(record));
+}
+
+void log_service_log_gyro_sample(uint32_t timestamp_us,
+                                 float gx_rad_s, float gy_rad_s, float gz_rad_s)
+{
+    if (!log_service_ready()) {
+        return;
+    }
+
+    const float gyro_scale = 1000.0f; /* rad/s -> mrad/s */
+
+    log_record_gyro_sample_t record = {
+        .timestamp_us = timestamp_us,
+        .gx_mrad_s = (int16_t)(gx_rad_s * gyro_scale),
+        .gy_mrad_s = (int16_t)(gy_rad_s * gyro_scale),
+        .gz_mrad_s = (int16_t)(gz_rad_s * gyro_scale),
+    };
+
+    log_writer_append_record(LOG_RECORD_TYPE_gyro_sample,
+                             &record,
+                             sizeof(record));
+}
+
+void log_service_log_baro_sample(uint32_t timestamp_us,
+                                 int32_t temp_centi,
+                                 int32_t pressure_centi,
+                                 uint32_t seq)
+{
+    if (!log_service_ready()) {
+        return;
+    }
+
+    log_record_baro_sample_t record = {
+        .timestamp_us = timestamp_us,
+        .temp_centi = temp_centi,
+        .pressure_centi = pressure_centi,
+        .seq = seq
+    };
+
+    log_writer_append_record(LOG_RECORD_TYPE_baro_sample,
+                             &record,
+                             sizeof(record));
 }
 
 void log_service_log_event(uint16_t event_code, uint16_t data, uint32_t timestamp_us)

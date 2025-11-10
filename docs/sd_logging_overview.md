@@ -19,10 +19,10 @@ Simplify post-flight analysis by capturing structured telemetry directly to an S
    * A FreeRTOS mutex guards buffer access so any task can enqueue records safely.
    * DMA completion ISR releases a semaphore, allowing the next buffer to be written without blocking the mission manager.
 
-3. **Mission manager integration** (`Core/Src/tasks/mission_manager.c`):
-   * The task simply calls `log_service_try_init/log_state/log_event/log_service_periodic_flush`.
-   * `log_service` (in `Core/Src/SD_logging/log_service.c`) is a façade around the writer: it handles init handshakes, formats `state_snapshot` and `event` records, and triggers periodic flushes.
-   * The mission manager no longer knows about buffers or CRCs; it just forwards state data and E-STOP events to the service.
+3. **Log service use in tasks**:
+   * Mission manager calls `log_service_try_init`, `log_service_log_event` (E-STOP + flight-state transitions), and `log_service_periodic_flush`. Radio logging hooks will land here as the parser matures.
+   * The state-estimation task logs accelerometer, gyro, and barometer samples after dequeuing them, and also logs each fused state snapshot with the latest flight state. All of this happens in task context.
+   * `log_service` (`Core/Src/SD_logging/log_service.c`) hides the framing, CRC, and DMA flush cadence; tasks simply pass physical units (m/s², rad/s, centi-units).
 
 ## Host tooling
 
