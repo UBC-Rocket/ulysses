@@ -1,0 +1,85 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry} 
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{hyperref}
+
+\title{Kalman Filtering \& Sensor Fusion}
+\author{UBC Rocket (TVR, Ulysses)}
+\date{\today}
+
+\begin{document}
+
+\maketitle % Displays the title, author, and date
+
+\section{Introduction}
+
+The goal is to take the datastream provided from the IMU and through some process determine the current orientation of Ulysses as a quaternion. 
+We have data from the IMU's accelerometer and gyroscope, which we can refer to as follows:
+$$
+\text{Acceleration} =
+\begin{pmatrix}
+a_x\\
+a_y\\
+a_z
+\end{pmatrix}
+\ \ \ \
+\text{Angular Velocity} =
+\begin{pmatrix}
+\omega_x\\
+\omega_y\\
+\omega_z
+\end{pmatrix}
+$$
+Which we want to use to find and continuously update $q=a_0+a_1i+a_2j+a_3k$. 
+
+\section{Math}
+\subsection{Notation}
+Denote $q_{n,k}$ as the prediction of $q$ for time $n$ made at time $k$.
+Similarly, we define $a_{x|t}$ and $\omega_{x|t}$ as the value of their respective measurements at time $t$.
+Our goal, then, is to find $q_{t,t}$ at our current timestep $t$, making use of $q_{t,t-1}$,$q_{t-1,t-1}$, and the measured data.
+Note that the initial state is $q=1+0i+0k+0j$. We will update the state via quaternion multiplication.
+\subsection{Accelerometer}
+When Ulysses is stationary or moving at a constant velocity, we expect the magnitude of its acceleration to be approximately equal to 1 (units in g). 
+We can use trigonometry to find the roll/pitch.
+\[
+\begin{gathered}
+\text{Roll}=\theta_x=\text{arctan}2(-a_y, -a_z)
+\\\text{Pitch}=\theta_y=\text{arctan}2(a_x, \sqrt{a_y^2 + a_z^2})
+\end{gathered}
+\]
+Each of these corresponds to a quaternion rotation:
+$$
+\begin{gathered}
+q_{\text{roll}}=\cos(0.5\cdot\theta_x)+\sin(0.5\cdot\theta_x)(i+0j+0k)\\
+q_{\text{pitch}}=\cos(0.5\cdot\theta_y)+\sin(0.5\cdot\theta_y)(0i+j+0k)
+\end{gathered}
+$$
+(there is a better way to do this)  
+To update the given state $q$ with any given quaternion rotation $r$, 
+$$
+q_{\text{new}}=r\cdot q\cdot r^{-1}
+$$
+Where $r^{-1}$ is the conjugate of $r$. These angles will not be accurate if Ulysses is experiencing acceleration from other sources. 
+We want to fuse this data in order to come to something more accurate regardless of experienced acceleration.
+
+\subsection{Gyroscope}
+By integrating over time with respect to angular velocity, we can find the current angles of Ulysses.
+$$
+q_{t,t}=q_{t-1,t-1}+\dfrac{\Delta t}{2}\cdot w\cdot q_{t-t,t-1}
+$$
+Where $w$ is the quaternion $w=0+\omega_xi+\omega_yj+\omega_zk$. \href{https://gamedev.stackexchange.com/questions/108920/applying-angular-velocity-to-quaternion}{Find the derevation here}.
+We expect the initial values of $\theta_{0,0}$ to be 0, as otherwise have no point of reference to begin our calculations.
+The key issue with the gyroscope is that it reports a noise 0.1\textdegree. Over the course of a flight, this uncertainty will compound, resulting in increasingly erroneous data eventually leading to a spectacular crash.
+Thus, while the gyroscope data is accurate regardless of acceleration, its noise makes it prone to drift.
+
+\section{Filtering}
+With the setups done, we can begin the process of filtering the data.
+%    jacobianF = np.array(v[[1.0+(tri[0,0]*tri[1,2]*g[1][0]-tri[0,1]*tri[1,2]*g[2][0])*self.dts, (tri[0,1]/tri[1,0]/tri[1,0]*g[1][0]+tri[0,0]/tri[1,0]/tri[1,0]*g[2][0])*self.dts], 
+%                               [-(tri[0,1]*g[1][0]+tri[0,0]*g[2][0])*self.dts, 1.0]])
+The jacobian is given By
+$$
+H=\begin{bmatrix}
+    
+\end{bmatrix}
+$$
+\end{document}
