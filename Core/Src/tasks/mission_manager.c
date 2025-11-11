@@ -4,6 +4,7 @@
 #include "mission_manager/mission_manager.h"
 #include "state_estimation/state.h"
 #include "SD_logging/log_service.h"
+#include "main.h"
 
 #ifdef DEBUG
 #include "debug_uart.h"
@@ -11,6 +12,11 @@
 
 static bool estop_event_logged = false;
 static flight_state_t last_logged_flight_state = IDLE;
+static bool flight_header_logged = false;
+static uint32_t flight_magic = 0U;
+static uint32_t flight_counter = 0U;
+
+static void log_flight_header_if_ready(uint32_t timestamp_us);
 
 void mission_manager_task_start(void *argument)
 {
@@ -22,6 +28,8 @@ void mission_manager_task_start(void *argument)
 
         state_t current_state = {0};
         state_exchange_get_state(&current_state);
+
+        log_flight_header_if_ready(current_state.u_s);
 
         handle_orientation_estop(&current_state, &flight_state);
 
@@ -36,8 +44,34 @@ void mission_manager_task_start(void *argument)
         log_flight_state_if_changed(flight_state, current_state.u_s);
 
         state_exchange_publish_flight_state(flight_state);
-        osDelay(10);
+        osDelay(2);
     }
+}
+
+static uint32_t next_flight_magic(void)
+{
+    uint32_t seed = HAL_GetTick() ^ 0x5A5AA5A5U;
+    if (seed == 0U) {
+        seed = 0xA5A5A5A5U;
+    }
+    return seed;
+}
+
+static void log_flight_header_if_ready(uint32_t timestamp_us)
+{
+    if (flight_header_logged || !log_service_ready()) {
+        return;
+    }
+
+    if (flight_magic == 0U) {
+        flight_magic = next_flight_magic();
+        flight_counter = HAL_GetTick();
+    }
+
+    log_service_log_flight_header(timestamp_us,
+                                  flight_magic,
+                                  flight_counter);
+    flight_header_logged = true;
 }
 
 static void handle_orientation_estop(const state_t *state, flight_state_t *flight_state)

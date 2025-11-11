@@ -52,4 +52,8 @@ build/
 .DS_Store
 
 #logs
-/tools/logs/*
+/tools/SD/bin/*.bin
+/tools/SD/logs/*.jsonl
+/tools/Serial/logs/*.jsonl
+
+__pycache__

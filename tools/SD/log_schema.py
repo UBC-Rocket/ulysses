@@ -12,6 +12,17 @@ TYPE_FORMATS = {'uint8_t': 'B', 'int8_t': 'b', 'uint16_t': 'H', 'int16_t': 'h', 
 
 RECORDS = {
 
+    "flight_header": {
+        "id": 16,
+        "enum": "LOG_RECORD_TYPE_flight_header",
+        "fields": [
+            ("uint32_t", "timestamp_us"),
+            ("uint32_t", "flight_magic"),
+            ("uint32_t", "flight_counter"),
+        ],
+        "format": "<III",
+        "struct": struct.Struct("<III"),
+    },
     "accel_sample": {
         "id": 1,
         "enum": "LOG_RECORD_TYPE_accel_sample",

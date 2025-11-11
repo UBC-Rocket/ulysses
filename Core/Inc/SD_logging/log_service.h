@@ -30,6 +30,10 @@ bool log_service_ready(void);
  */
 void log_service_log_state(const state_t *state, flight_state_t flight_state);
 
+void log_service_log_flight_header(uint32_t timestamp_us,
+                                   uint32_t flight_magic,
+                                   uint32_t flight_counter);
+
 void log_service_log_accel_sample(uint32_t timestamp_us,
                                   float ax_mps2, float ay_mps2, float az_mps2);
 

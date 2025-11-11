@@ -18,6 +18,11 @@ typedef struct __attribute__((packed)) {
     uint16_t reserved; ///< Padding to keep header aligned on 32-bit boundary
 } log_record_frame_t;
 
+#define LOG_RECORD_FIELDS_FLIGHT_HEADER(FIELD) \
+    FIELD(uint32_t, timestamp_us) \
+    FIELD(uint32_t, flight_magic) \
+    FIELD(uint32_t, flight_counter)
+
 #define LOG_RECORD_FIELDS_ACCEL_SAMPLE(FIELD) \
     FIELD(uint32_t, timestamp_us) \
     FIELD(int16_t, ax_mm_s2) \
@@ -56,6 +61,7 @@ typedef struct __attribute__((packed)) {
     FIELD(uint16_t, data_u16)
 
 #define LOG_RECORD_LIST(APP) \
+    APP(0x10, flight_header, LOG_RECORD_FIELDS_FLIGHT_HEADER) \
     APP(0x01, accel_sample, LOG_RECORD_FIELDS_ACCEL_SAMPLE) \
     APP(0x02, gyro_sample, LOG_RECORD_FIELDS_GYRO_SAMPLE) \
     APP(0x03, baro_sample, LOG_RECORD_FIELDS_BARO_SAMPLE) \

@@ -3,12 +3,15 @@
 #include "main.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include "task.h"
 #include <string.h>
 
 extern SD_HandleTypeDef hsd1;
 
 #define LOG_SD_BLOCK_SIZE   512U
 #define LOG_BUFFER_COUNT    2U
+#define LOG_ERASE_BLOCK_COUNT 8192U
+#define LOG_ERASE_TIMEOUT_MS 5000U
 
 typedef struct {
     uint8_t data[LOG_SD_BLOCK_SIZE];
@@ -30,6 +33,7 @@ typedef struct {
 } log_writer_ctx_t;
 
 static log_writer_ctx_t g_log_ctx;
+static bool s_preflight_erased = false;
 
 static uint16_t crc16_ccitt_update(uint16_t crc, uint8_t data);
 static uint16_t crc16_ccitt_compute(const uint8_t *data, size_t len);
@@ -40,12 +44,18 @@ static void pad_buffer_to_block(log_buffer_t *buf);
 static bool start_dma_flush(uint8_t buffer_index);
 static void wait_for_dma_completion(void);
 static bool flush_active_buffer(void);
+static bool ensure_preflight_erase(void);
+static bool wait_for_card_ready(uint32_t timeout_ms);
 
 bool log_writer_init(void)
 {
     memset(&g_log_ctx, 0, sizeof(g_log_ctx));
 
     if (!g_sd_card_initialized) {
+        return false;
+    }
+
+    if (!ensure_preflight_erase()) {
         return false;
     }
 
@@ -217,6 +227,12 @@ static bool start_dma_flush(uint8_t buffer_index)
 {
     wait_for_dma_completion();
 
+    if (!wait_for_card_ready(LOG_ERASE_TIMEOUT_MS)) {
+        g_log_ctx.error = true;
+        g_log_ctx.ready = false;
+        return false;
+    }
+
     HAL_StatusTypeDef status = HAL_SD_WriteBlocks_DMA(
         &hsd1,
         g_log_ctx.buffers[buffer_index].data,
@@ -247,6 +263,58 @@ static void wait_for_dma_completion(void)
         }
         g_log_ctx.flushing_idx = UINT8_MAX;
     }
+}
+
+static bool ensure_preflight_erase(void)
+{
+    if (s_preflight_erased) {
+        return true;
+    }
+
+    HAL_SD_CardInfoTypeDef card_info = {0};
+    if (HAL_SD_GetCardInfo(&hsd1, &card_info) != HAL_OK) {
+        return false;
+    }
+
+    uint32_t blocks_to_erase = LOG_ERASE_BLOCK_COUNT;
+    if (card_info.LogBlockNbr > 0U && blocks_to_erase > card_info.LogBlockNbr) {
+        blocks_to_erase = card_info.LogBlockNbr;
+    }
+
+    if (blocks_to_erase == 0U) {
+        return false;
+    }
+
+    if (HAL_SD_Erase(&hsd1, 0U, blocks_to_erase - 1U) != HAL_OK) {
+        return false;
+    }
+
+    if (!wait_for_card_ready(LOG_ERASE_TIMEOUT_MS)) {
+        return false;
+    }
+
+    s_preflight_erased = true;
+    return true;
+}
+
+static bool wait_for_card_ready(uint32_t timeout_ms)
+{
+    const uint32_t poll_ms = 10U;
+    uint32_t start = HAL_GetTick();
+
+    while (HAL_SD_GetCardState(&hsd1) != HAL_SD_CARD_TRANSFER) {
+        if ((HAL_GetTick() - start) > timeout_ms) {
+            return false;
+        }
+
+        if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+            vTaskDelay(pdMS_TO_TICKS(poll_ms));
+        } else {
+            HAL_Delay(poll_ms);
+        }
+    }
+
+    return true;
 }
 
 static uint16_t crc16_ccitt_update(uint16_t crc, uint8_t data)

@@ -60,6 +60,25 @@ void log_service_log_state(const state_t *state, flight_state_t flight_state)
                              sizeof(snapshot));
 }
 
+void log_service_log_flight_header(uint32_t timestamp_us,
+                                   uint32_t flight_magic,
+                                   uint32_t flight_counter)
+{
+    if (!log_service_ready()) {
+        return;
+    }
+
+    log_record_flight_header_t header = {
+        .timestamp_us = timestamp_us,
+        .flight_magic = flight_magic,
+        .flight_counter = flight_counter
+    };
+
+    log_writer_append_record(LOG_RECORD_TYPE_flight_header,
+                             &header,
+                             sizeof(header));
+}
+
 void log_service_log_accel_sample(uint32_t timestamp_us,
                                   float ax_mps2, float ay_mps2, float az_mps2)
 {

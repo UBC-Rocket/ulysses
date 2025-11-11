@@ -22,7 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stm32h5xx_hal_sd_ex.h"
+#include "stm32h5xx_ll_sdmmc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,6 +91,7 @@ static void MX_UART4_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
+static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd);
 
 /* USER CODE END PFP */
 
@@ -140,7 +142,15 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  
+  if (g_sd_card_initialized) {
+    if (HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B) != HAL_OK) {
+      Error_Handler();
+    }
+    if (sd_enable_internal_dma(&hsd1) != HAL_OK) {
+      Error_Handler();
+    }
+  }
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -390,7 +400,7 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Instance = SDMMC1;
   hsd1.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
-  hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
+  hsd1.Init.BusWide = SDMMC_BUS_WIDE_1B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd1.Init.ClockDiv = 0;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
@@ -824,6 +834,16 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd)
+{
+#if defined(SDMMC_ENABLE_IDMA_SINGLE_BUFF)
+  hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_SINGLE_BUFF;
+  return HAL_OK;
+#else
+  (void)hsd;
+  return HAL_ERROR;
+#endif
+}
 
 /* USER CODE END 4 */
 
