@@ -38,13 +38,13 @@ add_executable(${CMAKE_PROJECT_NAME})
 add_subdirectory(cmake/stm32cubemx)
 
 set(RTOS_TASKS_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/motor_control.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/radio_communication.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/sensor_fusion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/controls.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/mission_manager.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/state_estimation.c
 )
 
 set(SPI_DRIVER_SRC
-       ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
@@ -65,7 +65,10 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug_uart.c
 )
 
 # Add include paths
@@ -83,11 +86,6 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     BMI_GYRO_Chip_Select_GPIO_Port=BMI_GYRO_CS_GPIO_Port
     BMI_GYRO_Chip_Select_Pin=BMI_GYRO_CS_Pin
 )
-
-# Add CLI option to disable the SD card peripheral initialization
-if(ULYSSES_USE_SD_CARD)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ULYSSES_USE_SD_CARD)
-endif()
 
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
