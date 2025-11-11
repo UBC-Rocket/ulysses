@@ -58,14 +58,14 @@ osThreadId_t RadioCommunicationHandle;
 const osThreadAttr_t RadioCommunication_attributes = {
   .name = "RadioCommunication",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 /* Definitions for MotorControl */
 osThreadId_t MotorControlHandle;
 const osThreadAttr_t MotorControl_attributes = {
   .name = "MotorControl",
   .priority = (osPriority_t) osPriorityHigh,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 /* Definitions for SensorFusion */
 osThreadId_t SensorFusionHandle;
