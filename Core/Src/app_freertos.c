@@ -43,6 +43,15 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+osThreadId_t DebugLoggingTaskHandle;
+const osThreadAttr_t DebugLoggingTask_attributes = {
+  .name = "DebugLogging",
+  .priority = (osPriority_t) osPriorityBelowNormal,
+  .stack_size = 128 * 4,
+};
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
 /* USER CODE END Variables */
 /* Definitions for RadioCommunication */
 osThreadId_t RadioCommunicationHandle;
@@ -106,7 +115,11 @@ void MX_FREERTOS_Init(void) {
   SensorFusionHandle = osThreadNew(sensor_fusion_task_start, NULL, &SensorFusion_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+  DebugLoggingTaskHandle = osThreadNew(debug_logging_task_start, NULL, &DebugLoggingTask_attributes);
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
