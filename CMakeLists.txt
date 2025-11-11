@@ -43,6 +43,18 @@ set(RTOS_TASKS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/sensor_fusion.c
 )
 
+set(SPI_DRIVER_SRC
+       ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_common.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5611_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_accel.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
+)
+
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -52,16 +64,24 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
+    ${SPI_DRIVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    BMI_ACC_Chip_Select_GPIO_Port=BMI_ACC_CS_GPIO_Port
+    BMI_ACC_Chip_Select_Pin=BMI_ACC_CS_Pin
+    BMI_GYRO_Chip_Select_GPIO_Port=BMI_GYRO_CS_GPIO_Port
+    BMI_GYRO_Chip_Select_Pin=BMI_GYRO_CS_Pin
 )
 
 # Add CLI option to disable the SD card peripheral initialization

@@ -63,7 +63,7 @@ osThreadId_t SensorFusionHandle;
 const osThreadAttr_t SensorFusion_attributes = {
   .name = "SensorFusion",
   .priority = (osPriority_t) osPriorityAboveNormal,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 
 /* Private function prototypes -----------------------------------------------*/

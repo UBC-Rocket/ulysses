@@ -44,7 +44,6 @@
 
 DMA_HandleTypeDef handle_GPDMA1_Channel2;
 DMA_HandleTypeDef handle_GPDMA1_Channel3;
-DMA_HandleTypeDef handle_GPDMA1_Channel1;
 
 XSPI_HandleTypeDef hospi1;
 
@@ -53,6 +52,7 @@ SD_HandleTypeDef hsd1;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi4;
+DMA_HandleTypeDef handle_GPDMA1_Channel1;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 UART_HandleTypeDef huart4;
@@ -115,7 +115,9 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;  // enable DWT/ITM block
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;             // enable the cycle counter
+  DWT->CYCCNT = 0;                                 // reset counter
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -131,7 +133,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -233,6 +235,8 @@ static void MX_GPDMA1_Init(void)
   /* GPDMA1 interrupt Init */
     HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel1_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel1_IRQn);
 
   /* USER CODE BEGIN GPDMA1_Init 1 */
 
@@ -270,20 +274,6 @@ static void MX_GPDMA1_Init(void)
     Error_Handler();
   }
   if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel3, DMA_CHANNEL_NPRIV) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  handle_GPDMA1_Channel1.Instance = GPDMA1_Channel1;
-  handle_GPDMA1_Channel1.InitLinkedList.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
-  handle_GPDMA1_Channel1.InitLinkedList.LinkStepMode = DMA_LSM_FULL_EXECUTION;
-  handle_GPDMA1_Channel1.InitLinkedList.LinkAllocatedPort = DMA_LINK_ALLOCATED_PORT0;
-  handle_GPDMA1_Channel1.InitLinkedList.TransferEventMode = DMA_TCEM_LAST_LL_ITEM_TRANSFER;
-  handle_GPDMA1_Channel1.InitLinkedList.LinkedListMode = DMA_LINKEDLIST_NORMAL;
-  if (HAL_DMAEx_List_Init(&handle_GPDMA1_Channel1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel1, DMA_CHANNEL_NPRIV) != HAL_OK)
   {
     Error_Handler();
   }
