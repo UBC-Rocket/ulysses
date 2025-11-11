@@ -1,10 +1,7 @@
 #include "debug/log.h"
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <limits.h>
 
 #include "printf/printf.h"
 #include "FreeRTOS.h"
