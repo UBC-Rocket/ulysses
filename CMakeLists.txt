@@ -44,7 +44,7 @@ set(RTOS_TASKS_SRC
 )
 
 set(SPI_DRIVER_SRC
-       ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_queue.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SPI_device_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
@@ -54,6 +54,9 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
 )
 
+set(ALGO_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/algorithms/ekf.c
+)
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -66,6 +69,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
+    ${ALGO_SRC}
 )
 
 # Add include paths
@@ -73,6 +77,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/algorithms
 )
 
 # Add project symbols (macros)
