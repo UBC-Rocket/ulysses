@@ -1,4 +1,4 @@
-# SD Card Logging (WIP)
+# SD Card Logging
 
 > **Status:** In development. The logger streams records to the SD card, but recovery tooling and mission-critical validation are still ongoing.
 
@@ -10,14 +10,14 @@ Simplify post-flight analysis by capturing structured telemetry directly to an S
 
 1. **Detection & init** (`Core/Src/main.c`):
    * `MX_SDMMC1_SD_Init()` only runs when the card-detect GPIO reports a card present.
-   * Init uses 1-bit bus width and <400 kHz clock to satisfy SDHC/UHS-I requirements, then switches to 4-bit / ~25 MHz once the card exits idle.
+   * Init configures the SDMMC for 4-bit transfers but intentionally divides the bus clock (`ClockDiv = 4`, ~12 MHz) to keep CRC margins healthy on our board routing; once the card responds, the controller’s internal DMA (IDMA) and NVIC path are enabled so block writes run without CPU copies.
    * `g_sd_card_initialized` reflects whether the card is ready for logging.
 
 2. **Log writer** (`Core/Src/SD_logging/log_writer.c`):
    * Double-buffered 512-byte blocks; each buffer fills with framed records and is flushed via `HAL_SD_WriteBlocks_DMA`.
    * Frames consist of a small header (`magic`, `type`, `payload length`, `CRC16`) followed by the payload, matching the structs in `log_records.h`.
    * A FreeRTOS mutex guards buffer access so any task can enqueue records safely.
-   * DMA completion ISR releases a semaphore, allowing the next buffer to be written without blocking the mission manager.
+   * DMA completion ISR releases a semaphore, allowing the next buffer to be written without blocking the mission manager; errors propagate through `HAL_SD_ErrorCallback`, so the mission tasks immediately stop logging if the card reports CRC/timeouts.
    * Before logging starts, the first ~4 MB of the card are erased to guarantee stale data from earlier flights is cleared.
 
 3. **Log service use in tasks**:

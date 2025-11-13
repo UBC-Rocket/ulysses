@@ -90,6 +90,7 @@ void state_estimation_task_start(void *argument)
                                          accel_sample.ax,
                                          accel_sample.ay,
                                          accel_sample.az);
+                                         
             num_accel_samples++;
         }
 

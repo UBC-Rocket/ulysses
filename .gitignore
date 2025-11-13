@@ -56,4 +56,4 @@ build/
 /tools/SD/logs/*.jsonl
 /tools/Serial/logs/*.jsonl
 
-__pycache__
+/tools/SD/__pycache__
