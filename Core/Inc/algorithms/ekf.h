@@ -1,3 +1,26 @@
+#ifndef EKF_H
+#define EKF_H
+
+#define STATE_DIM 4
+
 typedef struct {
-    
+    float x[STATE_DIM];             // state vector (just a quaternion for now)
+    float P[STATE_DIM][STATE_DIM];  // covariance matrix
+    float Q[STATE_DIM][STATE_DIM];  // process noise
+    float R[3][3];                  // measurement noise (of accel)
 } EKF;
+
+/* Macro to multiply any given A (r1 x c1) by B (c1 x c2) */
+#define MAT_MUL(A, B, C, r1, c1, c2)                          \
+    do {                                                      \
+        for (int i = 0; i < (r1); ++i) {                      \
+            for (int j = 0; j < (c2); ++j) {                  \
+                (C)[i][j] = 0;                                \
+                for (int k = 0; k < (c1); ++k) {              \
+                    (C)[i][j] += (A)[i][k] * (B)[k][j];       \
+                }                                              \
+            }                                                  \
+        }                                                      \
+    } while (0)
+
+#endif
