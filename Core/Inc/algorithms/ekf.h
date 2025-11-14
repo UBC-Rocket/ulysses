@@ -5,9 +5,9 @@
 
 typedef struct {
     float x[STATE_DIM];             // state vector (just a quaternion for now)
-    float P[STATE_DIM][STATE_DIM];  // covariance matrix
-    float Q[STATE_DIM][STATE_DIM];  // process noise
-    float R[3][3];                  // measurement noise (of accel)
+    float covar[STATE_DIM][STATE_DIM];  // covariance matrix
+    float process[STATE_DIM][STATE_DIM];  // process noise
+    float measurement[3][3];                  // measurement noise (of accel)
 } EKF;
 
 /* Macro to multiply any given A (r1 x c1) by B (c1 x c2) */
@@ -18,9 +18,9 @@ typedef struct {
                 (C)[i][j] = 0;                                \
                 for (int k = 0; k < (c1); ++k) {              \
                     (C)[i][j] += (A)[i][k] * (B)[k][j];       \
-                }                                              \
-            }                                                  \
-        }                                                      \
+                }                                             \
+            }                                                 \
+        }                                                     \
     } while (0)
 
 #endif
