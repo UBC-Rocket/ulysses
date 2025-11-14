@@ -90,7 +90,7 @@ The high-level overview is that we predict the next state based on the previous 
 \end{equation}
 Where $x$ is the state matrix and $f(x)$ is the state transition.
 \begin{equation}
-    P_k=F_kP_{k-1}F_k^T+Q
+    P_{k,k-1}=F_kP_{k-1,k-1}F_k^T+Q
 \end{equation}
 Where $P$ is the state covariance matrix, $F$ is the Jacobian matrix of the state transition, and $Q$ is the process noise covariance matrix.
 \begin{equation}
@@ -102,14 +102,14 @@ Concluding the prediction step. The update step is as follows:
 \end{equation}
 Where $\tilde{y}_k$ is the 'innovation' (difference between prediction and measured), $z_k$ is the measurements of roll \& pitch we calculate from the accelerometer (filling 0 in for yaw/heading since we have no way of measuring that accurately), and $h(\hat{x})$ is the observation model previously described (converted into a vector representing the expected gravity/accel readings).
 \begin{equation}
-    K_k=P_kH_k^T(H_kP_kH_k^T+R_k)^{-1}
+    K_k=P_{k,k-1}H_k^T(H_kP_{k,k-1}H_k^T+R_k)^{-1}
 \end{equation}
 Where $K$ is the Kalman gain, $H_k$ is the Jacobian of $h(\hat{x}_k)$, and $R$ is the measurement covariance matrix (can set to $0.02\times I$ where $I$ is a $3\times3$ identity matrix).
 \begin{equation}
     \hat{x}_{k+1}=\hat{x}_k+K_k\cdot\tilde{y_k}
 \end{equation}
 \begin{equation}
-    P_{k+1}=(I-K_kH_k)P_k
+    P_{k,k}=(I-K_kH_k)P_k
 \end{equation}
 We will tune Q and R as necessary. The final expected value that will be fed to the PID is in (6).
 \subsection{State transition}
