@@ -1,5 +1,6 @@
 #include "ekf.h"
 #include <math.h>
+#include <string.h>
 
 /* ------------- helpers ---------------- */
 
@@ -72,6 +73,20 @@ int inverse(float a[N][N], float inverse[N][N]) {
     return 1; // Success
 }
 
+void transpose4x4(const float A[4][4], float AT[4][4])
+{
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            AT[j][i] = A[i][j];
+}
+
+void transpose3x4_to_4x3(const float A[3][4], float AT[4][3])
+{
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 4; ++j)
+            AT[j][i] = A[i][j];
+}
+
 /* ------------- EKF ---------------- */
 static EKF ekf;
 
@@ -88,16 +103,16 @@ void init_ekf(
     // sets ekf.P to an identity matrix
     for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) {
         if (i==j) {
-            ekf.P[i][j] = 1;
+            ekf.covar[i][j] = 1;
             continue;
         }
 
-        ekf.P[i][j] = 0;
+        ekf.covar[i][j] = 0;
     }
 
     // copy inputs
-    for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) ekf.Q[i][j] = process_noise[i][j];
-    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) ekf.R[i][j] = measurement_noise[i][j];
+    for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) ekf.process[i][j] = process_noise[i][j];
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) ekf.measurement[i][j] = measurement_noise[i][j];
 }
 
 void state_transition(
@@ -136,6 +151,66 @@ void state_transition(
     normalize(next_state);
 }
 
+void get_state_jacobian(
+    float g[3],
+    float dT,
+    float j[4][4]
+)
+{
+    /*
+    |  1    -gxdt   -gydt   -gzdt |
+    | gxdt    1      gzdt   -gydt |
+    | gydt  -gzdt     1      gxdt |
+    | gzdt   gydt   -gxdt     1   |
+    */
+    float xdt = 0.5f * g[0] * dT;
+    float ydt = 0.5f * g[1] * dT;
+    float zdt = 0.5f * g[2] * dT;
+
+    memcpy(j,
+        (float [4][4]){
+            {1,   -xdt, -ydt, -zdt},
+            {xdt,  1,    zdt, -ydt},
+            {ydt, -zdt,  1,    xdt},
+            {zdt,  ydt, -xdt,  1  }
+        },
+        sizeof(float[4][4]));
+
+    // j[0][0]=1;   j[0][1]=-xdt; j[0][2]=-ydt; j[0][3]=-zdt;
+    // j[1][0]=xdt; j[1][1]=1;    j[1][2]=zdt;  j[1][3]=-ydt;
+    // j[2][0]=ydt; j[2][1]=-zdt; j[2][2]=1;    j[2][3]=xdt;
+    // j[3][0]=zdt; j[3][1]=ydt;  j[3][2]=-xdt; j[3][3]=1;
+  
+}
+
+void predict_covar(
+    float predicted_covar[4][4],
+    float jacobian[4][4]
+)
+{
+    float m1[4][4];
+
+    float jacobian_transposed[4][4];
+    transpose4x4(jacobian, jacobian_transposed);
+
+    MAT_MUL(jacobian, ekf.covar, m1, 4, 4, 4);
+    MAT_MUL(m1, jacobian_transposed, predicted_covar, 4, 4, 4);
+
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) predicted_covar[i][j] += ekf.process[i][j];
+}
+
+void predict_accel_from_quat(const float q[4], float accel_pred[3])
+{
+    float q0 = q[0];
+    float q1 = q[1];
+    float q2 = q[2];
+    float q3 = q[3];
+
+    // v_body = q * v_world * q_conjugate
+    accel_pred[0] = 2.0f * (q1*q3 - q0*q2); // ax
+    accel_pred[1] = 2.0f * (q2*q3 + q0*q1); // ay
+    accel_pred[2] = q0*q0 - q1*q1 - q2*q2 + q3*q3; // az
+}
 
 void tick_ekf(
     float deltaTime,
@@ -143,7 +218,25 @@ void tick_ekf(
     float accel[3]
 )
 {
-    
+    /* prediction step */
+    float next_state[4];
+    state_transition(ekf.x, next_state, deltaTime, gyro);
+
+    float state_jacobian[4][4];
+    get_state_jacobian(gyro, deltaTime, state_jacobian);
+
+    float predicted_covar[4][4];
+
+    predict_covar(predicted_covar, state_jacobian);
+
+    /* update step */
+    // find innovation
+    float innovation[3];
+
+    float predicted_accel[3];
+    predict_accel_from_quat(next_state, predicted_accel);
+
+    for (int i = 0; i < 3; i++) innovation[i] = accel[i] - predicted_accel[i]; // minus predicted gravity 
 }
 
 
