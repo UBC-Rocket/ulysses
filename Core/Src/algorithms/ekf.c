@@ -180,7 +180,7 @@ void get_state_jacobian(
     // j[1][0]=xdt; j[1][1]=1;    j[1][2]=zdt;  j[1][3]=-ydt;
     // j[2][0]=ydt; j[2][1]=-zdt; j[2][2]=1;    j[2][3]=xdt;
     // j[3][0]=zdt; j[3][1]=ydt;  j[3][2]=-xdt; j[3][3]=1;
-  
+
 }
 
 void predict_covar(
@@ -212,6 +212,25 @@ void predict_accel_from_quat(const float q[4], float accel_pred[3])
     accel_pred[2] = q0*q0 - q1*q1 - q2*q2 + q3*q3; // az
 }
 
+void get_h_jacobian(
+    float q[4],
+    float h_jacobian[3][4]
+)
+{
+    float q0 = 2 * q[0];
+    float q1 = 2 * q[1];
+    float q2 = 2 * q[2];
+    float q3 = 2 * q[3];
+
+    memcpy(h_jacobian, 
+        (float[3][4]) {
+            {-q2, q3, -q0, q1},
+            {q1, q0, q3, q2},
+            {q0, -q1, -q2, q3}
+        }, 
+        sizeof(float[3][4]));
+}
+
 void tick_ekf(
     float deltaTime,
     float gyro[3],
@@ -231,12 +250,66 @@ void tick_ekf(
 
     /* update step */
     // find innovation
-    float innovation[3];
+    float innovation[3][1];
 
     float predicted_accel[3];
     predict_accel_from_quat(next_state, predicted_accel);
 
-    for (int i = 0; i < 3; i++) innovation[i] = accel[i] - predicted_accel[i]; // minus predicted gravity 
+    for (int i = 0; i < 3; i++) innovation[i][0] = accel[i] - predicted_accel[i]; // minus predicted gravity 
+
+    // get new kalman gain ( KILL ME !!!)
+    // half of the ram of ulysses will be dedicated to 4x4 matrices :thumbsup:
+    float h_jacobian[3][4];
+    get_h_jacobian(next_state, h_jacobian);
+
+    float h_jacobian_t[4][3];
+    transpose3x4_to_4x3(h_jacobian, h_jacobian_t);
+
+    float mat1[4][3]; // p_{k, k-1} * H_k ^ T
+    MAT_MUL(predicted_covar, h_jacobian_t, mat1, 4, 4, 3);
+
+    float mat2[3][4]; // H_k * p_{k, k-1}
+    MAT_MUL(h_jacobian,predicted_covar, mat2, 3, 4, 4);
+
+    float mat3[3][3]; // mat2 * H_k ^ T
+    MAT_MUL(mat2, h_jacobian_t, mat3, 3, 4, 3);
+
+    // add measurement covariance
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) mat3[i][j] += ekf.measurement[i][j];
+
+    float inv_mat3[3][3]; // self-explanatory
+    int result = inverse(mat3, inv_mat3);
+
+    if (!result) {
+        /* matrix could not be inverted, cannot continue with ekf update (unlikely in typical conditions) */
+        return;
+    }
+    
+    float kalman_gain[4][3]; // mat1 * inv_mat3
+    MAT_MUL(mat1, inv_mat3, kalman_gain, 4, 3, 3);
+
+    // compute adjustment
+    float adjustment[4][1];
+    MAT_MUL(kalman_gain, innovation, adjustment, 4, 3, 1);
+
+    for (int i = 0; i < 4; i++) ekf.x[i] = next_state[i] + adjustment[i][0];
+    normalize(ekf.x);
+
+    float KH[4][4];
+    MAT_MUL(kalman_gain, h_jacobian, KH, 4, 3, 4);
+
+    float I[4][4] = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
+
+    float I_minus_KH[4][4];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            I_minus_KH[i][j] = I[i][j] - KH[i][j];
+
+    float new_p[4][4];
+    MAT_MUL(I_minus_KH, predicted_covar, new_p, 4, 4, 4);
+
+    // store it
+    memcpy(ekf.covar, new_p, sizeof(new_p));
 }
 
 
