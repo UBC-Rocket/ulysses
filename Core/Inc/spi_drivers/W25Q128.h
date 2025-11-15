@@ -1,0 +1,186 @@
+/*
+    Driver for the W25Q128JV Flash Memory.
+    Basic implementation for initialization, read, write, and erase operations.
+
+    Reference: Winbond W25Q128JV Datasheet Rev. M
+    Device: 128 Mbit (16 MB) flash memory
+    - 65,536 pages (256 bytes each)
+    - 4,096 sectors (4 KB each)
+    - 256 blocks (64 KB each)
+
+    @ UBC Rocket
+*/
+
+#ifndef W25Q128_FLASH_H
+#define W25Q128_FLASH_H
+
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+#define W25Q128_CMD_WRITE_ENABLE         0x06
+#define W25Q128_CMD_WRITE_DISABLE        0x04
+#define W25Q128_CMD_READ_STATUS_REG1     0x05
+#define W25Q128_CMD_READ_STATUS_REG2     0x35
+#define W25Q128_CMD_READ_STATUS_REG3     0x15
+#define W25Q128_CMD_WRITE_STATUS_REG1    0x01
+#define W25Q128_CMD_WRITE_STATUS_REG2    0x31
+#define W25Q128_CMD_WRITE_STATUS_REG3    0x11
+#define W25Q128_CMD_PAGE_PROGRAM         0x02
+#define W25Q128_CMD_SECTOR_ERASE         0x20
+#define W25Q128_CMD_BLOCK_ERASE_32K      0x52
+#define W25Q128_CMD_BLOCK_ERASE_64K      0xD8
+#define W25Q128_CMD_CHIP_ERASE           0xC7
+#define W25Q128_CMD_READ_DATA            0x03
+#define W25Q128_CMD_FAST_READ            0x0B
+#define W25Q128_CMD_READ_JEDEC_ID        0x9F
+#define W25Q128_CMD_READ_UNIQUE_ID       0x4B
+#define W25Q128_CMD_POWER_DOWN           0xB9
+#define W25Q128_CMD_RELEASE_POWER_DOWN   0xAB
+
+typedef struct {
+    uint8_t  unique_id[8];     ///< 64-bit unique ID
+    uint8_t  status_reg1;      ///< Status Register 1 cache
+    uint8_t  status_reg2;      ///< Status Register 2 cache
+    uint8_t  status_reg3;      ///< Status Register 3 cache
+    uint32_t jedec_id;         ///< JEDEC ID
+    bool     initialized;      ///< Initialization status
+} w25q128_t;
+
+/**
+ * @brief Build command to read JEDEC ID (3 bytes: Manufacturer, Memory Type, Capacity)
+ * @param tx_buf Buffer to write command into (must be at least 4 bytes)
+ * @return Number of bytes in command frame (4: 1 cmd + 3 response)
+ */
+size_t w25q128_build_read_jedec_id(uint8_t *tx_buf);
+
+/**
+ * @brief Build command to read Unique ID (64-bit)
+ * @param tx_buf Buffer to write command into (must be at least 13 bytes)
+ * @return Number of bytes in command frame (13: 1 cmd + 4 dummy + 8 id)
+ */
+size_t w25q128_build_read_unique_id(uint8_t *tx_buf);
+
+/**
+ * @brief Build Write Enable command
+ * @param tx_buf Buffer to write command into (must be at least 1 byte)
+ * @return Number of bytes in command frame (1)
+ */
+size_t w25q128_build_write_enable(uint8_t *tx_buf);
+
+/**
+ * @brief Build Write Disable command
+ * @param tx_buf Buffer to write command into (must be at least 1 byte)
+ * @return Number of bytes in command frame (1)
+ */
+size_t w25q128_build_write_disable(uint8_t *tx_buf);
+
+/**
+ * @brief Build command to read Status Register
+ * @param reg_num Register number (1, 2, or 3)
+ * @param tx_buf Buffer to write command into (must be at least 2 bytes)
+ * @return Number of bytes in command frame (2: 1 cmd + 1 response)
+ */
+size_t w25q128_build_read_status_reg(uint8_t reg_num, uint8_t *tx_buf);
+
+/**
+ * @brief Build command to read data (standard read, up to 50 MHz)
+ * @param address 24-bit address to read from
+ * @param num_bytes Number of bytes to read
+ * @param tx_buf Buffer to write command into (must be at least 4 + num_bytes)
+ * @return Number of bytes in command frame (4 + num_bytes)
+ */
+size_t w25q128_build_read_data(uint32_t address, uint16_t num_bytes, uint8_t *tx_buf);
+
+/**
+ * @brief Build command to read data (fast read, up to 104 MHz, requires 1 dummy byte)
+ * @param address 24-bit address to read from
+ * @param num_bytes Number of bytes to read
+ * @param tx_buf Buffer to write command into (must be at least 5 + num_bytes)
+ * @return Number of bytes in command frame (5 + num_bytes: cmd + 3 addr + dummy + data)
+ */
+size_t w25q128_build_fast_read(uint32_t address, uint16_t num_bytes, uint8_t *tx_buf);
+
+/**
+ * @brief Build Page Program command (writes up to 256 bytes)
+ * @param address 24-bit address to write to (must be within same page)
+ * @param data Pointer to data to write
+ * @param num_bytes Number of bytes to write (max 256)
+ * @param tx_buf Buffer to write command into (must be at least 4 + num_bytes)
+ * @return Number of bytes in command frame (4 + num_bytes)
+ */
+size_t w25q128_build_page_program(uint32_t address, const uint8_t *data, 
+                                  uint16_t num_bytes, uint8_t *tx_buf);
+
+/**
+ * @brief Build Sector Erase command (erases 4 KB)
+ * @param sector_address Sector address (0 to 4095)
+ * @param tx_buf Buffer to write command into (must be at least 4 bytes)
+ * @return Number of bytes in command frame (4)
+ */
+size_t w25q128_build_sector_erase(uint32_t sector_address, uint8_t *tx_buf);
+
+/**
+ * @brief Build Block Erase command (erases 64 KB)
+ * @param block_address Block address (0 to 255)
+ * @param tx_buf Buffer to write command into (must be at least 4 bytes)
+ * @return Number of bytes in command frame (4)
+ */
+size_t w25q128_build_block_erase(uint32_t block_address, uint8_t *tx_buf);
+
+/**
+ * @brief Build Chip Erase command (erases entire chip)
+ * @param tx_buf Buffer to write command into (must be at least 1 byte)
+ * @return Number of bytes in command frame (1)
+ */
+size_t w25q128_build_chip_erase(uint8_t *tx_buf);
+
+/* -------------------------------------------------------------------------- */
+/* Response parsers                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Parse JEDEC ID response
+ * @param rx_buf Receive buffer from SPI transaction
+ * @param dev Device structure to update
+ */
+void w25q128_parse_jedec_id(const uint8_t *rx_buf, w25q128_t *dev);
+
+/**
+ * @brief Parse Unique ID response
+ * @param rx_buf Receive buffer from SPI transaction
+ * @param dev Device structure to update
+ */
+void w25q128_parse_unique_id(const uint8_t *rx_buf, w25q128_t *dev);
+
+/**
+ * @brief Parse Status Register response
+ * @param rx_buf Receive buffer from SPI transaction
+ * @param reg_num Register number (1, 2, or 3)
+ * @param dev Device structure to update
+ */
+void w25q128_parse_status_reg(const uint8_t *rx_buf, uint8_t reg_num, w25q128_t *dev);
+
+/**
+ * @brief Parse read data response
+ * @param rx_buf Receive buffer from SPI transaction
+ * @param data_out Output buffer for read data
+ * @param num_bytes Number of bytes to copy
+ */
+void w25q128_parse_read_data(const uint8_t *rx_buf, uint8_t *data_out, uint16_t num_bytes);
+
+/**
+ * @brief Check if device is busy (polling status register)
+ * @param status_reg1 Status Register 1 value
+ * @return true if busy, false if ready
+ */
+bool w25q128_is_busy(uint8_t status_reg1);
+
+/**
+ * @brief Check if write enable latch is set
+ * @param status_reg1 Status Register 1 value
+ * @return true if write enabled, false otherwise
+ */
+bool w25q128_is_write_enabled(uint8_t status_reg1);
+
+#endif // W25Q128_FLASH_H
