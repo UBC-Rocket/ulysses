@@ -13,6 +13,7 @@
 #include "debug/log.h"
 
 #define PI 3.141593
+#define GRAV 9.807
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
 // External variable declarations
@@ -30,12 +31,12 @@ void quat_to_euler(float q[4], float e[3]) {
     float y = q[2];
     float z = q[3];
 
-    // ----- Roll (x-axis rotation) -----
+    // Roll (x-axis rotation)
     float sinr = 2.0f * (w*x + y*z);
     float cosr = 1.0f - 2.0f * (x*x + y*y);
     e[0] = atan2f(sinr, cosr) * 180 / PI;
 
-    // ----- Pitch (y-axis rotation) -----
+    // Pitch (y-axis rotation)
     float sinp = 2.0f * (w*y - z*x);
     if (fabsf(sinp) >= 1.0f)
         e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / PI; // clamp at ±90°
@@ -144,23 +145,22 @@ void sensor_fusion_task_start(void *argument)
             accel_samples[num_accel_samples] = accel_sample;
 
             num_accel_samples++;
-
         }
+
         while(num_gyro_samples < FUSION_VECTOR_SAMPLE_SIZE){
             if(!bmi088_gyro_sample_dequeue(&bmi088_gyro_sample_ring, &gyro_sample)) break;
             
             gyro_samples[num_gyro_samples] = gyro_sample;
 
             num_gyro_samples++;
-
         }
+
         while(num_baro_samples < FUSION_VECTOR_SAMPLE_SIZE){
             if(!ms5611_sample_dequeue(&ms5611_sample_ring, &baro_sample)) break;
 
             baro_samples[num_baro_samples] = baro_sample;
 
             num_baro_samples++;
-
         }
 
         ms5611_poller_tick_1khz(&baro_poll);
@@ -171,9 +171,16 @@ void sensor_fusion_task_start(void *argument)
         
         for (uint8_t i = 0; i < loops; i++) {
             float g_data_raw[3] = {gyro_samples[i].gx * PI / 180, gyro_samples[i].gy * PI / 180, gyro_samples[i].gz * PI / 180};
-            float a_data_raw[3] = {accel_samples[i].ax / -9.81, accel_samples[i].ay / -9.81, accel_samples[i].az / -9.81};
+            float a_data_raw[3] = {accel_samples[i].ax / -GRAV, accel_samples[i].ay / -GRAV, accel_samples[i].az / -GRAV};
+            // accel should read [0, 0, 1] when sitting stationary upright
 
-            // Still need to calibrate bias
+            if (last_tick != 0) {
+                delta_time = (gyro_samples[i].t_us - last_tick) / 1000000;
+            }
+
+            last_tick = gyro_samples[i].t_us;
+            
+            // Calibration
             if (ticks < CALIBRATION) {
                 ticks += 1;
                 update_bias(g_bias, g_data_raw, a_bias, a_data_raw, ticks);
@@ -181,20 +188,14 @@ void sensor_fusion_task_start(void *argument)
                 continue;
             }
 
-            // Calibration finished.
+            // Calibration finished
             float g_data[3] = {g_data_raw[0] - g_bias[0], 
-                    g_data_raw[1] - g_bias[1], 
-                    g_data_raw[2] - g_bias[2]};
+                               g_data_raw[1] - g_bias[1], 
+                               g_data_raw[2] - g_bias[2]};
 
             float a_data[3] = {a_data_raw[0] - a_bias[0], 
-                a_data_raw[1] - a_bias[1], 
-                a_data_raw[2] - a_bias[2]};
-
-            if (last_tick != 0) {
-                delta_time = (gyro_samples[i].t_us - last_tick) / 1000000;
-            }
-
-            last_tick = gyro_samples[i].t_us;
+                               a_data_raw[1] - a_bias[1], 
+                               a_data_raw[2] - a_bias[2]};
 
             tick_ekf(delta_time, g_data, a_data);
 
@@ -206,7 +207,6 @@ void sensor_fusion_task_start(void *argument)
                 float e[2];
                 quat_to_euler(q, e);
 
-                //DLOG_PRINT("%f %f %f %f", q[0], q[1], q[2], q[3]);
                 DLOG_PRINT("Pitch: %f\nRoll: %f\n", e[0], e[1]);
             }
 
