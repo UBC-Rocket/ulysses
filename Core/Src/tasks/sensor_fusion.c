@@ -220,4 +220,3 @@ void sensor_fusion_task_start(void *argument)
         }
     }
 }
-
