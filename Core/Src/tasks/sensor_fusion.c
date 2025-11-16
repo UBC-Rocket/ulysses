@@ -41,7 +41,26 @@ void quat_to_euler(float q[4], float e[3]) {
         e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / PI; // clamp at ±90°
     else
         e[1] = asinf(sinp) * 180 / PI;
+}
 
+void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_data_raw[3], int64_t ticks)
+{
+    if (ticks == 0) {
+        for (int i = 0; i < 3; i++) g_bias[i] = g_data_raw[i];
+        for (int i = 0; i < 2; i++) a_bias[i] = a_data_raw[i];
+
+        a_bias[2] = a_data_raw[2] - 1;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        g_bias[i] = (g_bias[i]) * (((float)ticks - 1) / (float)ticks) + (g_data_raw[i]) * (1 / (float)ticks);
+    }
+
+    for (int i = 0; i < 2; i++) {
+        a_bias[i] = (a_bias[i]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[i]) * (1 / (float)ticks);
+    }
+
+    a_bias[2] = (a_bias[2]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[2] - 1) * (1 / (float)ticks);
 }
 
 void sensor_fusion_task_start(void *argument)
@@ -152,11 +171,21 @@ void sensor_fusion_task_start(void *argument)
         
         for (uint8_t i = 0; i < loops; i++) {
             float g_data_raw[3] = {gyro_samples[i].gx * PI / 180, gyro_samples[i].gy * PI / 180, gyro_samples[i].gz * PI / 180};
-            float g_data[3] = {g_data_raw[0] - g_bias[0], 
-                               g_data_raw[1] - g_bias[1], 
-                               g_data_raw[2] - g_bias[2]};
-
             float a_data_raw[3] = {accel_samples[i].ax / -9.81, accel_samples[i].ay / -9.81, accel_samples[i].az / -9.81};
+
+            // Still need to calibrate bias
+            if (ticks < CALIBRATION) {
+                ticks += 1;
+                update_bias(g_bias, g_data_raw, a_bias, a_data_raw, ticks);
+
+                continue;
+            }
+
+            // Calibration finished.
+            float g_data[3] = {g_data_raw[0] - g_bias[0], 
+                    g_data_raw[1] - g_bias[1], 
+                    g_data_raw[2] - g_bias[2]};
+
             float a_data[3] = {a_data_raw[0] - a_bias[0], 
                 a_data_raw[1] - a_bias[1], 
                 a_data_raw[2] - a_bias[2]};
@@ -167,50 +196,22 @@ void sensor_fusion_task_start(void *argument)
 
             last_tick = gyro_samples[i].t_us;
 
-            // run ekf after calibration
-            if (ticks > CALIBRATION) {
-                ticks += 1;
+            tick_ekf(delta_time, g_data, a_data);
 
-                tick_ekf(delta_time, g_data, a_data);
-
+            // logging
+            if (ticks % 200 == 0) {
                 float q[4];
                 get_state_x(q);
 
-                if (ticks % 200 == 0) {
-                    float e[2];
-                    quat_to_euler(q, e);
+                float e[2];
+                quat_to_euler(q, e);
 
-                    DLOG_PRINT("Pitch: %f\nRoll: %f\n", e[0], e[1]);
-                }
-
-                continue;
-            };
-
-            // CALIBRATING BIAS
-            if (ticks == 0) {
-                for (int i = 0; i < 3; i++) g_bias[i] = g_data_raw[i];
-                for (int i = 0; i < 2; i++) a_bias[i] = a_data_raw[i];
-
-                a_bias[2] = a_data_raw[2] - 1;
-
-                ticks += 1;
-
-                continue;
+                //DLOG_PRINT("%f %f %f %f", q[0], q[1], q[2], q[3]);
+                DLOG_PRINT("Pitch: %f\nRoll: %f\n", e[0], e[1]);
             }
-
-            for (int i = 0; i < 3; i++) {
-                g_bias[i] = (g_bias[i]) * (((float)ticks - 1) / (float)ticks) + (g_data_raw[i]) * (1 / (float)ticks);
-            }
-
-            for (int i = 0; i < 2; i++) {
-                a_bias[i] = (a_bias[i]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[i]) * (1 / (float)ticks);
-            }
-
-            a_bias[2] = (a_bias[2]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[2] - 1) * (1 / (float)ticks);
 
             ticks += 1;
         }
-
 
         TickType_t elapsed = xTaskGetTickCount() - cycle_start;
         if (elapsed < period_ticks) {
