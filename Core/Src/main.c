@@ -134,7 +134,7 @@ int main(void)
   MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  config_imu_HIL(&hspi1);
+  IMU_HIL_t* imu = config_imu_HIL(&hspi1); // initialie imu hardware in loop testing (change spi port if required since hspi1 is a placeholder)
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -152,7 +152,10 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    update_imu_HIL_stream();
+    update_imu_HIL_stream(imu); // grabs newest imu data and puts it in imu->acc_x, y, z and imu->gyro_x, y, z
+
+    // TODO: steven pls put ur filter here or smth idk
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

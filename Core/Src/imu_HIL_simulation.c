@@ -1,34 +1,44 @@
 #include "imu_HIL_simulation.h"
 
-void config_imu_HIL(SPI_HandleTypeDef* SPI_Handle) {
-    IMU_HIL* imu = (IMU_HIL*) malloc(sizeof(IMU_HIL));
+IMU_HIL_t* config_imu_HIL(SPI_HandleTypeDef* SPI_Handle) {
+    IMU_HIL_t* imu = (IMU_HIL_t*) malloc(sizeof(IMU_HIL_t));
     imu->bus_handle = SPI_Handle;
+
+    return imu;
 }
 
-void update_imu_HIL_stream() {
+void update_imu_HIL_stream(IMU_HIL_t* imu) {
     // read simulated accelerometer data
     uint8_t addr = 0x80 | 0x02;   // read ACC_X_LSB
-    uint8_t buf[6];
+    uint8_t buf_accel[6];
 
-    CS_ACC_LOW();
-    HAL_SPI_Transmit(&hspi1, &addr, 1, HAL_MAX_DELAY);
-    HAL_SPI_Receive(&hspi1, buf, 6, HAL_MAX_DELAY);
-    CS_ACC_HIGH();
+    HAL_GPIO_WritePin(CS_ACC_PORT, CS_ACC_PIN, GPIO_PIN_RESET);
+    if (HAL_SPI_Transmit(imu->bus_handle, &addr, 1, HAL_MAX_DELAY) != HAL_OK) {
+        HAL_GPIO_WritePin(CS_ACC_PORT, CS_ACC_PIN, GPIO_PIN_SET);
+    }
+    if (HAL_SPI_Receive(imu->bus_handle, buf_accel, 6, HAL_MAX_DELAY) != HAL_OK) {
+        HAL_GPIO_WritePin(CS_ACC_PORT, CS_ACC_PIN, GPIO_PIN_SET);
+    }
+    HAL_GPIO_WritePin(CS_ACC_PORT, CS_ACC_PIN, GPIO_PIN_SET);
 
-    int16_t ax = (buf[1] << 8) | buf[0];
-    int16_t ay = (buf[3] << 8) | buf[2];
-    int16_t az = (buf[5] << 8) | buf[4];
+    imu->acc_x = (buf_accel[1] << 8) | buf_accel[0];
+    imu->acc_y = (buf_accel[3] << 8) | buf_accel[2];
+    imu->acc_z = (buf_accel[5] << 8) | buf_accel[4];
 
     // read simulated gyroscope data
     uint8_t addr = 0x80 | 0x02;
-    uint8_t buf[6];
+    uint8_t buf_gyro[6];
 
-    CS_GYR_LOW();
-    HAL_SPI_Transmit(&hspi1, &addr, 1, HAL_MAX_DELAY);
-    HAL_SPI_Receive(&hspi1, buf, 6, HAL_MAX_DELAY);
-    CS_GYR_HIGH();
+    HAL_GPIO_WritePin(CS_GYR_PORT, CS_GYR_PIN, GPIO_PIN_RESET);
+    if (HAL_SPI_Transmit(imu->bus_handle, &addr, 1, HAL_MAX_DELAY) != HAL_OK) {
+        HAL_GPIO_WritePin(CS_GYR_PORT, CS_GYR_PIN, GPIO_PIN_SET);
+    }
+    if (HAL_SPI_Receive(imu->bus_handle, buf_gyro, 6, HAL_MAX_DELAY) != HAL_OK) {
+        HAL_GPIO_WritePin(CS_GYR_PORT, CS_GYR_PIN, GPIO_PIN_SET);
+    }
+    HAL_GPIO_WritePin(CS_GYR_PORT, CS_GYR_PIN, GPIO_PIN_SET);
 
-    int16_t gx = (buf[1] << 8) | buf[0];
-    int16_t gy = (buf[3] << 8) | buf[2];
-    int16_t gz = (buf[5] << 8) | buf[4];
+    imu->gyro_x = (buf_gyro[1] << 8) | buf_gyro[0];
+    imu->gyro_y = (buf_gyro[3] << 8) | buf_gyro[2];
+    imu->gyro_z = (buf_gyro[5] << 8) | buf_gyro[4];
 }

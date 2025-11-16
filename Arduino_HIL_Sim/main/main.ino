@@ -92,6 +92,8 @@ void setup() {
 
     pinMode(MISO, OUTPUT);
 
+    Serial.begin(115200);
+
     // Load WHO_AM_I values
     acc_reg[0x00] = 0x1E;  // BMI088 accel
     gyr_reg[0x00] = 0x0F;  // BMI088 gyro
@@ -102,6 +104,7 @@ void setup() {
     SPI.attachInterrupt();
 
     lastT = micros();
+
 }
 
 void loop() {
@@ -115,4 +118,10 @@ void loop() {
     if (digitalRead(CS_ACC) == HIGH && digitalRead(CS_GYR) == HIGH) {
         reading = false;
     }
+
+    // int64_t test = 105563;
+    // int64_t test_lower = test & 0xFF;
+    // int64_t test_upper = test >> 8;
+    // float acc_x = (test_upper << 8) | test_lower;
+    // Serial.println(acc_x);
 }

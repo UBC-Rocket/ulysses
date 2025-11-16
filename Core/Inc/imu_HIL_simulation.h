@@ -5,32 +5,24 @@
 #include "stm32u5xx_hal.h"
 #include "main.h"
 
+#define CS_ACC_PIN   GPIO_PIN_4
+#define CS_ACC_PORT  GPIOA
+#define CS_GYR_PIN   GPIO_PIN_5
+#define CS_GYR_PORT  GPIOA
+
 void config_imu_HIL(SPI_HandleTypeDef* SPI_Handle);
 void update_imu_HIL_stream();
 
-typedef struct IMU_HIL {
-
-    uint32_t config_flags;
-    uint32_t status_flags;
+typedef struct IMU_HIL_t {
 
     SPI_HandleTypeDef* bus_handle;
 
-    int* acc_z;
-    int* acc_y;
-    int* acc_x;
+    int acc_z;
+    int acc_y;
+    int acc_x;
 
-    uint8_t acc_iterator;
-    uint8_t acc_buffer_full;
+    int gyro_z;
+    int gyro_y;
+    int gyro_x;
 
-    int* gyro_z;
-    int* gyro_y;
-    int* gyro_x;
-
-    // Note: Using on-demand conversion instead of pre-calculated arrays
-
-    int* sensor_time;
-
-    uint8_t gyro_iterator;
-    uint8_t gyro_buffer_full;
-
-} IMU_HIL;
+} IMU_HIL_t;
