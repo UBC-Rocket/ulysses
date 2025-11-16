@@ -8,6 +8,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "math.h"
+#include "algorithms/ekf.h"
 
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
@@ -64,6 +65,20 @@ void sensor_fusion_task_start(void *argument)
     static ms5611_sample_t baro_samples[16];
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
 
+    float q[4][4] = {{0.000001, 0, 0, 0},
+                    {0, 0.000001, 0, 0},
+                    {0, 0, 0.000001, 0},
+                    {0, 0, 0, 0.000001}};
+
+    float m[3][3] = {{0.01, 0, 0},
+                    {0, 0.01, 0},
+                    {0, 0, 0.01}};
+
+    init_ekf(q, m);
+
+    float delta_time = 0;
+    float last_tick = 0;
+
     while (true) {
         TickType_t cycle_start = xTaskGetTickCount();
 
@@ -101,6 +116,23 @@ void sensor_fusion_task_start(void *argument)
         }
 
         ms5611_poller_tick_1khz(&baro_poll);
+
+        uint8_t loops = 0;
+        if (num_accel_samples > num_gyro_samples) loops = num_gyro_samples;
+        else loops = num_accel_samples;
+        
+        for (uint8_t i = 0; i < loops; i++) {
+            float g_data[3] = {gyro_samples[i].x, gyro_samples[i].y, gyro_samples[i].z};
+            float a_data[3] = {accel_samples[i].x, accel_samples[i].y, accel_samples[i].z};
+
+            if (last_tick != 0) {
+                delta_time = (gyro_samples[i].t_us - last_tick) / 1000000;
+            }
+
+            last_tick = gyro_samples[i].t_us;
+
+            tick_ekf(delta_time, g_data, a_data);
+        }
 
         TickType_t elapsed = xTaskGetTickCount() - cycle_start;
         if (elapsed < period_ticks) {
