@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "stm32h5xx_hal.h"
 
 #define W25Q128_CMD_WRITE_ENABLE         0x06
 #define W25Q128_CMD_WRITE_DISABLE        0x04
@@ -48,92 +49,91 @@ typedef struct {
 } w25q128_t;
 
 /**
- * @brief Build command to read JEDEC ID (3 bytes: Manufacturer, Memory Type, Capacity)
- * @param tx_buf Buffer to write command into (must be at least 4 bytes)
- * @return Number of bytes in command frame (4: 1 cmd + 3 response)
+ * @brief Command configuration for W25Q128 with XSPI/OCTOSPI
+ * This struct contains the XSPI command parameters and optional TX data buffer
  */
-size_t w25q128_build_read_jedec_id(uint8_t *tx_buf);
+typedef struct {
+    XSPI_RegularCmdTypeDef cmd;     ///< XSPI command configuration
+    const uint8_t *tx_data;          ///< Optional TX data buffer (NULL if no data to send)
+    uint16_t tx_data_size;           ///< Size of TX data buffer (0 if no data)
+} w25q128_xspi_cmd_t;
+
+/**
+ * @brief Build command to read JEDEC ID (3 bytes: Manufacturer, Memory Type, Capacity)
+ * @param cmd Pointer to command structure to populate
+ */
+void w25q128_build_read_jedec_id(w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build command to read Unique ID (64-bit)
- * @param tx_buf Buffer to write command into (must be at least 13 bytes)
- * @return Number of bytes in command frame (13: 1 cmd + 4 dummy + 8 id)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_read_unique_id(uint8_t *tx_buf);
+void w25q128_build_read_unique_id(w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Write Enable command
- * @param tx_buf Buffer to write command into (must be at least 1 byte)
- * @return Number of bytes in command frame (1)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_write_enable(uint8_t *tx_buf);
+void w25q128_build_write_enable(w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Write Disable command
- * @param tx_buf Buffer to write command into (must be at least 1 byte)
- * @return Number of bytes in command frame (1)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_write_disable(uint8_t *tx_buf);
+void w25q128_build_write_disable(w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build command to read Status Register
  * @param reg_num Register number (1, 2, or 3)
- * @param tx_buf Buffer to write command into (must be at least 2 bytes)
- * @return Number of bytes in command frame (2: 1 cmd + 1 response)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_read_status_reg(uint8_t reg_num, uint8_t *tx_buf);
+void w25q128_build_read_status_reg(uint8_t reg_num, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build command to read data (standard read, up to 50 MHz)
  * @param address 24-bit address to read from
  * @param num_bytes Number of bytes to read
- * @param tx_buf Buffer to write command into (must be at least 4 + num_bytes)
- * @return Number of bytes in command frame (4 + num_bytes)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_read_data(uint32_t address, uint16_t num_bytes, uint8_t *tx_buf);
+void w25q128_build_read_data(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build command to read data (fast read, up to 104 MHz, requires 1 dummy byte)
  * @param address 24-bit address to read from
  * @param num_bytes Number of bytes to read
- * @param tx_buf Buffer to write command into (must be at least 5 + num_bytes)
- * @return Number of bytes in command frame (5 + num_bytes: cmd + 3 addr + dummy + data)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_fast_read(uint32_t address, uint16_t num_bytes, uint8_t *tx_buf);
+void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Page Program command (writes up to 256 bytes)
  * @param address 24-bit address to write to (must be within same page)
  * @param data Pointer to data to write
  * @param num_bytes Number of bytes to write (max 256)
- * @param tx_buf Buffer to write command into (must be at least 4 + num_bytes)
- * @return Number of bytes in command frame (4 + num_bytes)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_page_program(uint32_t address, const uint8_t *data, 
-                                  uint16_t num_bytes, uint8_t *tx_buf);
+void w25q128_build_page_program(uint32_t address, const uint8_t *data, 
+                                uint16_t num_bytes, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Sector Erase command (erases 4 KB)
  * @param sector_address Sector address (0 to 4095)
- * @param tx_buf Buffer to write command into (must be at least 4 bytes)
- * @return Number of bytes in command frame (4)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_sector_erase(uint32_t sector_address, uint8_t *tx_buf);
+void w25q128_build_sector_erase(uint32_t sector_address, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Block Erase command (erases 64 KB)
  * @param block_address Block address (0 to 255)
- * @param tx_buf Buffer to write command into (must be at least 4 bytes)
- * @return Number of bytes in command frame (4)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_block_erase(uint32_t block_address, uint8_t *tx_buf);
+void w25q128_build_block_erase(uint32_t block_address, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Chip Erase command (erases entire chip)
- * @param tx_buf Buffer to write command into (must be at least 1 byte)
- * @return Number of bytes in command frame (1)
+ * @param cmd Pointer to command structure to populate
  */
-size_t w25q128_build_chip_erase(uint8_t *tx_buf);
+void w25q128_build_chip_erase(w25q128_xspi_cmd_t *cmd);
 
 /* -------------------------------------------------------------------------- */
 /* Response parsers                                                           */
