@@ -86,7 +86,7 @@
 /*#define HAL_WWDG_MODULE_ENABLED */
 /*#define HAL_PSSI_MODULE_ENABLED */
 /*#define HAL_ICACHE_MODULE_ENABLED */
-/*#define HAL_PCD_MODULE_ENABLED */
+#define HAL_PCD_MODULE_ENABLED
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_EXTI_MODULE_ENABLED
 #define HAL_DMA_MODULE_ENABLED
@@ -242,13 +242,13 @@
 #define  USE_HAL_SDRAM_REGISTER_CALLBACKS     0U    /* SDRAM register callback disabled     */
 #define  USE_HAL_SMARTCARD_REGISTER_CALLBACKS 0U    /* SMARTCARD register callback disabled */
 #define  USE_HAL_SMBUS_REGISTER_CALLBACKS     0U    /* SMBUS register callback disabled     */
-#define  USE_HAL_SPI_REGISTER_CALLBACKS       0U    /* SPI register callback disabled       */
+#define  USE_HAL_SPI_REGISTER_CALLBACKS       1U    /* SPI register callback enabled       */
 #define  USE_HAL_SRAM_REGISTER_CALLBACKS      0U    /* SRAM register callback disabled      */
 #define  USE_HAL_TIM_REGISTER_CALLBACKS       0U    /* TIM register callback disabled       */
 #define  USE_HAL_UART_REGISTER_CALLBACKS      1U    /* UART register callback enabled      */
-#define  USE_HAL_USART_REGISTER_CALLBACKS     0U    /* USART register callback disabled     */
+#define  USE_HAL_USART_REGISTER_CALLBACKS     1U    /* USART register callback enabled     */
 #define  USE_HAL_WWDG_REGISTER_CALLBACKS      0U    /* WWDG register callback disabled      */
-#define  USE_HAL_XSPI_REGISTER_CALLBACKS      0U    /* XSPI register callback disabled      */
+#define  USE_HAL_XSPI_REGISTER_CALLBACKS      1U    /* XSPI register callback enabled      */
 
 /* ############################################ SPI peripheral configuration ######################################## */
 

@@ -69,6 +69,8 @@ DMA_HandleTypeDef handle_GPDMA2_Channel0;
 DMA_HandleTypeDef handle_GPDMA2_Channel3;
 DMA_HandleTypeDef handle_GPDMA2_Channel2;
 
+PCD_HandleTypeDef hpcd_USB_DRD_FS;
+
 /* USER CODE BEGIN PV */
 bool g_sd_card_initialized = false;
 
@@ -88,6 +90,7 @@ static void MX_SPI4_Init(void);
 static void MX_UART4_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_USB_PCD_Init(void);
 /* USER CODE BEGIN PFP */
 static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd);
 
@@ -139,6 +142,7 @@ int main(void)
   MX_UART4_Init();
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
+  MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
 
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
@@ -192,10 +196,12 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_CSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI
+                              |RCC_OSCILLATORTYPE_CSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV2;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.CSIState = RCC_CSI_ON;
   RCC_OscInitStruct.CSICalibrationValue = RCC_CSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -373,7 +379,7 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockDiv = 4;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
   {
-    return; 
+    Error_Handler();
   }
   /* USER CODE BEGIN SDMMC1_Init 2 */
   //TODO : on autogeneration, HAL_SD_Init failure calls error handler. replace with return;
@@ -674,6 +680,42 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USB Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USB_PCD_Init(void)
+{
+
+  /* USER CODE BEGIN USB_Init 0 */
+
+  /* USER CODE END USB_Init 0 */
+
+  /* USER CODE BEGIN USB_Init 1 */
+
+  /* USER CODE END USB_Init 1 */
+  hpcd_USB_DRD_FS.Instance = USB_DRD_FS;
+  hpcd_USB_DRD_FS.Init.dev_endpoints = 8;
+  hpcd_USB_DRD_FS.Init.speed = USBD_FS_SPEED;
+  hpcd_USB_DRD_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
+  hpcd_USB_DRD_FS.Init.Sof_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.low_power_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.lpm_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.battery_charging_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.vbus_sensing_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.bulk_doublebuffer_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.iso_singlebuffer_enable = DISABLE;
+  if (HAL_PCD_Init(&hpcd_USB_DRD_FS) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USB_Init 2 */
+
+  /* USER CODE END USB_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -688,27 +730,28 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, BNO_RST_Pin|BNO_CS_Pin|EXT_CS_3_Pin|EXT_CS_4_Pin
-                          |BARO2_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, BNO_RST_Pin|BNO_CS_Pin|EXT_CS_2_Pin|EXT_CS_3_Pin
+                          |EXT_CS_4_Pin|BARO2_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, BNO_WAKE_Pin|BNO_BOOTN_Pin|STAT_LED_R_Pin|STAT_LED_G_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, BARO1_CS_Pin|BMI_ACC_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, EXT_CS_1_Pin|BMI_GYRO_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BMI_GYRO_CS_GPIO_Port, BMI_GYRO_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, BARO1_CS_Pin|BMI_ACC_CS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : BNO_RST_Pin BNO_CS_Pin EXT_CS_3_Pin EXT_CS_4_Pin
-                           BARO2_CS_Pin */
-  GPIO_InitStruct.Pin = BNO_RST_Pin|BNO_CS_Pin|EXT_CS_3_Pin|EXT_CS_4_Pin
-                          |BARO2_CS_Pin;
+  /*Configure GPIO pins : BNO_RST_Pin BNO_CS_Pin EXT_CS_2_Pin EXT_CS_3_Pin
+                           EXT_CS_4_Pin BARO2_CS_Pin */
+  GPIO_InitStruct.Pin = BNO_RST_Pin|BNO_CS_Pin|EXT_CS_2_Pin|EXT_CS_3_Pin
+                          |EXT_CS_4_Pin|BARO2_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -721,14 +764,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : EXT_INT_1_Pin EXT_CS_1_Pin */
-  GPIO_InitStruct.Pin = EXT_INT_1_Pin|EXT_CS_1_Pin;
+  /*Configure GPIO pin : EXT_INT_1_Pin */
+  GPIO_InitStruct.Pin = EXT_INT_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(EXT_INT_1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : EXT_CS_1_Pin BMI_GYRO_CS_Pin */
+  GPIO_InitStruct.Pin = EXT_CS_1_Pin|BMI_GYRO_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : EXT_INT_2_Pin EXT_CS_2_Pin EXT_INT_3_Pin EXT_INT_4_Pin */
-  GPIO_InitStruct.Pin = EXT_INT_2_Pin|EXT_CS_2_Pin|EXT_INT_3_Pin|EXT_INT_4_Pin;
+  /*Configure GPIO pins : EXT_INT_2_Pin EXT_INT_3_Pin EXT_INT_4_Pin */
+  GPIO_InitStruct.Pin = EXT_INT_2_Pin|EXT_INT_3_Pin|EXT_INT_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -746,33 +796,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BMI_GYRO_CS_Pin */
-  GPIO_InitStruct.Pin = BMI_GYRO_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(BMI_GYRO_CS_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF10_USB;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pin : SD_CARD_DETECT_Pin */
   GPIO_InitStruct.Pin = SD_CARD_DETECT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SD_CARD_DETECT_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : BNO_INT_Pin */
+  GPIO_InitStruct.Pin = BNO_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(BNO_INT_GPIO_Port, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI5_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI5_IRQn);
 
   HAL_NVIC_SetPriority(EXTI7_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI7_IRQn);
