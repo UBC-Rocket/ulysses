@@ -4,12 +4,15 @@
 #include "spi_drivers/SPI_device_interactions.h"
 #include "stm32h5xx_hal.h"
 #include "main.h"
+#include <stdint.h>
 #include <stdio.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "math.h"
 #include "algorithms/ekf.h"
+#include "debug/log.h"
 
+#define PI 3.141593
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
 // External variable declarations
@@ -20,6 +23,26 @@ extern bmi088_accel_t accel;
 extern bmi088_gyro_t gyro;
 
 static ms5611_poller_t baro_poll;
+
+void quat_to_euler(float q[4], float e[3]) {
+    float w = q[0];
+    float x = q[1];
+    float y = q[2];
+    float z = q[3];
+
+    // ----- Roll (x-axis rotation) -----
+    float sinr = 2.0f * (w*x + y*z);
+    float cosr = 1.0f - 2.0f * (x*x + y*y);
+    e[0] = atan2f(sinr, cosr) * 180 / PI;
+
+    // ----- Pitch (y-axis rotation) -----
+    float sinp = 2.0f * (w*y - z*x);
+    if (fabsf(sinp) >= 1.0f)
+        e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / PI; // clamp at ±90°
+    else
+        e[1] = asinf(sinp) * 180 / PI;
+
+}
 
 void sensor_fusion_task_start(void *argument)
 {
@@ -78,6 +101,12 @@ void sensor_fusion_task_start(void *argument)
 
     float delta_time = 0;
     float last_tick = 0;
+    
+    uint64_t CALIBRATION = 2000;
+    uint64_t ticks = 0;
+
+    float a_bias[3] = {0, 0, 0};
+    float g_bias[3] = {0, 0, 0};
 
     while (true) {
         TickType_t cycle_start = xTaskGetTickCount();
@@ -122,8 +151,15 @@ void sensor_fusion_task_start(void *argument)
         else loops = num_accel_samples;
         
         for (uint8_t i = 0; i < loops; i++) {
-            float g_data[3] = {gyro_samples[i].x, gyro_samples[i].y, gyro_samples[i].z};
-            float a_data[3] = {accel_samples[i].x, accel_samples[i].y, accel_samples[i].z};
+            float g_data_raw[3] = {gyro_samples[i].gx * PI / 180, gyro_samples[i].gy * PI / 180, gyro_samples[i].gz * PI / 180};
+            float g_data[3] = {g_data_raw[0] - g_bias[0], 
+                               g_data_raw[1] - g_bias[1], 
+                               g_data_raw[2] - g_bias[2]};
+
+            float a_data_raw[3] = {accel_samples[i].ax / -9.81, accel_samples[i].ay / -9.81, accel_samples[i].az / -9.81};
+            float a_data[3] = {a_data_raw[0] - a_bias[0], 
+                a_data_raw[1] - a_bias[1], 
+                a_data_raw[2] - a_bias[2]};
 
             if (last_tick != 0) {
                 delta_time = (gyro_samples[i].t_us - last_tick) / 1000000;
@@ -131,8 +167,50 @@ void sensor_fusion_task_start(void *argument)
 
             last_tick = gyro_samples[i].t_us;
 
-            tick_ekf(delta_time, g_data, a_data);
+            // run ekf after calibration
+            if (ticks > CALIBRATION) {
+                ticks += 1;
+
+                tick_ekf(delta_time, g_data, a_data);
+
+                float q[4];
+                get_state_x(q);
+
+                if (ticks % 200 == 0) {
+                    float e[2];
+                    quat_to_euler(q, e);
+
+                    DLOG_PRINT("Pitch: %f\nRoll: %f\n", e[0], e[1]);
+                }
+
+                continue;
+            };
+
+            // CALIBRATING BIAS
+            if (ticks == 0) {
+                for (int i = 0; i < 3; i++) g_bias[i] = g_data_raw[i];
+                for (int i = 0; i < 2; i++) a_bias[i] = a_data_raw[i];
+
+                a_bias[2] = a_data_raw[2] - 1;
+
+                ticks += 1;
+
+                continue;
+            }
+
+            for (int i = 0; i < 3; i++) {
+                g_bias[i] = (g_bias[i]) * (((float)ticks - 1) / (float)ticks) + (g_data_raw[i]) * (1 / (float)ticks);
+            }
+
+            for (int i = 0; i < 2; i++) {
+                a_bias[i] = (a_bias[i]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[i]) * (1 / (float)ticks);
+            }
+
+            a_bias[2] = (a_bias[2]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[2] - 1) * (1 / (float)ticks);
+
+            ticks += 1;
         }
+
 
         TickType_t elapsed = xTaskGetTickCount() - cycle_start;
         if (elapsed < period_ticks) {
@@ -142,3 +220,4 @@ void sensor_fusion_task_start(void *argument)
         }
     }
 }
+
