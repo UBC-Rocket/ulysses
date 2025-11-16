@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "imu_HIL_simulation.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -132,8 +132,9 @@ int main(void)
   MX_UART4_Init();
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
+
   /* USER CODE BEGIN 2 */
-  
+  config_imu_HIL(&hspi1);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -151,7 +152,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+    update_imu_HIL_stream();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
