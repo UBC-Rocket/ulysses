@@ -141,6 +141,37 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+
+    // Define a buffer for testing
+  #define USER_BUFFER_SIZE 64
+  uint8_t user_buffer[USER_BUFFER_SIZE];
+  
+  // tells driver which UART port to use
+  radio_init(&huart2);
+  
+  radio_start_listening();
+  
+  // main test loop blocking RTOS init
+  while(1)
+  {
+      if (radio_is_new_message_available())
+      {
+          // If yes, get the message from the driver. 
+          // This function also handles restarting the listen process.
+          uint16_t len = radio_get_message(user_buffer, USER_BUFFER_SIZE);
+
+          if (len > 0)
+          {
+              // Echo the exact same message back
+              radio_send(user_buffer, len);
+              // Blink LED1 to visually confirm we processed an echo
+              HAL_GPIO_TogglePin(STAT_LED_1_GPIO_Port, STAT_LED_1_Pin);
+          }
+      }
+      HAL_Delay(10);
+  }
+
+
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
   debug_log_init(&huart1);
 #endif // ULYSSES_ENABLE_DEBUG_LOGGING
