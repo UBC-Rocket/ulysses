@@ -58,9 +58,9 @@ extern osThreadId_t DebugLoggingTaskHandle;
 #endif // ULYSSES_ENABLE_DEBUG_LOGGING
 
 /* USER CODE END EM */
-extern osThreadId_t RadioCommunicationHandle;
-extern osThreadId_t MotorControlHandle;
-extern osThreadId_t SensorFusionHandle;
+extern osThreadId_t MissionManagerHandle;
+extern osThreadId_t ControlsHandle;
+extern osThreadId_t StateEstimationHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -71,9 +71,9 @@ extern void debug_logging_task_start(void *argument);
 
 /* USER CODE END FunctionPrototypes */
 
-extern void radio_communication_task_start(void *argument);
-extern void motor_control_task_start(void *argument);
-extern void sensor_fusion_task_start(void *argument);
+extern void mission_manager_task_start(void *argument);
+extern void controls_task_start(void *argument);
+extern void state_estimation_task_start(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
