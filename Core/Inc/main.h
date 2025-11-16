@@ -80,13 +80,11 @@ extern bool g_sd_card_initialized;
 #define EXT_INT_1_EXTI_IRQn EXTI4_IRQn
 #define EXT_CS_1_Pin GPIO_PIN_5
 #define EXT_CS_1_GPIO_Port GPIOC
-#define EXT_CS_1_EXTI_IRQn EXTI5_IRQn
 #define EXT_INT_2_Pin GPIO_PIN_7
 #define EXT_INT_2_GPIO_Port GPIOE
 #define EXT_INT_2_EXTI_IRQn EXTI7_IRQn
 #define EXT_CS_2_Pin GPIO_PIN_8
 #define EXT_CS_2_GPIO_Port GPIOE
-#define EXT_CS_2_EXTI_IRQn EXTI8_IRQn
 #define EXT_INT_3_Pin GPIO_PIN_9
 #define EXT_INT_3_GPIO_Port GPIOE
 #define EXT_INT_3_EXTI_IRQn EXTI9_IRQn
@@ -121,6 +119,9 @@ extern bool g_sd_card_initialized;
 #define STAT_LED_G_GPIO_Port GPIOA
 #define SD_CARD_DETECT_Pin GPIO_PIN_3
 #define SD_CARD_DETECT_GPIO_Port GPIOD
+#define BNO_INT_Pin GPIO_PIN_8
+#define BNO_INT_GPIO_Port GPIOB
+#define BNO_INT_EXTI_IRQn EXTI8_IRQn
 #define BARO2_CS_Pin GPIO_PIN_0
 #define BARO2_CS_GPIO_Port GPIOE
 
