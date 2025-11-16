@@ -44,20 +44,29 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+osThreadId_t DebugLoggingTaskHandle;
+const osThreadAttr_t DebugLoggingTask_attributes = {
+  .name = "DebugLogging",
+  .priority = (osPriority_t) osPriorityBelowNormal,
+  .stack_size = 128 * 4,
+};
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
 /* USER CODE END Variables */
 /* Definitions for MissionManager */
 osThreadId_t MissionManagerHandle;
 const osThreadAttr_t MissionManager_attributes = {
   .name = "MissionManager",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 /* Definitions for Controls */
 osThreadId_t ControlsHandle;
 const osThreadAttr_t Controls_attributes = {
   .name = "Controls",
   .priority = (osPriority_t) osPriorityHigh,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 /* Definitions for StateEstimation */
 osThreadId_t StateEstimationHandle;
@@ -108,7 +117,11 @@ void MX_FREERTOS_Init(void) {
   StateEstimationHandle = osThreadNew(state_estimation_task_start, NULL, &StateEstimation_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+  DebugLoggingTaskHandle = osThreadNew(debug_logging_task_start, NULL, &DebugLoggingTask_attributes);
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

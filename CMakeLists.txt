@@ -12,11 +12,14 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
+
+# There are no dynamic linkers for our embedded system. We must
+# statically link all libraries.
+set(BUILD_SHARED_LIBS OFF)
 
 # Set the project name
 set(CMAKE_PROJECT_NAME ulysses)
@@ -26,7 +29,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
+
+option(ULYSSES_ENABLE_DEBUG_LOGGING "Enable serial debug logging" ON)
+option(ULYSSES_USE_SD_CARD "Enable SD card initialization (requires SD card to be inserted)" OFF)
+
+# Display a summary of the build configuration
 message("Build type: " ${CMAKE_BUILD_TYPE})
+message("Debug logging: " ${ULYSSES_ENABLE_DEBUG_LOGGING})
+message("SD card initialization: " ${ULYSSES_USE_SD_CARD})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
@@ -37,10 +47,27 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Add dependencies
+include(cmake/printf-library.cmake)
+
+FetchContent_MakeAvailable(printf)
+
+# Library requires a native 64-bit integer type, so must be be compiled
+# with at least C99 standard
+set_target_properties(printf PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+)
+
+set(DEBUG_MODULE_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug/log.c
+)
+
 set(RTOS_TASKS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/controls.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/mission_manager.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/state_estimation.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/debug_logging.c
 )
 
 set(SPI_DRIVER_SRC
@@ -70,6 +97,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
+    ${DEBUG_MODULE_SRC}
 )
 
 # Add include paths
@@ -86,6 +114,8 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     BMI_ACC_Chip_Select_Pin=BMI_ACC_CS_Pin
     BMI_GYRO_Chip_Select_GPIO_Port=BMI_GYRO_CS_GPIO_Port
     BMI_GYRO_Chip_Select_Pin=BMI_GYRO_CS_Pin
+    $<$<BOOL:${ULYSSES_USE_SD_CARD}>:ULYSSES_USE_SD_CARD>
+    $<$<BOOL:${ULYSSES_ENABLE_DEBUG_LOGGING}>:ULYSSES_ENABLE_DEBUG_LOGGING>
 )
 
 # Remove wrong libob.a library dependency when using cpp files
@@ -96,4 +126,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+    printf::printf
 )

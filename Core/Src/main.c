@@ -22,8 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stm32h5xx_hal_sd_ex.h"
-#include "stm32h5xx_ll_sdmmc.h"
+#include "debug/log.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -141,6 +140,11 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+  debug_log_init(&huart1);
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
   if (g_sd_card_initialized) {
     if (sd_enable_internal_dma(&hsd1) != HAL_OK) {
       Error_Handler();
