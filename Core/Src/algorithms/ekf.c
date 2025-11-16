@@ -312,6 +312,8 @@ void tick_ekf(
     memcpy(ekf.covar, new_p, sizeof(new_p));
 }
 
-
-
-
+void get_state_x(float out[4])
+{
+    for (int i = 0; i < 4; i++)
+        out[i] = ekf.x[i];
+}
