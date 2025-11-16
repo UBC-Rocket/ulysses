@@ -53,6 +53,10 @@ extern "C" {
 /* Exported macro -------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+extern osThreadId_t DebugLoggingTaskHandle;
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
 /* USER CODE END EM */
 extern osThreadId_t RadioCommunicationHandle;
 extern osThreadId_t MotorControlHandle;
@@ -60,6 +64,10 @@ extern osThreadId_t SensorFusionHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+extern void debug_logging_task_start(void *argument);
+#endif // ULYSSES_ENABLE_DEBUG_LOGGING
 
 /* USER CODE END FunctionPrototypes */
 
