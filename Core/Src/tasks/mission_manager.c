@@ -6,9 +6,6 @@
 #include "SD_logging/log_service.h"
 #include "main.h"
 
-#ifdef DEBUG
-#include "debug_uart.h"
-#endif
 
 static bool estop_event_logged = false;
 static flight_state_t last_logged_flight_state = IDLE;
@@ -89,10 +86,7 @@ static void handle_orientation_estop(const state_t *state, flight_state_t *fligh
 
         if (nav_body_up[2] < 0.0f) {
             *flight_state = E_STOP;
-#ifdef DEBUG
-            static const char estop_message[] = "MissionManager: E-STOP (orientation)\r\n";
-            debug_uart_write((const uint8_t *)estop_message, sizeof(estop_message) - 1U);
-#endif
+
             log_service_log_event(LOG_EVENT_CODE_ESTOP,
                                   (uint16_t)(*flight_state),
                                   state->u_s);

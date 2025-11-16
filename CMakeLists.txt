@@ -68,7 +68,6 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug_uart.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
 )

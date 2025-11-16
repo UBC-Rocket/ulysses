@@ -23,9 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "state_exchange.h"
-#ifdef DEBUG
-#include "debug_uart.h"
-#endif
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -82,9 +80,7 @@ const osThreadAttr_t StateEstimation_attributes = {
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
   state_exchange_init();
-#ifdef DEBUG
-  debug_uart_init();
-#endif
+
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
