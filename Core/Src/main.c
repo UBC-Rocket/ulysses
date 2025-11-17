@@ -363,13 +363,21 @@ static void MX_SDMMC1_SD_Init(void)
 {
 
   /* USER CODE BEGIN SDMMC1_Init 0 */
+
   g_sd_card_initialized = false;
+
   if (!sd_card_is_inserted()) {
     return;
   }
+
   /* USER CODE END SDMMC1_Init 0 */
 
   /* USER CODE BEGIN SDMMC1_Init 1 */
+
+  // HACK: Ignore error from the SD card HAL initialization.
+  // If it fails to initialize then do not use the SD card,
+  // no need to lock up the flight controller.
+  #define Error_Handler() return
 
   /* USER CODE END SDMMC1_Init 1 */
   hsd1.Instance = SDMMC1;
@@ -383,7 +391,10 @@ static void MX_SDMMC1_SD_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN SDMMC1_Init 2 */
-  //TODO : on autogeneration, HAL_SD_Init failure calls error handler. replace with return;
+
+  // HACK: Ignore error from the SD card HAL initialization.
+  #undef Error_Handler
+
   g_sd_card_initialized = true;
 
   /* USER CODE END SDMMC1_Init 2 */
