@@ -9,7 +9,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "math.h"
-#include "algorithms/ekf.h"
+#include "ekf.h"
 #include "debug/log.h"
 
 #define PI 3.141593
@@ -25,7 +25,7 @@ extern bmi088_gyro_t gyro;
 
 static ms5611_poller_t baro_poll;
 
-void quat_to_euler(float q[4], float e[3]) {
+void quat_to_euler(float q[4], float e[2]) {
     float w = q[0];
     float x = q[1];
     float y = q[2];
@@ -128,6 +128,13 @@ void sensor_fusion_task_start(void *argument)
     float a_bias[3] = {0, 0, 0};
     float g_bias[3] = {0, 0, 0};
 
+    fusion_shared_t fusion_shared = {
+        .quat = {1, 0, 0, 0},
+        .euler = {0, 0}
+    };
+
+    SemaphoreHandle_t fusion_mutex = xSemaphoreCreateMutex();
+
     while (true) {
         TickType_t cycle_start = xTaskGetTickCount();
 
@@ -199,15 +206,16 @@ void sensor_fusion_task_start(void *argument)
 
             tick_ekf(delta_time, g_data, a_data);
 
-            // logging
-            if (ticks % 200 == 0) {
-                float q[4];
-                get_state_x(q);
+            float q[4];
+            get_state_x(q);
 
-                float e[2];
-                quat_to_euler(q, e);
+            float e[2];
+            quat_to_euler(q, e);
 
-                DLOG_PRINT("Pitch: %f\nRoll: %f\n", e[0], e[1]);
+            if (xSemaphoreTake(fusion_mutex, 0)) {
+                memcpy(fusion_shared.quat, q, sizeof(q));
+                memcpy(fusion_shared.euler, e, sizeof(e));
+                xSemaphoreGive(fusion_mutex);
             }
 
             ticks += 1;
