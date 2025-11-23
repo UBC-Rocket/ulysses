@@ -82,8 +82,8 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
 )
 
-set(ALGO_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/algorithms/ekf.c
+set(STATE_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
 )
 
 # Link directories setup
@@ -97,6 +97,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
@@ -110,7 +111,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/algorithms
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/state_estimation
 )
 
 # Add project symbols (macros)

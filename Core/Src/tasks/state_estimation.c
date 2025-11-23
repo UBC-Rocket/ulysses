@@ -8,12 +8,7 @@
 #include "spi_drivers/SPI_queue.h"
 #include "spi_drivers/SPI_device_interactions.h"
 #include "stm32h5xx_hal.h"
-#include "main.h"
 #include <stdint.h>
-#include <stdio.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "math.h"
 #include "ekf.h"
 #include "debug/log.h"
 #include "state_exchange.h"
@@ -21,7 +16,6 @@
 #include "mission_manager/mission_manager.h"
 #include "SD_logging/log_service.h"
 #include "SD_logging/log_service.h"
-
 
 #define GRAV 9.807
 #define FUSION_VECTOR_SAMPLE_SIZE 32
@@ -34,10 +28,6 @@ extern bmi088_accel_t accel;
 extern bmi088_gyro_t gyro;
 
 static ms5611_poller_t baro_poll;
-
-orientation_t orientation_values[16];
-uint16_t queue_index = 0;
-uint16_t next_queue_index = 0;
 
 void quat_to_euler(float q[4], float e[2]) {
     float w = q[0];
@@ -76,19 +66,6 @@ void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_
     }
 
     a_bias[2] = (a_bias[2]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[2] - 1) * (1 / (float)ticks);
-}
-
-void push_to_queue(orientation_t new_orientation) {
-    orientation_values[next_queue_index] = new_orientation;
-    
-    next_queue_index = (queue_index + 1) % 16;
-    
-    if (next_queue_index == 0) queue_index = 15;
-    else queue_index = next_queue_index - 1;
-}
-
-void get_orientation(orientation_t v) {
-    v = orientation_values[queue_index];
 }
 
 void state_estimation_task_start(void *argument)
@@ -252,18 +229,31 @@ void state_estimation_task_start(void *argument)
 
             float e[2];
             quat_to_euler(q, e);
-
-            orientation_t data = {
-                .quat = {q[0], q[1], q[2], q[3]},
-                .euler = {e[0], e[1]}
+            quaternion_t new_quaternion = {
+                .w = q[0],
+                .x = q[1],
+                .y = q[2],
+                .z = q[3]
             };
 
-            push_to_queue(data);
+            state_t data = {
+                .pos = {0, 0, 0},
+                .vel = {0, 0, 0},
+
+                .omega_b = {g_data[0], g_data[1], g_data[2]},
+                .q_bn = new_quaternion,
+
+                .u_s = gyro_samples[i].t_us
+            };
+
+            state_exchange_publish_state(&data);
 
             // logging (optional)
-            // if (ticks % 200 == 0) {
-            //     DLOG_PRINT("Roll: %f, Pitch: %f", e[0], e[1]);
-            // }
+            if (ticks % 200 == 0) {
+                DLOG_PRINT("[%f, %f, %f, %f]\n", q[0], q[1],q[2],q[3]);
+            }
+
+            
 
             ticks += 1;
         }
