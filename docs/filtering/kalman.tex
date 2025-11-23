@@ -31,8 +31,6 @@ a_z
 \end{pmatrix}
 $$
 Which we want to use to find and continuously update $q=q_0+q_1i+q_2j+q_3k$. 
-
-\section{Math}
 \subsection{Notation}
 Denote $q_{n,k}$ as the prediction of $q$ for time $n$ made at time $k$.
 Similarly, we define $a_{x|t}$ and $\omega_{x|t}$ as the value of their respective measurements at time $t$.
@@ -182,12 +180,13 @@ $$
 \end{bmatrix}
 $$
 \subsection{h Jacobian}
-The Jacobian of $h(\text{blag})$ is:
+The Jacobian of $h(x)$ is:
 $$
 \begin{bmatrix}
-    -2g(q_2) & 2g(q_3) & -2g(q_0) & 2g(q_1)\\
-    2g(q_1) & 2g(q_0) & 2g(q_3) & 2g(q_2)\\
-    2g(q_0) & -2g(q_1) & -2g(q_2) & -2g(q_3)
+    -2q_2 & 2q_3 & -2q_0 & 2q_1\\
+    2q_1 & 2q_0 & 2q_3 & 2q_2\\
+    2q_0 & -2q_1 & -2q_2 & -2q_3
 \end{bmatrix}
 $$
+Thus, with everything defined, simply follow the outlined process for a beautiful EKF. Position estimation coming soon!
 \end{document}
