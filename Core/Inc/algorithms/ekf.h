@@ -2,7 +2,6 @@
 #define EKF_H
 
 #include "FreeRTOS.h"
-#include "semphr.h"
 
 #define STATE_DIM 4
 
@@ -53,9 +52,11 @@ typedef struct {
      * @details Stored as [roll, pitch]
      */
     float euler[2]; // roll, pitch
-} fusion_shared_t;
+} orientation_t;
 
-extern fusion_shared_t fusion_shared;
-extern SemaphoreHandle_t fusion_mutex;
+/**
+ * @brief returns orientation data in orientation_t
+ */
+void get_orientation(orientation_t v);
 
 #endif
