@@ -218,6 +218,11 @@ void sensor_fusion_task_start(void *argument)
                 xSemaphoreGive(fusion_mutex);
             }
 
+            // logging (optional)
+            // if (ticks % 200 == 0) {
+            //     DLOG_PRINT("Roll: %f, Pitch: %f", e[0], e[1]);
+            // }
+
             ticks += 1;
         }
 
