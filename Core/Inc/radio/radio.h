@@ -1,4 +1,4 @@
-// In Core/Inc/drivers/radio.h
+// In Core/Inc/radio/radio.h
 
 #ifndef RADIO_H
 #define RADIO_H

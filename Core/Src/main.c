@@ -1,4 +1,7 @@
 /* USER CODE BEGIN Header */
+
+// Core/Src/main.c
+
 /**
   ******************************************************************************
   * @file           : main.c
@@ -142,6 +145,11 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
+  #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+  debug_log_init(&huart1);
+  #endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
+
     // Define a buffer for testing
   #define USER_BUFFER_SIZE 64
   uint8_t user_buffer[USER_BUFFER_SIZE];
@@ -156,7 +164,7 @@ int main(void)
   {
       if (radio_is_new_message_available())
       {
-          // If yes, get the message from the driver. 
+          // If yes, get the message from the driver. 2
           // This function also handles restarting the listen process.
           uint16_t len = radio_get_message(user_buffer, USER_BUFFER_SIZE);
 
@@ -165,16 +173,13 @@ int main(void)
               // Echo the exact same message back
               radio_send(user_buffer, len);
               // Blink LED1 to visually confirm we processed an echo
-              HAL_GPIO_TogglePin(STAT_LED_1_GPIO_Port, STAT_LED_1_Pin);
+              HAL_GPIO_TogglePin(STAT_LED_R_GPIO_Port, STAT_LED_R_Pin);
           }
       }
       HAL_Delay(10);
   }
 
 
-#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
-  debug_log_init(&huart1);
-#endif // ULYSSES_ENABLE_DEBUG_LOGGING
 
   if (g_sd_card_initialized) {
     if (sd_enable_internal_dma(&hsd1) != HAL_OK) {

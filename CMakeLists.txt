@@ -1,3 +1,5 @@
+# CMakeLists.txt
+
 cmake_minimum_required(VERSION 3.22)
 
 #
@@ -81,6 +83,10 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
 )
 
+set(RADIO_DRIVER_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/radio/radio.c
+)
+
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -92,6 +98,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${RADIO_DRIVER_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c

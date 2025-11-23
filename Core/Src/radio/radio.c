@@ -1,4 +1,4 @@
-// In Core/Src/Drivers/radio.c
+// In Core/Src/radio/radio.c
 
 #include "Drivers/radio.h"
 #include "main.h"
@@ -33,7 +33,7 @@ HAL_StatusTypeDef radio_send(uint8_t* data, uint16_t length) {
 
 HAL_StatusTypeDef radio_start_listening(void) {
     if (radio_uart_handle == NULL) {
-        return HAL_ERROR;
+        return HAL_ERROR; // TODO make own error message
     }
     message_received = false;
     // non-blocking and returns immediately, DMA and UART5 listen in the background
@@ -76,19 +76,19 @@ uint16_t radio_get_message(uint8_t* buffer, uint16_t max_length) {
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == radio_uart_handle->Instance) {
         // Turn LED2 ON to indicate a successful transmission.
-        HAL_GPIO_WritePin(STAT_LED_2_GPIO_Port, STAT_LED_2_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(STAT_LED_G_GPIO_Port, STAT_LED_G_Pin, GPIO_PIN_SET);
     }
 }
 
 
 // predefined ISR for UART5
-// size automatically set by hardware
+// Size automatically set by hardware
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     if (huart->Instance == radio_uart_handle->Instance) {
         received_message_length = Size;
         message_received = true;
         // Turn OFF LED2 to signal we are ready for a new transmission.
-        HAL_GPIO_WritePin(STAT_LED_2_GPIO_Port, STAT_LED_2_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(STAT_LED_G_GPIO_Port, STAT_LED_G_Pin, GPIO_PIN_RESET);
     }
 }

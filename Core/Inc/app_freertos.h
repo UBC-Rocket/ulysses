@@ -1,4 +1,7 @@
 /* USER CODE BEGIN Header */
+
+// Core/Inc/app_freertos.h
+
 /**
   ******************************************************************************
   * File Name          : app_freertos.h
