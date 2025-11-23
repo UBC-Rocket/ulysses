@@ -175,6 +175,9 @@ void HAL_XSPI_MspInit(XSPI_HandleTypeDef* hxspi)
     GPIO_InitStruct.Alternate = GPIO_AF6_OCTOSPI1;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+    /* OCTOSPI1 interrupt Init */
+    HAL_NVIC_SetPriority(OCTOSPI1_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(OCTOSPI1_IRQn);
     /* USER CODE BEGIN OCTOSPI1_MspInit 1 */
 
     /* USER CODE END OCTOSPI1_MspInit 1 */
@@ -215,6 +218,8 @@ void HAL_XSPI_MspDeInit(XSPI_HandleTypeDef* hxspi)
 
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0);
 
+    /* OCTOSPI1 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(OCTOSPI1_IRQn);
     /* USER CODE BEGIN OCTOSPI1_MspDeInit 1 */
 
     /* USER CODE END OCTOSPI1_MspDeInit 1 */
