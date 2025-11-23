@@ -12,7 +12,6 @@
 #include "ekf.h"
 #include "debug/log.h"
 
-#define PI 3.141593
 #define GRAV 9.807
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
@@ -25,6 +24,10 @@ extern bmi088_gyro_t gyro;
 
 static ms5611_poller_t baro_poll;
 
+orientation_t orientation_values[16];
+uint16_t queue_index = 0;
+uint16_t next_queue_index = 0;
+
 void quat_to_euler(float q[4], float e[2]) {
     float w = q[0];
     float x = q[1];
@@ -34,14 +37,14 @@ void quat_to_euler(float q[4], float e[2]) {
     // Roll (x-axis rotation)
     float sinr = 2.0f * (w*x + y*z);
     float cosr = 1.0f - 2.0f * (x*x + y*y);
-    e[0] = atan2f(sinr, cosr) * 180 / PI;
+    e[0] = atan2f(sinr, cosr) * 180 / M_PI;
 
     // Pitch (y-axis rotation)
     float sinp = 2.0f * (w*y - z*x);
     if (fabsf(sinp) >= 1.0f)
-        e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / PI; // clamp at ±90°
+        e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / M_PI; // clamp at ±90°
     else
-        e[1] = asinf(sinp) * 180 / PI;
+        e[1] = asinf(sinp) * 180 / M_PI;
 }
 
 void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_data_raw[3], int64_t ticks)
@@ -62,6 +65,19 @@ void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_
     }
 
     a_bias[2] = (a_bias[2]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[2] - 1) * (1 / (float)ticks);
+}
+
+void push_to_queue(orientation_t new_orientation) {
+    orientation_values[next_queue_index] = new_orientation;
+    
+    next_queue_index = (queue_index + 1) % 16;
+    
+    if (next_queue_index == 0) queue_index = 15;
+    else queue_index = next_queue_index - 1;
+}
+
+void get_orientation(orientation_t v) {
+    v = orientation_values[queue_index];
 }
 
 void sensor_fusion_task_start(void *argument)
@@ -128,13 +144,6 @@ void sensor_fusion_task_start(void *argument)
     float a_bias[3] = {0, 0, 0};
     float g_bias[3] = {0, 0, 0};
 
-    fusion_shared_t fusion_shared = {
-        .quat = {1, 0, 0, 0},
-        .euler = {0, 0}
-    };
-
-    SemaphoreHandle_t fusion_mutex = xSemaphoreCreateMutex();
-
     while (true) {
         TickType_t cycle_start = xTaskGetTickCount();
 
@@ -177,7 +186,7 @@ void sensor_fusion_task_start(void *argument)
         else loops = num_accel_samples;
         
         for (uint8_t i = 0; i < loops; i++) {
-            float g_data_raw[3] = {gyro_samples[i].gx * PI / 180, gyro_samples[i].gy * PI / 180, gyro_samples[i].gz * PI / 180};
+            float g_data_raw[3] = {gyro_samples[i].gx * M_PI / 180, gyro_samples[i].gy * M_PI / 180, gyro_samples[i].gz * M_PI / 180};
             float a_data_raw[3] = {accel_samples[i].ax / -GRAV, accel_samples[i].ay / -GRAV, accel_samples[i].az / -GRAV};
             // accel should read [0, 0, 1] when sitting stationary upright
 
@@ -212,11 +221,12 @@ void sensor_fusion_task_start(void *argument)
             float e[2];
             quat_to_euler(q, e);
 
-            if (xSemaphoreTake(fusion_mutex, 0)) {
-                memcpy(fusion_shared.quat, q, sizeof(q));
-                memcpy(fusion_shared.euler, e, sizeof(e));
-                xSemaphoreGive(fusion_mutex);
-            }
+            orientation_t data = {
+                .quat = {q[0], q[1], q[2], q[3]},
+                .euler = {e[0], e[1]}
+            };
+
+            push_to_queue(data);
 
             // logging (optional)
             // if (ticks % 200 == 0) {
