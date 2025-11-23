@@ -40,6 +40,8 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+
+
 static bool sd_card_is_inserted(void)
 {
     GPIO_PinState state = HAL_GPIO_ReadPin(SD_CARD_DETECT_GPIO_Port, SD_CARD_DETECT_Pin);
@@ -92,7 +94,9 @@ static void MX_UART4_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd);
+
+
+static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd); 
 
 /* USER CODE END PFP */
 

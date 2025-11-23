@@ -1,4 +1,8 @@
 /* USER CODE BEGIN Header */
+
+
+// Core/Src/stm32h5xx_hal_msp.c
+
 /**
   ******************************************************************************
   * @file         stm32h5xx_hal_msp.c
