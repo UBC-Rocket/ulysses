@@ -65,9 +65,9 @@ set(DEBUG_MODULE_SRC
 )
 
 set(RTOS_TASKS_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/motor_control.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/radio_communication.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/sensor_fusion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/controls.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/mission_manager.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/state_estimation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/tasks/debug_logging.c
 )
 
@@ -96,7 +96,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
     ${DEBUG_MODULE_SRC}
     ${ALGO_SRC}
 )

@@ -37,13 +37,16 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+static bool sd_card_is_inserted(void)
+{
+    GPIO_PinState state = HAL_GPIO_ReadPin(SD_CARD_DETECT_GPIO_Port, SD_CARD_DETECT_Pin);
+    /* Assuming the detect pin is low when a card is present. Adjust if hardware differs. */
+    return state == GPIO_PIN_RESET;
+}
 
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
-DMA_HandleTypeDef handle_GPDMA1_Channel2;
-DMA_HandleTypeDef handle_GPDMA1_Channel3;
 
 XSPI_HandleTypeDef hospi1;
 
@@ -54,6 +57,8 @@ SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi4;
 DMA_HandleTypeDef handle_GPDMA1_Channel1;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
+DMA_HandleTypeDef handle_GPDMA1_Channel3;
+DMA_HandleTypeDef handle_GPDMA1_Channel2;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;
@@ -65,6 +70,7 @@ DMA_HandleTypeDef handle_GPDMA2_Channel3;
 DMA_HandleTypeDef handle_GPDMA2_Channel2;
 
 /* USER CODE BEGIN PV */
+bool g_sd_card_initialized = false;
 
 /* USER CODE END PV */
 
@@ -83,6 +89,7 @@ static void MX_UART4_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
+static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd);
 
 /* USER CODE END PFP */
 
@@ -137,6 +144,12 @@ int main(void)
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
   debug_log_init(&huart1);
 #endif // ULYSSES_ENABLE_DEBUG_LOGGING
+
+  if (g_sd_card_initialized) {
+    if (sd_enable_internal_dma(&hsd1) != HAL_OK) {
+      Error_Handler();
+    }
+  }
 
   /* USER CODE END 2 */
 
@@ -241,46 +254,14 @@ static void MX_GPDMA1_Init(void)
     HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
     HAL_NVIC_SetPriority(GPDMA1_Channel1_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(GPDMA1_Channel1_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel2_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel2_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel3_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel3_IRQn);
 
   /* USER CODE BEGIN GPDMA1_Init 1 */
 
   /* USER CODE END GPDMA1_Init 1 */
-  handle_GPDMA1_Channel2.Instance = GPDMA1_Channel2;
-  handle_GPDMA1_Channel2.Init.Request = DMA_REQUEST_SW;
-  handle_GPDMA1_Channel2.Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
-  handle_GPDMA1_Channel2.Init.Direction = DMA_MEMORY_TO_MEMORY;
-  handle_GPDMA1_Channel2.Init.SrcInc = DMA_SINC_FIXED;
-  handle_GPDMA1_Channel2.Init.DestInc = DMA_DINC_FIXED;
-  handle_GPDMA1_Channel2.Init.SrcDataWidth = DMA_SRC_DATAWIDTH_BYTE;
-  handle_GPDMA1_Channel2.Init.DestDataWidth = DMA_DEST_DATAWIDTH_BYTE;
-  handle_GPDMA1_Channel2.Init.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
-  handle_GPDMA1_Channel2.Init.SrcBurstLength = 1;
-  handle_GPDMA1_Channel2.Init.DestBurstLength = 1;
-  handle_GPDMA1_Channel2.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT0;
-  handle_GPDMA1_Channel2.Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
-  handle_GPDMA1_Channel2.Init.Mode = DMA_NORMAL;
-  if (HAL_DMA_Init(&handle_GPDMA1_Channel2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel2, DMA_CHANNEL_NPRIV) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  handle_GPDMA1_Channel3.Instance = GPDMA1_Channel3;
-  handle_GPDMA1_Channel3.InitLinkedList.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
-  handle_GPDMA1_Channel3.InitLinkedList.LinkStepMode = DMA_LSM_FULL_EXECUTION;
-  handle_GPDMA1_Channel3.InitLinkedList.LinkAllocatedPort = DMA_LINK_ALLOCATED_PORT0;
-  handle_GPDMA1_Channel3.InitLinkedList.TransferEventMode = DMA_TCEM_LAST_LL_ITEM_TRANSFER;
-  handle_GPDMA1_Channel3.InitLinkedList.LinkedListMode = DMA_LINKEDLIST_NORMAL;
-  if (HAL_DMAEx_List_Init(&handle_GPDMA1_Channel3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel3, DMA_CHANNEL_NPRIV) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN GPDMA1_Init 2 */
 
   /* USER CODE END GPDMA1_Init 2 */
@@ -315,7 +296,9 @@ static void MX_GPDMA2_Init(void)
     HAL_NVIC_EnableIRQ(GPDMA2_Channel5_IRQn);
 
   /* USER CODE BEGIN GPDMA2_Init 1 */
-
+#ifndef DEBUG
+  HAL_NVIC_DisableIRQ(GPDMA2_Channel0_IRQn);
+#endif
   /* USER CODE END GPDMA2_Init 1 */
   /* USER CODE BEGIN GPDMA2_Init 2 */
 
@@ -373,13 +356,10 @@ static void MX_SDMMC1_SD_Init(void)
 {
 
   /* USER CODE BEGIN SDMMC1_Init 0 */
-
-  // The following initialization code will fault if there is no SD card inserted.
-  // So provide an option to disable it in case the user doesn't have an SD card.
-#ifndef ULYSSES_USE_SD_CARD
-  return;
-#endif
-
+  g_sd_card_initialized = false;
+  if (!sd_card_is_inserted()) {
+    return;
+  }
   /* USER CODE END SDMMC1_Init 0 */
 
   /* USER CODE BEGIN SDMMC1_Init 1 */
@@ -390,13 +370,15 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd1.Init.ClockDiv = 0;
+  hsd1.Init.ClockDiv = 4;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
   {
-    Error_Handler();
+    return; 
   }
   /* USER CODE BEGIN SDMMC1_Init 2 */
-
+  //TODO : on autogeneration, HAL_SD_Init failure calls error handler. replace with return;
+  g_sd_card_initialized = true;
+  
   /* USER CODE END SDMMC1_Init 2 */
 
 }
@@ -602,7 +584,9 @@ static void MX_USART1_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART1_Init 0 */
-
+#ifndef DEBUG
+  return;
+#endif
   /* USER CODE END USART1_Init 0 */
 
   /* USER CODE BEGIN USART1_Init 1 */
@@ -820,6 +804,16 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd)
+{
+#if defined(SDMMC_ENABLE_IDMA_SINGLE_BUFF)
+  hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_SINGLE_BUFF;
+  return HAL_OK;
+#else
+  (void)hsd;
+  return HAL_ERROR;
+#endif
+}
 
 /* USER CODE END 4 */
 

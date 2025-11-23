@@ -50,3 +50,10 @@ build/
 
 # Mac
 .DS_Store
+
+#logs
+/tools/SD/bin/*.bin
+/tools/SD/logs/*.jsonl
+/tools/Serial/logs/*.jsonl
+
+/tools/SD/__pycache__
