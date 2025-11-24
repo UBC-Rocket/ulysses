@@ -1,3 +1,6 @@
+// Core/Src/debug/log.c
+
+
 #include "debug/log.h"
 
 #include <stdbool.h>

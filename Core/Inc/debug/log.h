@@ -1,3 +1,5 @@
+// Core/Inc/debug/log.h
+
 #ifndef DEBUG_LOG_H
 #define DEBUG_LOG_H
 

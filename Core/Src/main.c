@@ -26,6 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "debug/log.h"
+#include "radio/radio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -157,9 +158,11 @@ int main(void)
     // Define a buffer for testing
   #define USER_BUFFER_SIZE 64
   uint8_t user_buffer[USER_BUFFER_SIZE];
+
+  uint8_t periodic_message[] = "Ping\r\n"; 
   
   // tells driver which UART port to use
-  radio_init(&huart2);
+  radio_init(&huart4);
   
   radio_start_listening();
   
@@ -176,11 +179,20 @@ int main(void)
           {
               // Echo the exact same message back
               radio_send(user_buffer, len);
+
+
+              // debug console via USB/UART 1
+              HAL_UART_Transmit(&huart1, user_buffer, len, 100);
+
+              // Print a newline in the terminal
+              HAL_UART_Transmit(&huart1, (uint8_t*)"\r\n", 2, 100);
+
               // Blink LED1 to visually confirm we processed an echo
               HAL_GPIO_TogglePin(STAT_LED_R_GPIO_Port, STAT_LED_R_Pin);
           }
       }
-      HAL_Delay(10);
+      radio_send(periodic_message, sizeof(periodic_message) - 1);
+      // HAL_Delay(10); TODO uncomment and figure out why infinitely stuck
   }
 
 

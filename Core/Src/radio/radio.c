@@ -1,6 +1,6 @@
 // In Core/Src/radio/radio.c
 
-#include "Drivers/radio.h"
+#include "radio/radio.h"
 #include "main.h"
 #include <string.h> 
 
@@ -81,7 +81,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 
-// predefined ISR for UART5
+// predefined ISR for UART4
 // Size automatically set by hardware
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
@@ -90,5 +90,13 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
         message_received = true;
         // Turn OFF LED2 to signal we are ready for a new transmission.
         HAL_GPIO_WritePin(STAT_LED_G_GPIO_Port, STAT_LED_G_Pin, GPIO_PIN_RESET);
+    }
+}
+
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+    if (huart->Instance == radio_uart_handle->Instance) {
+        // restart listening to prevent driver death
+        radio_start_listening();
     }
 }
