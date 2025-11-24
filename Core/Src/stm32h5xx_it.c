@@ -61,6 +61,7 @@ volatile uint32_t g_hardfault_sp;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern XSPI_HandleTypeDef hospi1;
 extern SD_HandleTypeDef hsd1;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel1;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
@@ -200,20 +201,6 @@ void EXTI4_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles EXTI Line5 interrupt.
-  */
-void EXTI5_IRQHandler(void)
-{
-  /* USER CODE BEGIN EXTI5_IRQn 0 */
-
-  /* USER CODE END EXTI5_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(EXT_CS_1_Pin);
-  /* USER CODE BEGIN EXTI5_IRQn 1 */
-
-  /* USER CODE END EXTI5_IRQn 1 */
-}
-
-/**
   * @brief This function handles EXTI Line7 interrupt.
   */
 void EXTI7_IRQHandler(void)
@@ -235,7 +222,7 @@ void EXTI8_IRQHandler(void)
   /* USER CODE BEGIN EXTI8_IRQn 0 */
 
   /* USER CODE END EXTI8_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(EXT_CS_2_Pin);
+  HAL_GPIO_EXTI_IRQHandler(BNO_INT_Pin);
   /* USER CODE BEGIN EXTI8_IRQn 1 */
 
   /* USER CODE END EXTI8_IRQn 1 */
@@ -449,6 +436,20 @@ void UART4_IRQHandler(void)
   /* USER CODE BEGIN UART4_IRQn 1 */
 
   /* USER CODE END UART4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles OCTOSPI1 global interrupt.
+  */
+void OCTOSPI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN OCTOSPI1_IRQn 0 */
+
+  /* USER CODE END OCTOSPI1_IRQn 0 */
+  HAL_XSPI_IRQHandler(&hospi1);
+  /* USER CODE BEGIN OCTOSPI1_IRQn 1 */
+
+  /* USER CODE END OCTOSPI1_IRQn 1 */
 }
 
 /**
