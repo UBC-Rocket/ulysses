@@ -31,12 +31,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 project(${CMAKE_PROJECT_NAME})
 
 option(ULYSSES_ENABLE_DEBUG_LOGGING "Enable serial debug logging" ON)
-option(ULYSSES_USE_SD_CARD "Enable SD card initialization (requires SD card to be inserted)" OFF)
+option(ULYSSES_USE_USB "Enable USB support" OFF)
 
 # Display a summary of the build configuration
 message("Build type: " ${CMAKE_BUILD_TYPE})
 message("Debug logging: " ${ULYSSES_ENABLE_DEBUG_LOGGING})
-message("SD card initialization: " ${ULYSSES_USE_SD_CARD})
+message("USB support: " ${ULYSSES_USE_USB})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
@@ -114,7 +114,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     BMI_ACC_Chip_Select_Pin=BMI_ACC_CS_Pin
     BMI_GYRO_Chip_Select_GPIO_Port=BMI_GYRO_CS_GPIO_Port
     BMI_GYRO_Chip_Select_Pin=BMI_GYRO_CS_Pin
-    $<$<BOOL:${ULYSSES_USE_SD_CARD}>:ULYSSES_USE_SD_CARD>
+    $<$<BOOL:${ULYSSES_USE_USB}>:ULYSSES_USE_USB>
     $<$<BOOL:${ULYSSES_ENABLE_DEBUG_LOGGING}>:ULYSSES_ENABLE_DEBUG_LOGGING>
 )
 

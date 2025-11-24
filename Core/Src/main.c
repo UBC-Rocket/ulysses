@@ -37,11 +37,12 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+
 static bool sd_card_is_inserted(void)
 {
-    GPIO_PinState state = HAL_GPIO_ReadPin(SD_CARD_DETECT_GPIO_Port, SD_CARD_DETECT_Pin);
-    /* Assuming the detect pin is low when a card is present. Adjust if hardware differs. */
-    return state == GPIO_PIN_RESET;
+  GPIO_PinState state = HAL_GPIO_ReadPin(SD_CARD_DETECT_GPIO_Port, SD_CARD_DETECT_Pin);
+  /* Assuming the detect pin is low when a card is present. Adjust if hardware differs. */
+  return state == GPIO_PIN_RESET;
 }
 
 /* USER CODE END PM */
@@ -302,7 +303,7 @@ static void MX_GPDMA2_Init(void)
     HAL_NVIC_EnableIRQ(GPDMA2_Channel5_IRQn);
 
   /* USER CODE BEGIN GPDMA2_Init 1 */
-#ifndef DEBUG
+#ifndef ULYSSES_ENABLE_DEBUG_LOGGING
   HAL_NVIC_DisableIRQ(GPDMA2_Channel0_IRQn);
 #endif
   /* USER CODE END GPDMA2_Init 1 */
@@ -384,7 +385,7 @@ static void MX_SDMMC1_SD_Init(void)
   /* USER CODE BEGIN SDMMC1_Init 2 */
   //TODO : on autogeneration, HAL_SD_Init failure calls error handler. replace with return;
   g_sd_card_initialized = true;
-  
+
   /* USER CODE END SDMMC1_Init 2 */
 
 }
@@ -590,7 +591,7 @@ static void MX_USART1_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART1_Init 0 */
-#ifndef DEBUG
+#ifndef ULYSSES_ENABLE_DEBUG_LOGGING
   return;
 #endif
   /* USER CODE END USART1_Init 0 */
@@ -688,6 +689,10 @@ static void MX_USB_PCD_Init(void)
 {
 
   /* USER CODE BEGIN USB_Init 0 */
+
+#ifndef ULYSSES_USE_USB
+  return;
+#endif // ULYSSES_USE_USB
 
   /* USER CODE END USB_Init 0 */
 
