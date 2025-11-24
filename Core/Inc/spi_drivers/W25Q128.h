@@ -40,12 +40,51 @@
 #define W25Q128_CMD_RELEASE_POWER_DOWN   0xAB
 
 typedef struct {
-    uint8_t  unique_id[8];     ///< 64-bit unique ID
-    uint8_t  status_reg1;      ///< Status Register 1 cache
-    uint8_t  status_reg2;      ///< Status Register 2 cache
-    uint8_t  status_reg3;      ///< Status Register 3 cache
-    uint32_t jedec_id;         ///< JEDEC ID
-    bool     initialized;      ///< Initialization status
+    uint8_t manufacturer_id;
+    uint8_t memory_type;
+    uint8_t capacity;
+} jedec_id_t;
+
+typedef enum {
+    W25Q128_STATUS_REG_1 = 1,
+    W25Q128_STATUS_REG_2 = 2,
+    W25Q128_STATUS_REG_3 = 3,
+} w25q128_status_reg_t;
+
+typedef struct {
+    bool srp;  ///< Status Register Protect
+    bool sec;  ///< Sector/Block Protect bit
+    bool tb;   ///< Top/Bottom Block Protect
+    bool bp2;  ///< Block Protect Bits (2)
+    bool bp1;  ///< Block Protect Bits (1)
+    bool bp0;  ///< Block Protect Bits (0)
+    bool wel;  ///< Write Enable Latch
+    bool busy; ///< Erase/Write In Progress
+} w25q128_status_reg_1_t;
+
+typedef struct {
+    bool sus; ///< Erase/Program Suspend Status
+    bool cmp; ///< Complement Protect
+    bool lb3; ///< Security Register Lock Bits (3)
+    bool lb2; ///< Security Register Lock Bits (2)
+    bool lb1; ///< Security Register Lock Bits (1)
+    bool qe;  ///< Quad Enable
+    bool srl; ///< Status Register Lock
+} w25q128_status_reg_2_t;
+
+typedef struct {
+    bool drv1; ///< Output Driver Strength (1)
+    bool drv0; ///< Output Driver Strength (0)
+    bool wps;  ///< Write Protect Selection
+} w25q128_status_reg_3_t;
+
+typedef struct {
+    uint64_t               unique_id;    ///< 64-bit unique ID
+    w25q128_status_reg_1_t status_reg1;  ///< Status Register 1 cache
+    w25q128_status_reg_2_t status_reg2;  ///< Status Register 2 cache
+    w25q128_status_reg_3_t status_reg3;  ///< Status Register 3 cache
+    jedec_id_t             jedec_id;     ///< JEDEC ID
+    bool                   initialized;  ///< Initialization status
 } w25q128_t;
 
 /**
@@ -53,9 +92,9 @@ typedef struct {
  * This struct contains the XSPI command parameters and optional TX data buffer
  */
 typedef struct {
-    XSPI_RegularCmdTypeDef cmd;     ///< XSPI command configuration
-    const uint8_t *tx_data;          ///< Optional TX data buffer (NULL if no data to send)
-    uint16_t tx_data_size;           ///< Size of TX data buffer (0 if no data)
+    XSPI_RegularCmdTypeDef cmd; ///< XSPI command configuration
+    const uint8_t *tx_data;     ///< Optional TX data buffer (NULL if no data to send)
+    uint16_t tx_data_size;      ///< Size of TX data buffer (0 if no data)
 } w25q128_xspi_cmd_t;
 
 /**
@@ -84,10 +123,10 @@ void w25q128_build_write_disable(w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build command to read Status Register
- * @param reg_num Register number (1, 2, or 3)
+ * @param reg_num Register number
  * @param cmd Pointer to command structure to populate
  */
-void w25q128_build_read_status_reg(uint8_t reg_num, w25q128_xspi_cmd_t *cmd);
+void w25q128_build_read_status_reg(w25q128_status_reg_t reg_num, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build command to read data (standard read, up to 50 MHz)
@@ -112,7 +151,7 @@ void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_
  * @param num_bytes Number of bytes to write (max 256)
  * @param cmd Pointer to command structure to populate
  */
-void w25q128_build_page_program(uint32_t address, const uint8_t *data, 
+void w25q128_build_page_program(uint32_t address, const uint8_t *data,
                                 uint16_t num_bytes, w25q128_xspi_cmd_t *cmd);
 
 /**
@@ -156,10 +195,10 @@ void w25q128_parse_unique_id(const uint8_t *rx_buf, w25q128_t *dev);
 /**
  * @brief Parse Status Register response
  * @param rx_buf Receive buffer from SPI transaction
- * @param reg_num Register number (1, 2, or 3)
+ * @param reg_num Register number
  * @param dev Device structure to update
  */
-void w25q128_parse_status_reg(const uint8_t *rx_buf, uint8_t reg_num, w25q128_t *dev);
+void w25q128_parse_status_reg(const uint8_t *rx_buf, w25q128_status_reg_t reg_num, w25q128_t *dev);
 
 /**
  * @brief Parse read data response
@@ -171,16 +210,16 @@ void w25q128_parse_read_data(const uint8_t *rx_buf, uint8_t *data_out, uint16_t 
 
 /**
  * @brief Check if device is busy (polling status register)
- * @param status_reg1 Status Register 1 value
+ * @param dev The device structure
  * @return true if busy, false if ready
  */
-bool w25q128_is_busy(uint8_t status_reg1);
+bool w25q128_is_busy(w25q128_t *dev);
 
 /**
  * @brief Check if write enable latch is set
- * @param status_reg1 Status Register 1 value
+ * @param dev The device structure
  * @return true if write enabled, false otherwise
  */
-bool w25q128_is_write_enabled(uint8_t status_reg1);
+bool w25q128_is_write_enabled(w25q128_t *dev);
 
 #endif // W25Q128_FLASH_H
