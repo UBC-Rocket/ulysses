@@ -250,7 +250,7 @@ void state_estimation_task_start(void *argument)
 
             // logging (optional)
             if (ticks % 200 == 0) {
-                DLOG_PRINT("[%f, %f, %f, %f]\n", q[0], q[1],q[2],q[3]);
+                DLOG_PRINT("[%f, %f]\n", e[0], e[1]);
             }
 
             

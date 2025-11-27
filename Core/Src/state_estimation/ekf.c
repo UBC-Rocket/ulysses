@@ -95,24 +95,26 @@ void init_ekf(
     float measurement_noise[3][3])
 {
     // init
-    ekf.x[0] = 1;
-    ekf.x[1] = 0;
-    ekf.x[2] = 0;
-    ekf.x[3] = 0;
+    ekf.quaternion.vals[0] = 1;
+    ekf.quaternion.vals[1] = 0;
+    ekf.quaternion.vals[2] = 0;
+    ekf.quaternion.vals[3] = 0;
+
+    for (int i = 0; i < 3; i++) ekf.position.vals[i] = 0;
 
     // sets ekf.P to an identity matrix
     for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) {
         if (i==j) {
-            ekf.covar[i][j] = 1;
+            ekf.quaternion.covar[i][j] = 1;
             continue;
         }
 
-        ekf.covar[i][j] = 0;
+        ekf.quaternion.covar[i][j] = 0;
     }
 
     // copy inputs
-    for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) ekf.process[i][j] = process_noise[i][j];
-    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) ekf.measurement[i][j] = measurement_noise[i][j];
+    for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) ekf.quaternion.process[i][j] = process_noise[i][j];
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) ekf.quaternion.measurement[i][j] = measurement_noise[i][j];
 }
 
 void state_transition(
@@ -193,10 +195,10 @@ void predict_covar(
     float jacobian_transposed[4][4];
     transpose4x4(jacobian, jacobian_transposed);
 
-    MAT_MUL(jacobian, ekf.covar, m1, 4, 4, 4);
+    MAT_MUL(jacobian, ekf.quaternion.covar, m1, 4, 4, 4);
     MAT_MUL(m1, jacobian_transposed, predicted_covar, 4, 4, 4);
 
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) predicted_covar[i][j] += ekf.process[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) predicted_covar[i][j] += ekf.quaternion.process[i][j];
 }
 
 void predict_accel_from_quat(const float q[4], float accel_pred[3])
@@ -239,7 +241,7 @@ void tick_ekf(
 {
     /* prediction step */
     float next_state[4];
-    state_transition(ekf.x, next_state, deltaTime, gyro);
+    state_transition(ekf.quaternion.vals, next_state, deltaTime, gyro);
 
     float state_jacobian[4][4];
     get_state_jacobian(gyro, deltaTime, state_jacobian);
@@ -275,7 +277,7 @@ void tick_ekf(
     MAT_MUL(mat2, h_jacobian_t, mat3, 3, 4, 3);
 
     // add measurement covariance
-    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) mat3[i][j] += ekf.measurement[i][j];
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) mat3[i][j] += ekf.quaternion.measurement[i][j];
 
     float inv_mat3[3][3]; // self-explanatory
     int result = inverse(mat3, inv_mat3);
@@ -292,8 +294,8 @@ void tick_ekf(
     float adjustment[4][1];
     MAT_MUL(kalman_gain, innovation, adjustment, 4, 3, 1);
 
-    for (int i = 0; i < 4; i++) ekf.x[i] = next_state[i] + adjustment[i][0];
-    normalize(ekf.x);
+    for (int i = 0; i < 4; i++) ekf.quaternion.vals[i] = next_state[i] + adjustment[i][0];
+    normalize(ekf.quaternion.vals);
 
     float KH[4][4];
     MAT_MUL(kalman_gain, h_jacobian, KH, 4, 3, 4);
@@ -309,11 +311,11 @@ void tick_ekf(
     MAT_MUL(I_minus_KH, predicted_covar, new_p, 4, 4, 4);
 
     // store it
-    memcpy(ekf.covar, new_p, sizeof(new_p));
+    memcpy(ekf.quaternion.covar, new_p, sizeof(new_p));
 }
 
 void get_state_x(float out[4])
 {
     for (int i = 0; i < 4; i++)
-        out[i] = ekf.x[i];
+        out[i] = ekf.quaternion.vals[i];
 }

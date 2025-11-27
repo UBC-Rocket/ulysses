@@ -6,10 +6,22 @@
 #define STATE_DIM 4
 
 typedef struct {
-    float x[STATE_DIM];                    // state vector (just a quaternion for now)
-    float covar[STATE_DIM][STATE_DIM];     // covariance matrix
-    float process[STATE_DIM][STATE_DIM];   // process noise
-    float measurement[3][3];               // measurement noise (of accel)
+    float vals[4];            // real, i, j, k (or w, x, y, z)
+    float covar[4][4];        // covariance matrix
+    float process[4][4];      // process noise
+    float measurement[3][3];  // measurement noise (of accel)
+} quaternion_state;
+
+typedef struct {
+    float vals[3];            // x, y, z
+    float covar[3][3];        // covariance matrix
+    float process[3][3];      // process noise
+    float measurement[3][3];  // measurement noise (of gps)
+} position_state;
+
+typedef struct {
+    quaternion_state quaternion;  
+    position_state position;                 
 } EKF;
 
 void get_state_x(float out[4]);
