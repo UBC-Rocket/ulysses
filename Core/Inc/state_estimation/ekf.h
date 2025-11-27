@@ -13,15 +13,16 @@ typedef struct {
 } quaternion_state;
 
 typedef struct {
-    float vals[3];            // x, y, z
+    float velocity[3];
+    float position[3];            // x, y, z
     float covar[3][3];        // covariance matrix
     float process[3][3];      // process noise
     float measurement[3][3];  // measurement noise (of gps)
-} position_state;
+} body_state;
 
 typedef struct {
     quaternion_state quaternion;  
-    position_state position;                 
+    body_state body;                 
 } EKF;
 
 void get_state_x(float out[4]);
