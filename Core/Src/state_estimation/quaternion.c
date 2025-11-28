@@ -1,17 +1,16 @@
-#include "ekf.h"
+#include <ekf.h>
 #include <math.h>
 #include <string.h>
 #include <matrix.h>
 
 void state_transition_orientation(
-    float p[4], // previous state
-    float next_state[4],
+    quaternion_state *state,
     float time_step,
     float g[3] // gyro data
 )
 {
     float P[4][1];
-    for (int i = 0; i < 4; i++) P[i][0] = p[i];
+    for (int i = 0; i < 4; i++) P[i][0] = state->vals[i];
 
     /*
     | 0   -gx   -gy  -gz  |
@@ -25,7 +24,6 @@ void state_transition_orientation(
                     {g[1], -g[2], 0, g[0]},
                     {g[2], g[1], -g[0], 0}};
 
-
     float C[4][1];
 
     MAT_MUL(B, P, C, 4, 4, 1);
@@ -33,10 +31,10 @@ void state_transition_orientation(
     for (int i = 0; i < 4; i++) C[i][0] = C[i][0] * (time_step / 2);
 
     for (int i = 0; i < 4; i++) {
-        next_state[i] = p[i] + C[i][0];
+        state->vals[i] = state->vals[i] + C[i][0];
     }
 
-    normalize(next_state);
+    normalize(state->vals);
 }
 
 void get_state_jacobian_orientation(

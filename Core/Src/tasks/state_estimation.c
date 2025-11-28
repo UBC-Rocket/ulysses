@@ -70,6 +70,7 @@ void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_
 
 void state_estimation_task_start(void *argument)
 {
+    DLOG_PRINT("init");
     jobq_spi_2.spi_bus = &hspi2;
     jobq_spi_2.spi_busy = false;
     jobq_spi_2.head = 0;
@@ -113,16 +114,34 @@ void state_estimation_task_start(void *argument)
 
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
 
-    float q[4][4] = {{0.000001, 0, 0, 0},
+    float process_noise_quaternion[4][4] = 
+                   {{0.000001, 0, 0, 0},
                     {0, 0.000001, 0, 0},
                     {0, 0, 0.000001, 0},
                     {0, 0, 0, 0.000001}};
 
-    float m[3][3] = {{0.01, 0, 0},
+    float measurement_noise_quaternion[3][3] = 
+                   {{0.01, 0, 0},
                     {0, 0.01, 0},
                     {0, 0, 0.01}};
 
-    init_ekf(q, m);
+    float process_noise_body[6][6] = 
+                   {{0.01, 0, 0, 0, 0, 0},
+                    {0, 0.01, 0, 0, 0, 0},
+                    {0, 0, 0.01, 0, 0, 0},
+                    {0, 0, 0, 0.001, 0, 0},
+                    {0, 0, 0, 0, 0.001, 0},
+                    {0, 0, 0, 0, 0, 0.001}};
+
+    float measurement_noise_body[3][3] = 
+                   {{15, 0, 0},
+                    {0, 15, 0},
+                    {0, 0, 15}};
+
+    init_ekf(process_noise_quaternion, 
+            measurement_noise_quaternion,
+            process_noise_body,
+            measurement_noise_body);
 
     float delta_time = 0;
     float last_tick = 0;
@@ -134,7 +153,6 @@ void state_estimation_task_start(void *argument)
     float g_bias[3] = {0, 0, 0};
 
     while (true) {
-
         uint64_t cycle_start = xTaskGetTickCount(); 
 
         uint8_t num_accel_samples = 0;
@@ -222,7 +240,7 @@ void state_estimation_task_start(void *argument)
                                a_data_raw[1] - a_bias[1], 
                                a_data_raw[2] - a_bias[2]};
 
-            tick_ekf(delta_time, g_data, a_data);
+            tick_ekf(delta_time, g_data, a_data, (float[3]){0, 0, 0});
 
             float q[4];
             get_state_x(q);

@@ -28,14 +28,17 @@ typedef struct {
 void get_state_x(float out[4]);
 
 void init_ekf(
-    float process_noise[STATE_DIM][STATE_DIM],
-    float measurement_noise[3][3]
+    float process_noise_quaternion[4][4],
+    float measurement_noise_quaternion[3][3],
+    float process_noise_body[6][6],
+    float measurement_noise_body[3][3]
 );
 
 void tick_ekf(
     float deltaTime,
     float gyro[3],
-    float accel[3]
+    float accel[3],
+    float gps_pos[3]
 );
 
 /* Macro to multiply any given A (r1 x c1) by B (c1 x c2), producing (r1 x c2) */
