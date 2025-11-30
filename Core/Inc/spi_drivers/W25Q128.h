@@ -210,27 +210,12 @@ void w25q128_build_chip_erase(w25q128_xspi_cmd_t *cmd);
 void w25q128_parse_jedec_id(const uint8_t *rx_buf, w25q128_t *dev);
 
 /**
- * @brief Parse Unique ID response
- * @param rx_buf Receive buffer from SPI transaction
- * @param dev Device structure to update
- */
-void w25q128_parse_unique_id(const uint8_t *rx_buf, w25q128_t *dev);
-
-/**
  * @brief Parse Status Register response
  * @param rx_buf Receive buffer from SPI transaction
  * @param reg_num Register number
  * @param dev Device structure to update
  */
 void w25q128_parse_status_reg(const uint8_t *rx_buf, w25q128_status_reg_t reg_num, w25q128_t *dev);
-
-/**
- * @brief Parse read data response
- * @param rx_buf Receive buffer from SPI transaction
- * @param data_out Output buffer for read data
- * @param num_bytes Number of bytes to copy
- */
-void w25q128_parse_read_data(const uint8_t *rx_buf, uint8_t *data_out, uint16_t num_bytes);
 
 /**
  * @brief Check if device is busy (polling status register)
