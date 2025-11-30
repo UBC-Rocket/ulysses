@@ -85,25 +85,33 @@ void predict_accel_from_quat(const float q[4], float accel_pred[3], float expect
 }
 
 void get_h_jacobian_quaternion(float q[4], float eg[3], float H[3][4]) {
-    float w=q[0], x=q[1], y=q[2], z=q[3];
+    float w = q[0];
+    float x = q[1];
+    float y = q[2];
+    float z = q[3];
     
-    // vx = (1-2y2-2z2)gx + 2(xy+wz)gy + 2(xz-wy)gz
-    // vy = 2(xy-wz)gx + (1-2x2-2z2)gy + 2(yz+wx)gz
-    // vz = 2(xz+wy)gx + 2(yz-wx)gy + (1-2x2-2y2)gz
-    
-    // derivs
-    H[0][0] = 2 * (z*eg[1] - y*eg[2]);             // w
-    H[0][1] = 2 * (y*eg[1] + z*eg[2]);             // x
-    H[0][2] = 2 * (-2*y*eg[0] + x*eg[1] - w*eg[2]);// y
-    H[0][3] = 2 * (-2*z*eg[0] + w*eg[1] + x*eg[2]);// z
-    
-    H[1][0] = 2 * (-z*eg[0] + x*eg[2]);            // w
-    H[1][1] = 2 * (y*eg[0] - 2*x*eg[1] + w*eg[2]); // x
-    H[1][2] = 2 * (x*eg[0] + z*eg[2]);             // y
-    H[1][3] = 2 * (-w*eg[0] - 2*z*eg[1] + y*eg[2]);// z
+    float gx = eg[0];
+    float gy = eg[1];
+    float gz = eg[2];
 
-    H[2][0] = 2 * (y*eg[0] - x*eg[1]);             // w
-    H[2][1] = 2 * (z*eg[0] - w*eg[1] - 2*x*eg[2]); // x
-    H[2][2] = 2 * (w*eg[0] + z*eg[1] - 2*y*eg[2]); // y
-    H[2][3] = 2 * (x*eg[0] + y*eg[1]);             // z
+    // Derivatives of R^T * g
+    // Where R^T is the rotation from World to Body
+    
+    // Row 0 (Gradient of a_x)
+    H[0][0] = 2.0f * (w * gx + z * gy - y * gz); // d/dw
+    H[0][1] = 2.0f * (x * gx + y * gy + z * gz); // d/dx
+    H[0][2] = 2.0f * (-y * gx + x * gy - w * gz); // d/dy
+    H[0][3] = 2.0f * (-z * gx + w * gy + x * gz); // d/dz
+
+    // Row 1 (Gradient of a_y)
+    H[1][0] = 2.0f * (-z * gx + w * gy + x * gz); // d/dw
+    H[1][1] = 2.0f * (y * gx - x * gy + w * gz);  // d/dx
+    H[1][2] = 2.0f * (x * gx + y * gy + z * gz);  // d/dy
+    H[1][3] = 2.0f * (-w * gx - z * gy + y * gz); // d/dz
+
+    // Row 2 (Gradient of a_z)
+    H[2][0] = 2.0f * (y * gx - x * gy + w * gz);  // d/dw
+    H[2][1] = 2.0f * (z * gx - w * gy + x * gz);  // d/dx
+    H[2][2] = 2.0f * (w * gx + z * gy - y * gz);  // d/dy
+    H[2][3] = 2.0f * (x * gx + y * gy + z * gz);  // d/dz
 }

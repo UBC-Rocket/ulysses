@@ -20,7 +20,7 @@
 #define GRAV 9.807
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
-float EXPECTED_GRAVITY[3] = {0, 0, 1};
+float EXPECTED_GRAVITY[3] = {1, 0, 0};
 
 // External variable declarations
 extern SPI_HandleTypeDef hspi2;
@@ -122,9 +122,9 @@ void state_estimation_task_start(void *argument)
                     {0, 0, 0, 0.000001}};
 
     float measurement_noise_quaternion[3][3] = 
-                   {{0.01, 0, 0},
-                    {0, 0.01, 0},
-                    {0, 0, 0.01}};
+                   {{0.1, 0, 0},
+                    {0, 0.1, 0},
+                    {0, 0, 0.1}};
 
     float process_noise_body[6][6] = 
                    {{0.01, 0, 0, 0, 0, 0},
@@ -274,8 +274,6 @@ void state_estimation_task_start(void *argument)
             if (ticks % 100 == 0) {
                 DLOG_PRINT("[%f, %f, %f]deg\n", e[0], e[1], e[2]);
             }
-
-            
 
             ticks += 1;
         }
