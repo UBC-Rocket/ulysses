@@ -243,7 +243,9 @@ void state_estimation_task_start(void *argument)
             tick_ekf(delta_time, g_data, a_data, (float[3]){0, 0, 0});
 
             float q[4];
-            get_state_x(q);
+            float pos[3];
+            float vel[3];
+            get_state(q, pos, vel);
 
             float e[2];
             quat_to_euler(q, e);
@@ -267,8 +269,8 @@ void state_estimation_task_start(void *argument)
             state_exchange_publish_state(&data);
 
             // logging (optional)
-            if (ticks % 200 == 0) {
-                DLOG_PRINT("[%f, %f]\n", e[0], e[1]);
+            if (ticks % 100 == 0) {
+                DLOG_PRINT("[%f, %f]deg, [%f, %f, %f]m\n", e[0], e[1], pos[0], pos[1], pos[2]);
             }
 
             

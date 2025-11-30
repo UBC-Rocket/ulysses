@@ -15,8 +15,8 @@ typedef struct {
 typedef struct {
     float velocity[3];
     float position[3];            // x, y, z
-    float covar[3][3];        // covariance matrix
-    float process[3][3];      // process noise
+    float covar[6][6];        // covariance matrix
+    float process[6][6];      // process noise
     float measurement[3][3];  // measurement noise (of gps)
 } body_state;
 
@@ -25,7 +25,7 @@ typedef struct {
     body_state body;                 
 } EKF;
 
-void get_state_x(float out[4]);
+void get_state(float quat[4], float pos[3], float vel[3]);
 
 void init_ekf(
     float process_noise_quaternion[4][4],

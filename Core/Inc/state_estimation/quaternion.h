@@ -6,7 +6,8 @@
 void state_transition_orientation(
     quaternion_state *state, // previous state
     float time_step,
-    float g[3] // gyro data
+    float g[3], // gyro data
+    float out_q[4]
 );
 
 void get_state_jacobian_orientation(
