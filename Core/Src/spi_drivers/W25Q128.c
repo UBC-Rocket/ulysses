@@ -6,6 +6,7 @@
 */
 
 #include "W25Q128.h"
+#include "stm32h5xx_hal_xspi.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -171,7 +172,7 @@ void w25q128_build_quad_input_page_program(uint32_t address, const uint8_t *data
     cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
 
     cmd->cmd.Address = address;
-    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_4_LINES;
+    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_1_LINE;
     cmd->cmd.AddressWidth = HAL_XSPI_ADDRESS_24_BITS;
     cmd->cmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_DISABLE;
 
