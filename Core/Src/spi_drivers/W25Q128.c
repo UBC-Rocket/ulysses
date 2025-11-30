@@ -23,34 +23,9 @@ void w25q128_build_read_jedec_id(w25q128_xspi_cmd_t *cmd)
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
 
     cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
-    cmd->cmd.DataLength = 3;  // 3 bytes: Manufacturer, Memory Type, Capacity
+    cmd->cmd.DataLength = W25Q128_DATA_BYTES_READ_JEDEC_ID;
     cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 0;
-
-    cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
-    cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
-
-    cmd->tx_data = NULL;
-    cmd->tx_data_size = 0;
-}
-
-void w25q128_build_read_unique_id(w25q128_xspi_cmd_t *cmd)
-{
-    memset(&cmd->cmd, 0, sizeof(XSPI_RegularCmdTypeDef));
-
-    cmd->cmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
-    cmd->cmd.Instruction = W25Q128_CMD_READ_UNIQUE_ID;
-    cmd->cmd.InstructionMode = HAL_XSPI_INSTRUCTION_1_LINE;
-    cmd->cmd.InstructionWidth = HAL_XSPI_INSTRUCTION_8_BITS;
-    cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-
-    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_NONE;
-    cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
-
-    cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
-    cmd->cmd.DataLength = 8;  // 8 bytes for unique ID
-    cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 32;  // 4 dummy bytes = 32 dummy cycles
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_READ_JEDEC_ID;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -71,8 +46,11 @@ void w25q128_build_write_enable(w25q128_xspi_cmd_t *cmd)
 
     cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_NONE;
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+
     cmd->cmd.DataMode = HAL_XSPI_DATA_NONE;
-    cmd->cmd.DummyCycles = 0;
+    cmd->cmd.DataLength = W25Q128_DATA_BYTES_WRITE_ENABLE;
+    cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_WRITE_ENABLE;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -93,8 +71,11 @@ void w25q128_build_write_disable(w25q128_xspi_cmd_t *cmd)
 
     cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_NONE;
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+
     cmd->cmd.DataMode = HAL_XSPI_DATA_NONE;
-    cmd->cmd.DummyCycles = 0;
+    cmd->cmd.DataLength = W25Q128_DATA_BYTES_WRITE_DISABLE;
+    cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_WRITE_DISABLE;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -112,12 +93,18 @@ void w25q128_build_read_status_reg(w25q128_status_reg_t reg_num, w25q128_xspi_cm
     switch (reg_num) {
         case W25Q128_STATUS_REG_1:
             cmd->cmd.Instruction = W25Q128_CMD_READ_STATUS_REG1;
+            cmd->cmd.DataLength = W25Q128_DATA_BYTES_READ_STATUS_REG1;
+            cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_READ_STATUS_REG1;
             break;
         case W25Q128_STATUS_REG_2:
             cmd->cmd.Instruction = W25Q128_CMD_READ_STATUS_REG2;
+            cmd->cmd.DataLength = W25Q128_DATA_BYTES_READ_STATUS_REG2;
+            cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_READ_STATUS_REG2;
             break;
         case W25Q128_STATUS_REG_3:
             cmd->cmd.Instruction = W25Q128_CMD_READ_STATUS_REG3;
+            cmd->cmd.DataLength = W25Q128_DATA_BYTES_READ_STATUS_REG3;
+            cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_READ_STATUS_REG3;
             break;
     }
 
@@ -129,9 +116,7 @@ void w25q128_build_read_status_reg(w25q128_status_reg_t reg_num, w25q128_xspi_cm
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
 
     cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
-    cmd->cmd.DataLength = 1;  // 1 byte status register
     cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 0;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -140,41 +125,12 @@ void w25q128_build_read_status_reg(w25q128_status_reg_t reg_num, w25q128_xspi_cm
     cmd->tx_data_size = 0;
 }
 
-void w25q128_build_read_data(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd)
+void w25q128_build_fast_read_quad_io(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd)
 {
     memset(&cmd->cmd, 0, sizeof(XSPI_RegularCmdTypeDef));
 
     cmd->cmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
-    cmd->cmd.Instruction = W25Q128_CMD_READ_DATA;
-    cmd->cmd.InstructionMode = HAL_XSPI_INSTRUCTION_1_LINE;
-    cmd->cmd.InstructionWidth = HAL_XSPI_INSTRUCTION_8_BITS;
-    cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-
-    cmd->cmd.Address = address;
-    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_1_LINE;
-    cmd->cmd.AddressWidth = HAL_XSPI_ADDRESS_24_BITS;
-    cmd->cmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_DISABLE;
-
-    cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
-
-    cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
-    cmd->cmd.DataLength = num_bytes;
-    cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 0;
-
-    cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
-    cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
-
-    cmd->tx_data = NULL;
-    cmd->tx_data_size = 0;
-}
-
-void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd)
-{
-    memset(&cmd->cmd, 0, sizeof(XSPI_RegularCmdTypeDef));
-
-    cmd->cmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
-    cmd->cmd.Instruction = W25Q128_CMD_FAST_READ;
+    cmd->cmd.Instruction = W25Q128_CMD_FAST_READ_QUAD_IO;
     cmd->cmd.InstructionMode = HAL_XSPI_INSTRUCTION_1_LINE;
     cmd->cmd.InstructionWidth = HAL_XSPI_INSTRUCTION_8_BITS;
     cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
@@ -189,7 +145,7 @@ void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_
     cmd->cmd.DataMode = HAL_XSPI_DATA_4_LINES;
     cmd->cmd.DataLength = num_bytes;
     cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 6;  // 1 dummy byte = 8 dummy cycles
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_FAST_READ_QUAD_IO;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -198,8 +154,8 @@ void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_
     cmd->tx_data_size = 0;
 }
 
-void w25q128_build_page_program(uint32_t address, const uint8_t *data,
-                                uint16_t num_bytes, w25q128_xspi_cmd_t *cmd)
+void w25q128_build_quad_input_page_program(uint32_t address, const uint8_t *data,
+                                           uint16_t num_bytes, w25q128_xspi_cmd_t *cmd)
 {
     // Limit to page size (256 bytes)
     if (num_bytes > 256) {
@@ -209,7 +165,7 @@ void w25q128_build_page_program(uint32_t address, const uint8_t *data,
     memset(&cmd->cmd, 0, sizeof(XSPI_RegularCmdTypeDef));
 
     cmd->cmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
-    cmd->cmd.Instruction = W25Q128_CMD_PAGE_PROGRAM;
+    cmd->cmd.Instruction = W25Q128_CMD_QUAD_INPUT_PAGE_PROGRAM;
     cmd->cmd.InstructionMode = HAL_XSPI_INSTRUCTION_1_LINE;
     cmd->cmd.InstructionWidth = HAL_XSPI_INSTRUCTION_8_BITS;
     cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
@@ -224,7 +180,7 @@ void w25q128_build_page_program(uint32_t address, const uint8_t *data,
     cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
     cmd->cmd.DataLength = num_bytes;
     cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 0;
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_QUAD_INPUT_PAGE_PROGRAM;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -241,7 +197,7 @@ void w25q128_build_sector_erase(uint32_t sector_address, w25q128_xspi_cmd_t *cmd
     memset(&cmd->cmd, 0, sizeof(XSPI_RegularCmdTypeDef));
 
     cmd->cmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
-    cmd->cmd.Instruction = W25Q128_CMD_SECTOR_ERASE;
+    cmd->cmd.Instruction = W25Q128_CMD_SECTOR_ERASE_4K;
     cmd->cmd.InstructionMode = HAL_XSPI_INSTRUCTION_1_LINE;
     cmd->cmd.InstructionWidth = HAL_XSPI_INSTRUCTION_8_BITS;
     cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
@@ -252,8 +208,11 @@ void w25q128_build_sector_erase(uint32_t sector_address, w25q128_xspi_cmd_t *cmd
     cmd->cmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_DISABLE;
 
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+
     cmd->cmd.DataMode = HAL_XSPI_DATA_NONE;
-    cmd->cmd.DummyCycles = 0;
+    cmd->cmd.DataLength = W25Q128_DATA_BYTES_SECTOR_ERASE_4K;
+    cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_SECTOR_ERASE_4K;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -262,7 +221,7 @@ void w25q128_build_sector_erase(uint32_t sector_address, w25q128_xspi_cmd_t *cmd
     cmd->tx_data_size = 0;
 }
 
-void w25q128_build_block_erase(uint32_t block_address, w25q128_xspi_cmd_t *cmd)
+void w25q128_build_block_erase_64k(uint32_t block_address, w25q128_xspi_cmd_t *cmd)
 {
     // Convert block address to byte address
     uint32_t byte_address = block_address * 65536;  // 64KB per block
@@ -282,7 +241,7 @@ void w25q128_build_block_erase(uint32_t block_address, w25q128_xspi_cmd_t *cmd)
 
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
     cmd->cmd.DataMode = HAL_XSPI_DATA_NONE;
-    cmd->cmd.DummyCycles = 0;
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_BLOCK_ERASE_64K;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
@@ -304,7 +263,7 @@ void w25q128_build_chip_erase(w25q128_xspi_cmd_t *cmd)
     cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_NONE;
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
     cmd->cmd.DataMode = HAL_XSPI_DATA_NONE;
-    cmd->cmd.DummyCycles = 0;
+    cmd->cmd.DummyCycles = W25Q128_DUMMY_CYCLES_CHIP_ERASE;
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;

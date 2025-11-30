@@ -19,25 +19,63 @@
 #include <stdbool.h>
 #include "stm32h5xx_hal.h"
 
-#define W25Q128_CMD_WRITE_ENABLE         0x06
-#define W25Q128_CMD_WRITE_DISABLE        0x04
-#define W25Q128_CMD_READ_STATUS_REG1     0x05
-#define W25Q128_CMD_READ_STATUS_REG2     0x35
-#define W25Q128_CMD_READ_STATUS_REG3     0x15
-#define W25Q128_CMD_WRITE_STATUS_REG1    0x01
-#define W25Q128_CMD_WRITE_STATUS_REG2    0x31
-#define W25Q128_CMD_WRITE_STATUS_REG3    0x11
-#define W25Q128_CMD_PAGE_PROGRAM         0x02
-#define W25Q128_CMD_SECTOR_ERASE         0x20
-#define W25Q128_CMD_BLOCK_ERASE_32K      0x52
-#define W25Q128_CMD_BLOCK_ERASE_64K      0xD8
-#define W25Q128_CMD_CHIP_ERASE           0xC7
-#define W25Q128_CMD_READ_DATA            0x03
-#define W25Q128_CMD_FAST_READ            0x0B
-#define W25Q128_CMD_READ_JEDEC_ID        0x9F
-#define W25Q128_CMD_READ_UNIQUE_ID       0x4B
-#define W25Q128_CMD_POWER_DOWN           0xB9
-#define W25Q128_CMD_RELEASE_POWER_DOWN   0xAB
+#define W25Q128_CMD_WRITE_ENABLE                0x06
+#define W25Q128_DUMMY_CYCLES_WRITE_ENABLE       0
+#define W25Q128_DATA_BYTES_WRITE_ENABLE         0
+
+#define W25Q128_CMD_WRITE_DISABLE               0x04
+#define W25Q128_DUMMY_CYCLES_WRITE_DISABLE      0
+#define W25Q128_DATA_BYTES_WRITE_DISABLE        0
+
+#define W25Q128_CMD_READ_STATUS_REG1            0x05
+#define W25Q128_DUMMY_CYCLES_READ_STATUS_REG1   0
+#define W25Q128_DATA_BYTES_READ_STATUS_REG1     1
+
+#define W25Q128_CMD_READ_STATUS_REG2            0x35
+#define W25Q128_DUMMY_CYCLES_READ_STATUS_REG2   0
+#define W25Q128_DATA_BYTES_READ_STATUS_REG2     1
+
+#define W25Q128_CMD_READ_STATUS_REG3            0x15
+#define W25Q128_DUMMY_CYCLES_READ_STATUS_REG3   0
+#define W25Q128_DATA_BYTES_READ_STATUS_REG3     1
+
+#define W25Q128_CMD_WRITE_STATUS_REG1           0x01
+#define W25Q128_DUMMY_CYCLES_WRITE_STATUS_REG1  0
+#define W25Q128_DATA_BYTES_WRITE_STATUS_REG1    1
+
+#define W25Q128_CMD_WRITE_STATUS_REG2           0x31
+#define W25Q128_DUMMY_CYCLES_WRITE_STATUS_REG2  0
+#define W25Q128_DATA_BYTES_WRITE_STATUS_REG2    1
+
+#define W25Q128_CMD_WRITE_STATUS_REG3           0x11
+#define W25Q128_DUMMY_CYCLES_WRITE_STATUS_REG3  0
+#define W25Q128_DATA_BYTES_WRITE_STATUS_REG3    1
+
+#define W25Q128_CMD_QUAD_INPUT_PAGE_PROGRAM          0x32
+#define W25Q128_DUMMY_CYCLES_QUAD_INPUT_PAGE_PROGRAM 0
+
+#define W25Q128_CMD_SECTOR_ERASE_4K             0x20
+#define W25Q128_DUMMY_CYCLES_SECTOR_ERASE_4K    0
+#define W25Q128_DATA_BYTES_SECTOR_ERASE_4K      0
+
+#define W25Q128_CMD_BLOCK_ERASE_32K             0x52
+#define W25Q128_DUMMY_CYCLES_BLOCK_ERASE_32K    0
+#define W25Q128_DATA_BYTES_BLOCK_ERASE_32K      0
+
+#define W25Q128_CMD_BLOCK_ERASE_64K             0xD8
+#define W25Q128_DUMMY_CYCLES_BLOCK_ERASE_64K    0
+#define W25Q128_DATA_BYTES_BLOCK_ERASE_64K      0
+
+#define W25Q128_CMD_CHIP_ERASE                  0xC7
+#define W25Q128_DUMMY_CYCLES_CHIP_ERASE         0
+#define W25Q128_DATA_BYTES_CHIP_ERASE           0
+
+#define W25Q128_CMD_FAST_READ_QUAD_IO           0xEB
+#define W25Q128_DUMMY_CYCLES_FAST_READ_QUAD_IO  6
+
+#define W25Q128_CMD_READ_JEDEC_ID               0x9F
+#define W25Q128_DUMMY_CYCLES_READ_JEDEC_ID      0
+#define W25Q128_DATA_BYTES_READ_JEDEC_ID        3
 
 typedef struct {
     uint8_t manufacturer_id;
@@ -104,12 +142,6 @@ typedef struct {
 void w25q128_build_read_jedec_id(w25q128_xspi_cmd_t *cmd);
 
 /**
- * @brief Build command to read Unique ID (64-bit)
- * @param cmd Pointer to command structure to populate
- */
-void w25q128_build_read_unique_id(w25q128_xspi_cmd_t *cmd);
-
-/**
  * @brief Build Write Enable command
  * @param cmd Pointer to command structure to populate
  */
@@ -129,20 +161,12 @@ void w25q128_build_write_disable(w25q128_xspi_cmd_t *cmd);
 void w25q128_build_read_status_reg(w25q128_status_reg_t reg_num, w25q128_xspi_cmd_t *cmd);
 
 /**
- * @brief Build command to read data (standard read, up to 50 MHz)
- * @param address 24-bit address to read from
- * @param num_bytes Number of bytes to read
- * @param cmd Pointer to command structure to populate
- */
-void w25q128_build_read_data(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd);
-
-/**
  * @brief Build command to read data (fast read, up to 104 MHz, requires 1 dummy byte)
  * @param address 24-bit address to read from
  * @param num_bytes Number of bytes to read
  * @param cmd Pointer to command structure to populate
  */
-void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd);
+void w25q128_build_fast_read_quad_io(uint32_t address, uint32_t num_bytes, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Page Program command (writes up to 256 bytes)
@@ -151,8 +175,8 @@ void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_
  * @param num_bytes Number of bytes to write (max 256)
  * @param cmd Pointer to command structure to populate
  */
-void w25q128_build_page_program(uint32_t address, const uint8_t *data,
-                                uint16_t num_bytes, w25q128_xspi_cmd_t *cmd);
+void w25q128_build_quad_input_page_program(uint32_t address, const uint8_t *data,
+                                           uint16_t num_bytes, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Sector Erase command (erases 4 KB)
@@ -166,7 +190,7 @@ void w25q128_build_sector_erase(uint32_t sector_address, w25q128_xspi_cmd_t *cmd
  * @param block_address Block address (0 to 255)
  * @param cmd Pointer to command structure to populate
  */
-void w25q128_build_block_erase(uint32_t block_address, w25q128_xspi_cmd_t *cmd);
+void w25q128_build_block_erase_64k(uint32_t block_address, w25q128_xspi_cmd_t *cmd);
 
 /**
  * @brief Build Chip Erase command (erases entire chip)
