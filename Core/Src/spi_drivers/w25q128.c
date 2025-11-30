@@ -5,7 +5,7 @@
     @ UBC Rocket
 */
 
-#include "W25Q128.h"
+#include "w25q128.h"
 #include "stm32h5xx_hal_xspi.h"
 #include <stdint.h>
 #include <string.h>
