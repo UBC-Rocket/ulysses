@@ -180,16 +180,16 @@ void w25q128_build_fast_read(uint32_t address, uint32_t num_bytes, w25q128_xspi_
     cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
 
     cmd->cmd.Address = address;
-    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_1_LINE;
+    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_4_LINE;
     cmd->cmd.AddressWidth = HAL_XSPI_ADDRESS_24_BITS;
     cmd->cmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_DISABLE;
 
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
 
-    cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
+    cmd->cmd.DataMode = HAL_XSPI_DATA_4_LINE;
     cmd->cmd.DataLength = num_bytes;
     cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
-    cmd->cmd.DummyCycles = 8;  // 1 dummy byte = 8 dummy cycles
+    cmd->cmd.DummyCycles = 6;  // 1 dummy byte = 8 dummy cycles
 
     cmd->cmd.DQSMode = HAL_XSPI_DQS_DISABLE;
     cmd->cmd.SIOOMode = HAL_XSPI_SIOO_INST_EVERY_CMD;
