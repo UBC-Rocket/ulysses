@@ -215,13 +215,13 @@ void w25q128_build_page_program(uint32_t address, const uint8_t *data,
     cmd->cmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
 
     cmd->cmd.Address = address;
-    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_1_LINE;
+    cmd->cmd.AddressMode = HAL_XSPI_ADDRESS_4_LINES;
     cmd->cmd.AddressWidth = HAL_XSPI_ADDRESS_24_BITS;
     cmd->cmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_DISABLE;
 
     cmd->cmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
 
-    cmd->cmd.DataMode = HAL_XSPI_DATA_1_LINE;
+    cmd->cmd.DataMode = HAL_XSPI_DATA_4_LINES;
     cmd->cmd.DataLength = num_bytes;
     cmd->cmd.DataDTRMode = HAL_XSPI_DATA_DTR_DISABLE;
     cmd->cmd.DummyCycles = 0;
