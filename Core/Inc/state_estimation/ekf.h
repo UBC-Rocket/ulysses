@@ -22,7 +22,8 @@ typedef struct {
 
 typedef struct {
     quaternion_state quaternion;  
-    body_state body;                 
+    body_state body;  
+    float expected_g[3];               
 } EKF;
 
 void get_state(float quat[4], float pos[3], float vel[3]);
@@ -31,7 +32,8 @@ void init_ekf(
     float process_noise_quaternion[4][4],
     float measurement_noise_quaternion[3][3],
     float process_noise_body[6][6],
-    float measurement_noise_body[3][3]
+    float measurement_noise_body[3][3],
+    float expected_g[3]
 );
 
 void tick_ekf(

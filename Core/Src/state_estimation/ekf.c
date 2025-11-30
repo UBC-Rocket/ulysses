@@ -44,7 +44,8 @@ void init_ekf(
     float process_noise_quaternion[4][4],
     float measurement_noise_quaternion[3][3],
     float process_noise_body[6][6],
-    float measurement_noise_body[3][3]
+    float measurement_noise_body[3][3],
+    float expected_g[3]
 )
 {
     // init
@@ -82,6 +83,8 @@ void init_ekf(
 
     for (int i = 0; i < 6; i++) for (int j = 0; j < 6; j++) ekf.body.process[i][j] = process_noise_body[i][j];
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) ekf.body.measurement[i][j] = measurement_noise_body[i][j];
+
+    for (int i = 0; i < 3; i++) ekf.expected_g[i] = expected_g[i];
 }
 
 void tick_ekf(
@@ -98,9 +101,9 @@ void tick_ekf(
     
     state_transition_orientation(&ekf.quaternion, deltaTime, gyro, processing_quaternion);
 
-    float transformed_accel[3];
-    transform_accel_data(accel, ekf.quaternion.vals, transformed_accel);
-    state_transition_body(&ekf.body, deltaTime, transformed_accel, processing_position, processing_velocity);
+    // float transformed_accel[3];
+    // transform_accel_data(accel, ekf.quaternion.vals, transformed_accel);
+    state_transition_body(&ekf.body, deltaTime, accel, processing_position, processing_velocity);
 
     float state_jacobian_quaternion[4][4];
     float state_jacobian_body[6][6];
@@ -120,7 +123,8 @@ void tick_ekf(
     float innovation_body[3][1];
 
     float predicted_accel[3];
-    predict_accel_from_quat(processing_quaternion, predicted_accel);
+    predict_accel_from_quat(processing_quaternion, predicted_accel, ekf.expected_g);
+    //DLOG_PRINT("%f %f %f\n", predicted_accel[0], predicted_accel[1], predicted_accel[2]);
 
     for (int i = 0; i < 3; i++) innovation_quaternion[i][0] = accel[i] - predicted_accel[i]; // minus predicted gravity 
 
@@ -130,7 +134,7 @@ void tick_ekf(
     // half of the ram of ulysses will be dedicated to 4x4 matrices :thumbsup:
     float h_jacobian_quaternion[3][4];
     float h_jacobian_body[3][6];
-    get_h_jacobian_quaternion(processing_quaternion, h_jacobian_quaternion);
+    get_h_jacobian_quaternion(processing_quaternion, ekf.expected_g, h_jacobian_quaternion);
     get_h_jacobian_body(h_jacobian_body);
 
     float h_jacobian_quaternion_t[4][3];

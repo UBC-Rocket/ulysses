@@ -58,7 +58,7 @@ uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
     delay_us(80000); // PLL lock time ≥80 ms
 
     /* --- 4. Configure range ±500 dps --- */
-    n = bmi088_gyro_build_range(BMI088_GYRO_RANGE_500DPS, tx, dev);
+    n = bmi088_gyro_build_range(BMI088_GYRO_RANGE_125DPS, tx, dev);
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(5000);
 

@@ -16,10 +16,11 @@ void get_state_jacobian_orientation(
     float j[4][4]
 );
 
-void predict_accel_from_quat(const float q[4], float accel_pred[3]);
+void predict_accel_from_quat(const float q[4], float accel_pred[3], float predicted_g[3]);
 
 void get_h_jacobian_quaternion(
     float q[4],
+    float expected_g[3],
     float h_jacobian[3][4]
 );
 

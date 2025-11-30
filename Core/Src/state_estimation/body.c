@@ -9,11 +9,11 @@ void transform_accel_data(
     float new_a[3]
 )
 {
-    predict_accel_from_quat(q, new_a);
+    // predict_accel_from_quat(q, new_a);
 
-    for (int i = 0; i < 3; i++) {
-        new_a[i] = a[i] - new_a[i];
-    }
+    // for (int i = 0; i < 3; i++) {
+    //     new_a[i] = a[i] - new_a[i];
+    // }
 
 }
 

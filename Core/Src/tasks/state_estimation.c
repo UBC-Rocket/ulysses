@@ -20,6 +20,8 @@
 #define GRAV 9.807
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
+float EXPECTED_GRAVITY[3] = {0, 0, 1};
+
 // External variable declarations
 extern SPI_HandleTypeDef hspi2;
 extern spi_job_queue_t jobq_spi_2;
@@ -29,7 +31,7 @@ extern bmi088_gyro_t gyro;
 
 static ms5611_poller_t baro_poll;
 
-void quat_to_euler(float q[4], float e[2]) {
+void quat_to_euler(float q[4], float e[3]) {
     float w = q[0];
     float x = q[1];
     float y = q[2];
@@ -46,31 +48,30 @@ void quat_to_euler(float q[4], float e[2]) {
         e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / M_PI; // clamp at ±90°
     else
         e[1] = asinf(sinp) * 180 / M_PI;
+
+    float siny = 2.0f * (w*z + x*y);
+    float cosy = 1.0f - 2.0f * (y*y + z*z);
+    e[2] = atan2f(siny, cosy) * 180.0f / (float)M_PI;
 }
 
-void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_data_raw[3], int64_t ticks)
+void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_data_raw[3], float expected_g[3], int64_t ticks)
 {
     if (ticks == 0) {
         for (int i = 0; i < 3; i++) g_bias[i] = g_data_raw[i];
-        for (int i = 0; i < 2; i++) a_bias[i] = a_data_raw[i];
-
-        a_bias[2] = a_data_raw[2] - 1;
+        for (int i = 0; i < 3; i++) a_bias[i] = a_data_raw[i] - expected_g[i];
     }
 
     for (int i = 0; i < 3; i++) {
         g_bias[i] = (g_bias[i]) * (((float)ticks - 1) / (float)ticks) + (g_data_raw[i]) * (1 / (float)ticks);
     }
 
-    for (int i = 0; i < 2; i++) {
-        a_bias[i] = (a_bias[i]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[i]) * (1 / (float)ticks);
+    for (int i = 0; i < 3; i++) {
+        a_bias[i] = (a_bias[i]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[i] - expected_g[i]) * (1 / (float)ticks);
     }
-
-    a_bias[2] = (a_bias[2]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[2] - 1) * (1 / (float)ticks);
 }
 
 void state_estimation_task_start(void *argument)
 {
-    DLOG_PRINT("init");
     jobq_spi_2.spi_bus = &hspi2;
     jobq_spi_2.spi_busy = false;
     jobq_spi_2.head = 0;
@@ -141,7 +142,8 @@ void state_estimation_task_start(void *argument)
     init_ekf(process_noise_quaternion, 
             measurement_noise_quaternion,
             process_noise_body,
-            measurement_noise_body);
+            measurement_noise_body,
+            EXPECTED_GRAVITY);
 
     float delta_time = 0;
     float last_tick = 0;
@@ -226,7 +228,7 @@ void state_estimation_task_start(void *argument)
             // Calibration
             if (ticks < CALIBRATION) {
                 ticks += 1;
-                update_bias(g_bias, g_data_raw, a_bias, a_data_raw, ticks);
+                update_bias(g_bias, g_data_raw, a_bias, a_data_raw, EXPECTED_GRAVITY, ticks);
 
                 continue;
             }
@@ -247,7 +249,7 @@ void state_estimation_task_start(void *argument)
             float vel[3];
             get_state(q, pos, vel);
 
-            float e[2];
+            float e[3];
             quat_to_euler(q, e);
             quaternion_t new_quaternion = {
                 .w = q[0],
@@ -270,7 +272,7 @@ void state_estimation_task_start(void *argument)
 
             // logging (optional)
             if (ticks % 100 == 0) {
-                DLOG_PRINT("[%f, %f]deg, [%f, %f, %f]m\n", e[0], e[1], pos[0], pos[1], pos[2]);
+                DLOG_PRINT("[%f, %f, %f]deg\n", e[0], e[1], e[2]);
             }
 
             

@@ -1,3 +1,4 @@
+#include "state.h"
 #include <ekf.h>
 #include <math.h>
 #include <string.h>
@@ -70,34 +71,39 @@ void get_state_jacobian_orientation(
 
 }
 
-void predict_accel_from_quat(const float q[4], float accel_pred[3])
+void predict_accel_from_quat(const float q[4], float accel_pred[3], float expected_g[3])
 {
-    float q0 = q[0];
-    float q1 = q[1];
-    float q2 = q[2];
-    float q3 = q[3];
+    rotation_matrix_t r;
+    quaternion_t quat;
+    quat.w = q[0]; quat.x = q[1]; quat.y = q[2]; quat.z = q[3];
 
-    // v_body = q * v_world * q_conjugate
-    accel_pred[0] = 2.0f * (q1*q3 - q0*q2); // ax
-    accel_pred[1] = 2.0f * (q2*q3 + q0*q1); // ay
-    accel_pred[2] = q0*q0 - q1*q1 - q2*q2 + q3*q3; // az
+    quaternion_to_rotation_matrix(&quat, &r);
+
+    for (int i = 0; i < 3; i++) accel_pred[i] = 0;
+
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) accel_pred[i] += r.R[j][i] * expected_g[j];
 }
 
-void get_h_jacobian_quaternion(
-    float q[4],
-    float h_jacobian[3][4]
-)
-{
-    float q0 = 2 * q[0];
-    float q1 = 2 * q[1];
-    float q2 = 2 * q[2];
-    float q3 = 2 * q[3];
+void get_h_jacobian_quaternion(float q[4], float eg[3], float H[3][4]) {
+    float w=q[0], x=q[1], y=q[2], z=q[3];
+    
+    // vx = (1-2y2-2z2)gx + 2(xy+wz)gy + 2(xz-wy)gz
+    // vy = 2(xy-wz)gx + (1-2x2-2z2)gy + 2(yz+wx)gz
+    // vz = 2(xz+wy)gx + 2(yz-wx)gy + (1-2x2-2y2)gz
+    
+    // derivs
+    H[0][0] = 2 * (z*eg[1] - y*eg[2]);             // w
+    H[0][1] = 2 * (y*eg[1] + z*eg[2]);             // x
+    H[0][2] = 2 * (-2*y*eg[0] + x*eg[1] - w*eg[2]);// y
+    H[0][3] = 2 * (-2*z*eg[0] + w*eg[1] + x*eg[2]);// z
+    
+    H[1][0] = 2 * (-z*eg[0] + x*eg[2]);            // w
+    H[1][1] = 2 * (y*eg[0] - 2*x*eg[1] + w*eg[2]); // x
+    H[1][2] = 2 * (x*eg[0] + z*eg[2]);             // y
+    H[1][3] = 2 * (-w*eg[0] - 2*z*eg[1] + y*eg[2]);// z
 
-    memcpy(h_jacobian, 
-        (float[3][4]) {
-            {-q2, q3, -q0, q1},
-            {q1, q0, q3, q2},
-            {q0, -q1, -q2, q3}
-        }, 
-        sizeof(float[3][4]));
+    H[2][0] = 2 * (y*eg[0] - x*eg[1]);             // w
+    H[2][1] = 2 * (z*eg[0] - w*eg[1] - 2*x*eg[2]); // x
+    H[2][2] = 2 * (w*eg[0] + z*eg[1] - 2*y*eg[2]); // y
+    H[2][3] = 2 * (x*eg[0] + y*eg[1]);             // z
 }
