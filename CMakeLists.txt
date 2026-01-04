@@ -7,6 +7,9 @@ cmake_minimum_required(VERSION 3.22)
 # User is free to modify the file as much as necessary
 #
 
+# Add our own CMake module directory to the search path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -48,16 +51,7 @@ add_executable(${CMAKE_PROJECT_NAME})
 add_subdirectory(cmake/stm32cubemx)
 
 # Add dependencies
-include(cmake/printf-library.cmake)
-
-FetchContent_MakeAvailable(printf)
-
-# Library requires a native 64-bit integer type, so must be be compiled
-# with at least C99 standard
-set_target_properties(printf PROPERTIES
-    C_STANDARD 11
-    C_STANDARD_REQUIRED ON
-)
+include(dependencies)
 
 set(DEBUG_MODULE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug/log.c
@@ -80,7 +74,6 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
 )
-
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
