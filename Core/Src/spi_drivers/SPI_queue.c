@@ -171,6 +171,8 @@ static void spi_dma_complete_common(SPI_HandleTypeDef *hspi) {
         jobq = &jobq_spi_1;
     } else if (hspi == jobq_spi_2.spi_bus) {
         jobq = &jobq_spi_2;
+    } else if (hspi == jobq_spi_4.spi_bus) {
+        jobq = &jobq_spi_4;
     } else {
         return;
     }

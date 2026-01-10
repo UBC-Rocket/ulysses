@@ -22,6 +22,7 @@
 
 #include "stm32h5xx_hal.h"
 #include "spi_drivers/ms5611_poller.h"
+#include "spi_drivers/ms5607_poller.h"
 #include "sensor_config.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -44,9 +45,11 @@ typedef struct {
     bool accel_ok;      /**< BMI088 accelerometer initialized successfully */
     bool gyro_ok;       /**< BMI088 gyroscope initialized successfully */
     bool baro_ok;       /**< MS5611 barometer initialized successfully */
+    bool baro2_ok;      /**< MS5607 barometer 2 initialized successfully */
     uint8_t accel_err;  /**< Accelerometer error code (0 = success) */
     uint8_t gyro_err;   /**< Gyroscope error code (0 = success) */
     uint8_t baro_err;   /**< Barometer error code (0 = success) */
+    uint8_t baro2_err;  /**< Barometer 2 error code (0 = success) */
 } sensors_init_status_t;
 
 /* -------------------------------------------------------------------------- */
@@ -114,7 +117,7 @@ static inline bool sensors_init_critical_ok(const sensors_init_status_t *status)
  */
 static inline bool sensors_init_all_ok(const sensors_init_status_t *status)
 {
-    return status->accel_ok && status->gyro_ok && status->baro_ok;
+    return status->accel_ok && status->gyro_ok && status->baro_ok && status->baro2_ok;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -129,6 +132,15 @@ static inline bool sensors_init_all_ok(const sensors_init_status_t *status)
  * @return Pointer to the global barometer poller.
  */
 ms5611_poller_t *sensors_get_baro_poller(void);
+
+/**
+ * @brief Get pointer to the second barometer (MS5607) poller instance.
+ *
+ * The state estimation task needs this to call ms5607_poller_tick().
+ *
+ * @return Pointer to the global barometer 2 poller.
+ */
+ms5607_poller_t *sensors_get_baro2_poller(void);
 
 #ifdef __cplusplus
 }

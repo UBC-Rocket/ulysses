@@ -19,6 +19,7 @@
 #include "spi_drivers/BMI088_accel.h"
 #include "spi_drivers/BMI088_gyro.h"
 #include "spi_drivers/MS5611_baro.h"
+#include "spi_drivers/MS5607_baro.h"
 
 /* -------------------------------------------------------------------------- */
 /* BMI088 Accelerometer Configuration                                         */
@@ -160,6 +161,40 @@ typedef struct {
 }
 
 /* -------------------------------------------------------------------------- */
+/* MS5607 Barometer 2 Configuration                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Configuration for MS5607 barometer (second barometer).
+ */
+typedef struct {
+    ms5607_osr_t osr;       /**< Oversampling ratio (256 to 4096) */
+    uint32_t     odr_hz;    /**< Target output data rate in Hz */
+} ms5607_config_t;
+
+/**
+ * @brief Default barometer 2 configuration.
+ *
+ * OSR: 4096 (highest resolution, ~8.2ms conversion)
+ * ODR: 50 Hz (suitable for altitude estimation)
+ */
+#define MS5607_CONFIG_DEFAULT {     \
+    .osr    = MS5607_OSR_4096,      \
+    .odr_hz = 50                    \
+}
+
+/**
+ * @brief Fast barometer 2 configuration for rapid descent.
+ *
+ * OSR: 1024 (faster conversion, ~2.3ms)
+ * ODR: 100 Hz
+ */
+#define MS5607_CONFIG_FAST {        \
+    .osr    = MS5607_OSR_1024,      \
+    .odr_hz = 100                   \
+}
+
+/* -------------------------------------------------------------------------- */
 /* Complete System Configuration                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -170,6 +205,7 @@ typedef struct {
     bmi088_accel_config_t accel;
     bmi088_gyro_config_t  gyro;
     ms5611_config_t       baro;
+    ms5607_config_t       baro2;
 } sensor_system_config_t;
 
 /**
@@ -178,7 +214,8 @@ typedef struct {
 #define SENSOR_SYSTEM_CONFIG_DEFAULT {          \
     .accel = BMI088_ACCEL_CONFIG_DEFAULT,       \
     .gyro  = BMI088_GYRO_CONFIG_DEFAULT,        \
-    .baro  = MS5611_CONFIG_DEFAULT              \
+    .baro  = MS5611_CONFIG_DEFAULT,             \
+    .baro2 = MS5607_CONFIG_DEFAULT              \
 }
 
 #endif /* SENSOR_CONFIG_H */

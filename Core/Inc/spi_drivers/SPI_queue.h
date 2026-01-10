@@ -72,6 +72,7 @@ typedef enum {
     SENSOR_ID_ACCEL,
     SENSOR_ID_GYRO,
     SENSOR_ID_BARO,
+    SENSOR_ID_BARO2,
     SENSOR_ID_OTHER
 } sensor_id_t;
 

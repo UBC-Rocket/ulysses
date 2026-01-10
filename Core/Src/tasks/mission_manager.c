@@ -7,7 +7,6 @@
 #include "main.h"
 
 
-static bool estop_event_logged = false;
 static flight_state_t last_logged_flight_state = IDLE;
 static bool flight_header_logged = false;
 static uint32_t flight_magic = 0U;

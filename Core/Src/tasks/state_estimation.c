@@ -25,6 +25,7 @@
 #include "spi_drivers/SPI_queue.h"
 #include "spi_drivers/SPI_device_interactions.h"
 #include "spi_drivers/ms5611_poller.h"
+#include "spi_drivers/ms5607_poller.h"
 #include "sensors_init.h"
 #include "stm32h5xx_hal.h"
 #include "main.h"
@@ -40,11 +41,12 @@ void state_estimation_task_start(void *argument)
     (void)argument;
 
     /*
-     * Get pointer to barometer poller - initialized in sensors_init().
+     * Get pointers to barometer pollers - initialized in sensors_init().
      * All other sensor state (sample ring buffers, device configs) is
      * accessed via the globals declared in SPI_device_interactions.h.
      */
     ms5611_poller_t *baro_poller = sensors_get_baro_poller();
+    ms5607_poller_t *baro2_poller = sensors_get_baro2_poller();
 
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
     uint32_t ISR_flags = 0;
@@ -54,15 +56,43 @@ void state_estimation_task_start(void *argument)
         if(ISR_flags != 0){
 
             if(ISR_flags & MS5611_BARO_SAMPLE_FLAG){
+                ms5611_sample_t baro_sample;
+                while (ms5611_sample_dequeue(&ms5611_sample_ring, &baro_sample)) {
+                    log_service_log_baro_sample(baro_sample.t_us,
+                                                baro_sample.temp_centi,
+                                                baro_sample.pressure_centi,
+                                                baro_sample.seq);
+                }
+            }
 
+            if(ISR_flags & MS5607_BARO2_SAMPLE_FLAG){
+                ms5607_sample_t baro2_sample;
+                while (ms5607_sample_dequeue(&ms5607_sample_ring, &baro2_sample)) {
+                    log_service_log_baro2_sample(baro2_sample.t_us,
+                                                 baro2_sample.temp_centi,
+                                                 baro2_sample.pressure_centi,
+                                                 baro2_sample.seq);
+                }
             }
 
             if(ISR_flags & BMI088_ACCEL_SAMPLE_FLAG){
-
+                bmi088_accel_sample_t accel_sample;
+                while (bmi088_acc_sample_dequeue(&bmi088_acc_sample_ring, &accel_sample)) {
+                    log_service_log_accel_sample((uint32_t)accel_sample.t_us,
+                                                 accel_sample.ax,
+                                                 accel_sample.ay,
+                                                 accel_sample.az);
+                }
             }
 
             if(ISR_flags & BMI088_GYRO_SAMPLE_FLAG){
-
+                bmi088_gyro_sample_t gyro_sample;
+                while (bmi088_gyro_sample_dequeue(&bmi088_gyro_sample_ring, &gyro_sample)) {
+                    log_service_log_gyro_sample(gyro_sample.t_us,
+                                                gyro_sample.gx,
+                                                gyro_sample.gy,
+                                                gyro_sample.gz);
+                }
             }
 
             // TODO: other sensor intakes
@@ -76,7 +106,8 @@ void state_estimation_task_start(void *argument)
 
         }
 
-        /* Drive the barometer polling state machine */
+        /* Drive the barometer polling state machines */
         ms5611_poller_tick(baro_poller);
+        ms5607_poller_tick(baro2_poller);
     }
 }

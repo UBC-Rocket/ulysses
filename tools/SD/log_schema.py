@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import struct
 
-LOG_SCHEMA_VERSION = 1
+LOG_SCHEMA_VERSION = 2
 
 TYPE_FORMATS = {'uint8_t': 'B', 'int8_t': 'b', 'uint16_t': 'H', 'int16_t': 'h', 'uint32_t': 'I', 'int32_t': 'i', 'uint64_t': 'Q', 'int64_t': 'q', 'float': 'f'}
 
@@ -28,24 +28,24 @@ RECORDS = {
         "enum": "LOG_RECORD_TYPE_accel_sample",
         "fields": [
             ("uint32_t", "timestamp_us"),
-            ("int16_t", "ax_mm_s2"),
-            ("int16_t", "ay_mm_s2"),
-            ("int16_t", "az_mm_s2"),
+            ("float", "ax_mps2"),
+            ("float", "ay_mps2"),
+            ("float", "az_mps2"),
         ],
-        "format": "<Ihhh",
-        "struct": struct.Struct("<Ihhh"),
+        "format": "<Ifff",
+        "struct": struct.Struct("<Ifff"),
     },
     "gyro_sample": {
         "id": 2,
         "enum": "LOG_RECORD_TYPE_gyro_sample",
         "fields": [
             ("uint32_t", "timestamp_us"),
-            ("int16_t", "gx_mrad_s"),
-            ("int16_t", "gy_mrad_s"),
-            ("int16_t", "gz_mrad_s"),
+            ("float", "gx_rad_s"),
+            ("float", "gy_rad_s"),
+            ("float", "gz_rad_s"),
         ],
-        "format": "<Ihhh",
-        "struct": struct.Struct("<Ihhh"),
+        "format": "<Ifff",
+        "struct": struct.Struct("<Ifff"),
     },
     "baro_sample": {
         "id": 3,
@@ -89,6 +89,18 @@ RECORDS = {
         ],
         "format": "<IHH",
         "struct": struct.Struct("<IHH"),
+    },
+    "baro2_sample": {
+        "id": 6,
+        "enum": "LOG_RECORD_TYPE_baro2_sample",
+        "fields": [
+            ("uint32_t", "timestamp_us"),
+            ("int32_t", "temp_centi"),
+            ("int32_t", "pressure_centi"),
+            ("uint32_t", "seq"),
+        ],
+        "format": "<IiiI",
+        "struct": struct.Struct("<IiiI"),
     },
 }
 

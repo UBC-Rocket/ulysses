@@ -8,14 +8,18 @@
 #include "sensors_init.h"
 #include "spi_drivers/SPI_device_interactions.h"
 #include "spi_drivers/ms5611_poller.h"
+#include "spi_drivers/ms5607_poller.h"
 #include "main.h"
 
 /* External SPI handles from main.c */
-extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi4;
 
 /* MS5611 poller instance - owned by this module, used by state estimation task */
 static ms5611_poller_t g_baro_poller;
+
+/* MS5607 poller instance - owned by this module, used by state estimation task */
+static ms5607_poller_t g_baro2_poller;
 
 /* Active configuration - stored after initialization */
 static sensor_system_config_t g_active_config;
@@ -30,9 +34,11 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
         .accel_ok = false,
         .gyro_ok = false,
         .baro_ok = false,
+        .baro2_ok = false,
         .accel_err = 0xFF,
         .gyro_err = 0xFF,
-        .baro_err = 0xFF
+        .baro_err = 0xFF,
+        .baro2_err = 0xFF
     };
 
     /* Use default config if none provided */
@@ -47,20 +53,21 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
      * Step 1: Initialize SPI job queues
      *
      * The job queues must be initialized before any sensor operations.
-     * jobq_spi_1: Reserved for future external sensors
-     * jobq_spi_2: IMU (BMI088) and barometer (MS5611)
+     * jobq_spi_2: IMU (BMI088) and barometer 1 (MS5611)
+     * jobq_spi_4: Barometer 2 (MS5607)
      */
-    jobq_spi_1.spi_bus = &hspi1;
-    jobq_spi_1.spi_busy = false;
-    jobq_spi_1.head = 0;
-    jobq_spi_1.tail = 0;
-    jobq_spi_1.last_submit_status = HAL_OK;
 
     jobq_spi_2.spi_bus = &hspi2;
     jobq_spi_2.spi_busy = false;
     jobq_spi_2.head = 0;
     jobq_spi_2.tail = 0;
     jobq_spi_2.last_submit_status = HAL_OK;
+
+    jobq_spi_4.spi_bus = &hspi4;
+    jobq_spi_4.spi_busy = false;
+    jobq_spi_4.head = 0;
+    jobq_spi_4.tail = 0;
+    jobq_spi_4.last_submit_status = HAL_OK;
 
     /*
      * Step 2: Initialize sample ring buffers
@@ -76,6 +83,9 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
 
     ms5611_sample_ring.head = 0;
     ms5611_sample_ring.tail = 0;
+
+    ms5607_sample_ring.head = 0;
+    ms5607_sample_ring.tail = 0;
 
     /*
      * Step 3: Initialize BMI088 Accelerometer with configuration
@@ -136,6 +146,29 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
         status.baro_err = 1;  /* PROM read failed */
     }
 
+    /*
+     * Step 6: Initialize MS5607 Barometer 2 Poller with configuration
+     *
+     * This is a blocking operation that:
+     *   - Resets the device
+     *   - Reads and validates PROM calibration data
+     *   - Configures the poller state machine
+     */
+    ms5607_poller_init(&g_baro2_poller,
+                       &hspi4,
+                       BARO2_CS_GPIO_Port,
+                       BARO2_CS_Pin,
+                       g_active_config.baro2.osr,
+                       g_active_config.baro2.odr_hz);
+
+    /* Check if PROM was read successfully by verifying calibration data */
+    if (g_baro2_poller.dev.C[1] != 0 || g_baro2_poller.dev.C[2] != 0) {
+        status.baro2_ok = true;
+        status.baro2_err = 0;
+    } else {
+        status.baro2_err = 1;  /* PROM read failed */
+    }
+
     return status;
 }
 
@@ -165,3 +198,14 @@ ms5611_poller_t *sensors_get_baro_poller(void)
     return &g_baro_poller;
 }
 
+/**
+ * @brief Get pointer to the second barometer (MS5607) poller instance.
+ *
+ * The state estimation task needs this to call ms5607_poller_tick().
+ *
+ * @return Pointer to the global barometer 2 poller.
+ */
+ms5607_poller_t *sensors_get_baro2_poller(void)
+{
+    return &g_baro2_poller;
+}

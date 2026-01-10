@@ -18,7 +18,9 @@
 #include "BMI088_accel.h"
 #include "BMI088_gyro.h"
 #include "MS5611_baro.h"
+#include "MS5607_baro.h"
 #include "ms5611_poller.h"
+#include "ms5607_poller.h"
 #include "sensor_config.h"
 #include <stdbool.h>
 
@@ -38,6 +40,7 @@ extern "C" {
 #define BMI088_ACCEL_SAMPLE_FLAG  (1U << 0)
 #define BMI088_GYRO_SAMPLE_FLAG   (1U << 1)
 #define MS5611_BARO_SAMPLE_FLAG   (1U << 2)
+#define MS5607_BARO2_SAMPLE_FLAG  (1U << 3)
 
 /* -------------------------------------------------------------------------- */
 /* Global Instances                                                           */
@@ -51,10 +54,12 @@ extern "C" {
 extern bmi088_accel_sample_queue_t bmi088_acc_sample_ring;
 extern bmi088_gyro_sample_queue_t bmi088_gyro_sample_ring;
 extern ms5611_sample_queue_t ms5611_sample_ring;
+extern ms5607_sample_queue_t ms5607_sample_ring;
 
 /** SPI job queues for each bus */
 extern spi_job_queue_t jobq_spi_1;
 extern spi_job_queue_t jobq_spi_2;
+extern spi_job_queue_t jobq_spi_4;
 
 /** Device configuration structs */
 extern bmi088_accel_t accel;
