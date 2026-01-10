@@ -7,6 +7,15 @@
  * timestamp, transfer type, and completion callback). The queue ensures safe,
  * serialized DMA usage. Device-specific handling is done in job callbacks.
  *
+ * Thread Safety:
+ * - spi_submit_job() is safe to call from both ISR and task contexts.
+ * - The queue uses critical sections to protect concurrent access.
+ * - Memory barriers ensure proper ordering for ring buffers.
+ *
+ * Cache Coherency:
+ * - DMA buffers are cache-line aligned for proper cache maintenance.
+ * - Call sync_dcache_invalidate() before reading DMA RX data if D-cache enabled.
+ *
  *  UBC Rocket, Benedikt Howard, Sept 29th, 2025
  */
 
@@ -14,9 +23,11 @@
 #define SPI_QUEUE
 
 #include "stm32h5xx_hal.h"
+#include "sync.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "timestamp.h"
 
 /* -------------------------------------------------------------------------- */
 /* Configuration                                                              */
@@ -75,11 +86,12 @@ struct spi_job_t {
     uint16_t cs_pin;        ///< Chip-select pin
     uint8_t tx[16];            ///< Tx buffer pointer
     uint16_t len;           ///< Transfer length in bytes
-    uint32_t t_sample;      ///< Sample timestamp in µs
+    uint64_t t_sample;      ///< Sample timestamp in µs
     spi_xfer_type_t type;   ///< Transfer type
     spi_done_cb_t done;     ///< Completion callback (optional)
     void *done_arg;         ///< User argument for callback
     sensor_id_t sensor;
+    uint32_t task_notification_flag;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -88,6 +100,10 @@ struct spi_job_t {
 
 /**
  * @brief Circular buffer of SPI jobs.
+ *
+ * @note spi_rx_staging is cache-line aligned for DMA coherency. If D-cache is
+ *       enabled, call sync_dcache_invalidate() on spi_rx_staging before reading
+ *       DMA results.
  */
 typedef struct {
     SPI_HandleTypeDef *spi_bus;
@@ -99,7 +115,8 @@ typedef struct {
     spi_job_t current_job;
     volatile bool spi_busy;
 
-    volatile uint8_t spi_rx_staging[SPI_RX_STAGING_SIZE];
+    /** @brief DMA RX staging buffer - cache-line aligned for coherency. */
+    SYNC_CACHE_ALIGNED volatile uint8_t spi_rx_staging[SPI_RX_STAGING_SIZE];
     volatile HAL_StatusTypeDef last_submit_status;
 } spi_job_queue_t;
 
@@ -124,10 +141,12 @@ static inline bool queue_full(spi_job_queue_t *q) {
 /**
  * @brief Enqueue a new SPI job.
  * @return True if successful, false if queue full.
+ * @note Uses memory barrier to ensure job data is visible before head update.
  */
 static inline bool enqueue_job(spi_job_queue_t *q, const spi_job_t *job) {
     if (queue_full(q)) return false;
     q->jobs[q->head] = *job;
+    SYNC_DMB();  /* Ensure job data written before head update is visible */
     q->head = (q->head + 1) % SPI_JOB_QUEUE_SIZE;
     return true;
 }
@@ -135,35 +154,21 @@ static inline bool enqueue_job(spi_job_queue_t *q, const spi_job_t *job) {
 /**
  * @brief Dequeue the next SPI job.
  * @return True if successful, false if queue empty.
+ * @note Uses memory barriers to ensure proper ordering with producer.
  */
 static inline bool dequeue_job(spi_job_queue_t *q, spi_job_t *job) {
     if (queue_empty(q)) return false;
+    SYNC_DMB();  /* Ensure we see job data written before head was updated */
     *job = q->jobs[q->tail];
+    SYNC_DMB();  /* Ensure job read completes before tail update */
     q->tail = (q->tail + 1) % SPI_JOB_QUEUE_SIZE;
     return true;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Timing helper                                                              */
-/* -------------------------------------------------------------------------- */
-
-/**
- * @brief Get current timestamp in microseconds from DWT->CYCCNT.
- * @note Requires enabling the DWT counter at init.
- */
-static inline uint32_t timestamp_us(void) {
-    return (uint32_t)(DWT->CYCCNT / (SystemCoreClock / 1000000UL));
-}
 
 /* -------------------------------------------------------------------------- */
 /* Core job runner                                                            */
 /* -------------------------------------------------------------------------- */
-
-/**
- * @brief Start a new SPI job immediately.
- * @note Assumes bus is idle. DMA completion will chain the next job.
- */
-static void start_job(spi_job_t *job, spi_job_queue_t *q);
 
 /**
  * @brief Submit an SPI job to the shared bus queue.
@@ -174,14 +179,5 @@ static void start_job(spi_job_t *job, spi_job_queue_t *q);
  *         false if it was queued (will run later)
  */
 bool spi_submit_job(spi_job_t job, spi_job_queue_t *q);
-
-/* -------------------------------------------------------------------------- */
-/* DMA completion callbacks                                                   */
-/* -------------------------------------------------------------------------- */
-
-/**
- * @brief Common handler called at end of DMA transfer.
- */
-static void spi_dma_complete_common(SPI_HandleTypeDef *hspi);
 
 #endif /* SPI_QUEUE */

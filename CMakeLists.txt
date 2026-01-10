@@ -85,6 +85,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/sensors_init.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timestamp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c

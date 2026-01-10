@@ -1,6 +1,10 @@
 #include "SPI_device_interactions.h"
 #include "main.h"
 
+/* -------------------------------------------------------------------------- */
+/* SPI Helpers                                                                */
+/* -------------------------------------------------------------------------- */
+
 static void write_frame(SPI_HandleTypeDef *hspi,
                         GPIO_TypeDef *cs_port,
                         uint16_t cs_pin,
@@ -27,10 +31,15 @@ static void write_sequence_split(SPI_HandleTypeDef *hspi,
     }
 }
 
-uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
-                         GPIO_TypeDef *cs_port,
-                         uint16_t cs_pin,
-                         bmi088_gyro_t *dev)
+/* -------------------------------------------------------------------------- */
+/* Gyroscope Initialization                                                   */
+/* -------------------------------------------------------------------------- */
+
+uint8_t bmi088_gyro_init_with_config(SPI_HandleTypeDef *hspi,
+                                     GPIO_TypeDef *cs_port,
+                                     uint16_t cs_pin,
+                                     bmi088_gyro_t *dev,
+                                     const bmi088_gyro_config_t *config)
 {
     uint8_t tx[16], rx[16];
     size_t n;
@@ -57,28 +66,26 @@ uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(80000); // PLL lock time ≥80 ms
 
-    /* --- 4. Configure range ±500 dps --- */
-    n = bmi088_gyro_build_range(BMI088_GYRO_RANGE_500DPS, tx, dev);
+    /* --- 4. Configure range from config --- */
+    n = bmi088_gyro_build_range(config->range, tx, dev);
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(5000);
 
-    /* --- 5. Configure ODR 400 Hz / BW 116 Hz --- */
-    n = bmi088_gyro_build_odr(BMI088_GYRO_ODR_400_HZ_BW_116, tx, dev);
+    /* --- 5. Configure ODR from config --- */
+    n = bmi088_gyro_build_odr(config->odr, tx, dev);
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(5000);
 
-    /* --- 6. Configure INT3 electrical behavior (push-pull, active high) --- */
-    n = bmi088_gyro_build_int_pin_conf(BMI088_GYRO_INT3,
-                                       BMI088_GYRO_INT_PUSH_PULL,
-                                       BMI088_GYRO_INT_ACTIVE_HIGH,
+    /* --- 6. Configure interrupt pin from config --- */
+    n = bmi088_gyro_build_int_pin_conf(config->int_pin,
+                                       config->int_drive,
+                                       config->int_polarity,
                                        tx);
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(5000);
 
-    /* --- 7. Map data-ready event to INT3 --- */
-    n = bmi088_gyro_build_int_event_map(BMI088_GYRO_INT3,
-                                        BMI088_GYRO_INT_EVENT_DATA_READY,
-                                        tx);
+    /* --- 7. Map interrupt events from config --- */
+    n = bmi088_gyro_build_int_event_map(config->int_pin, config->int_events, tx);
     write_sequence_split(hspi, cs_port, cs_pin, tx, n);
 
     /* --- 8. Verify first reading --- */
@@ -94,6 +101,15 @@ uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
         return 2;
 
     return 0;
+}
+
+uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
+                         GPIO_TypeDef *cs_port,
+                         uint16_t cs_pin,
+                         bmi088_gyro_t *dev)
+{
+    bmi088_gyro_config_t default_config = BMI088_GYRO_CONFIG_DEFAULT;
+    return bmi088_gyro_init_with_config(hspi, cs_port, cs_pin, dev, &default_config);
 }
 
 static void bmi088_gyro_done(spi_job_t *job,
@@ -125,6 +141,7 @@ void bmi088_gyro_interrupt(void)
     job.done     = bmi088_gyro_done;
     job.done_arg = NULL;
     job.sensor   = SENSOR_ID_GYRO;
+    job.task_notification_flag = BMI088_GYRO_SAMPLE_FLAG;
 
     spi_submit_job(job, &jobq_spi_2);
 }

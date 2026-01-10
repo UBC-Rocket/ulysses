@@ -23,6 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "debug/log.h"
+#include "sensors_init.h"
+#include "timestamp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -126,9 +128,8 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;  // enable DWT/ITM block
-  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;             // enable the cycle counter
-  DWT->CYCCNT = 0;                                 // reset counter
+  /* Initialize high-resolution timestamp (enables DWT cycle counter) */
+  timestamp_init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -154,6 +155,23 @@ int main(void)
     if (sd_enable_internal_dma(&hsd1) != HAL_OK) {
       Error_Handler();
     }
+  }
+
+  /*
+   * Initialize all SPI sensors before starting the scheduler.
+   * This avoids long blocking operations inside tasks with interrupts disabled.
+   * The sensor init takes ~700ms due to device reset delays.
+   */
+  sensors_init_status_t sensor_status = sensors_init();
+
+  /* Optional: Check sensor status and handle failures */
+  if (!sensors_init_critical_ok(&sensor_status)) {
+    /* IMU initialization failed - system may not be flight-ready */
+#ifdef ULYSSES_ENABLE_DEBUG_LOGGING
+    /* Log the error codes for debugging */
+    (void)sensor_status;  /* Avoid unused warning in release builds */
+#endif
+    /* Continue anyway - tasks will check ready flags */
   }
 
   /* USER CODE END 2 */
@@ -780,7 +798,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : EXT_INT_1_Pin */
+  /*Configure GPIO pin : EXT_INT_1_Pit */
   GPIO_InitStruct.Pin = EXT_INT_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
