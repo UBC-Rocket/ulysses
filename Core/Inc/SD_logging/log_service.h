@@ -50,6 +50,11 @@ void log_service_log_baro2_sample(uint32_t timestamp_us,
                                   int32_t pressure_centi,
                                   uint32_t seq);
 
+void log_service_log_imu2_sample(uint32_t timestamp_us,
+                                 float ax_mps2, float ay_mps2, float az_mps2,
+                                 float gx_rad_s, float gy_rad_s, float gz_rad_s,
+                                 int16_t temp_centi);
+
 /**
  * @brief Append an event record to the log (e.g., estop, state changes).
  */

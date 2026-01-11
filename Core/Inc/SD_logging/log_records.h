@@ -47,6 +47,16 @@ typedef struct __attribute__((packed)) {
     FIELD(int32_t, pressure_centi) \
     FIELD(uint32_t, seq)
 
+#define LOG_RECORD_FIELDS_IMU2_SAMPLE(FIELD) \
+    FIELD(uint32_t, timestamp_us) \
+    FIELD(float, ax_mps2) \
+    FIELD(float, ay_mps2) \
+    FIELD(float, az_mps2) \
+    FIELD(float, gx_rad_s) \
+    FIELD(float, gy_rad_s) \
+    FIELD(float, gz_rad_s) \
+    FIELD(int16_t, temp_centi)
+
 #define LOG_RECORD_FIELDS_STATE_SNAPSHOT(FIELD) \
     FIELD(uint32_t, timestamp_us) \
     FIELD(float, q_w) \
@@ -73,7 +83,8 @@ typedef struct __attribute__((packed)) {
     APP(0x03, baro_sample, LOG_RECORD_FIELDS_BARO_SAMPLE) \
     APP(0x04, state_snapshot, LOG_RECORD_FIELDS_STATE_SNAPSHOT) \
     APP(0x05, event, LOG_RECORD_FIELDS_EVENT) \
-    APP(0x06, baro2_sample, LOG_RECORD_FIELDS_BARO2_SAMPLE)
+    APP(0x06, baro2_sample, LOG_RECORD_FIELDS_BARO2_SAMPLE) \
+    APP(0x07, imu2_sample, LOG_RECORD_FIELDS_IMU2_SAMPLE)
 
 #define DECLARE_ENUM(id, name, fields) LOG_RECORD_TYPE_##name = id,
 typedef enum {

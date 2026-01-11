@@ -95,6 +95,17 @@ void state_estimation_task_start(void *argument)
                 }
             }
 
+            if(ISR_flags & ICM40609_IMU2_SAMPLE_FLAG){
+                icm40609_sample_t imu2_sample;
+                while (icm40609_sample_dequeue(&icm40609_sample_ring, &imu2_sample)) {
+                    log_service_log_imu2_sample((uint32_t)imu2_sample.t_us,
+                                                imu2_sample.ax, imu2_sample.ay, imu2_sample.az,
+                                                imu2_sample.gx, imu2_sample.gy, imu2_sample.gz,
+                                                (int16_t)(imu2_sample.temp_c * 100.0f));
+                    /* TODO: Fuse IMU2 data into state estimate */
+                }
+            }
+
             // TODO: other sensor intakes
 
             state_t fused_state = {0};

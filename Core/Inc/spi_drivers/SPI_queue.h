@@ -73,6 +73,7 @@ typedef enum {
     SENSOR_ID_GYRO,
     SENSOR_ID_BARO,
     SENSOR_ID_BARO2,
+    SENSOR_ID_IMU2,
     SENSOR_ID_OTHER
 } sensor_id_t;
 
@@ -85,7 +86,7 @@ typedef enum {
 struct spi_job_t {
     GPIO_TypeDef *cs_port;  ///< Chip-select port
     uint16_t cs_pin;        ///< Chip-select pin
-    uint8_t tx[16];            ///< Tx buffer pointer
+    uint8_t tx[24];         ///< Tx buffer (sized for FIFO burst reads)
     uint16_t len;           ///< Transfer length in bytes
     uint64_t t_sample;      ///< Sample timestamp in µs
     spi_xfer_type_t type;   ///< Transfer type

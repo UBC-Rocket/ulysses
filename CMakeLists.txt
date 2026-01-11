@@ -71,10 +71,12 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5611_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5607_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/icm40609_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_accel.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5607_baro.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ICM40609_imu.c
 )
 
 # Link directories setup

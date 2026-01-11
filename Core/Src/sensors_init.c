@@ -35,10 +35,12 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
         .gyro_ok = false,
         .baro_ok = false,
         .baro2_ok = false,
+        .imu2_ok = false,
         .accel_err = 0xFF,
         .gyro_err = 0xFF,
         .baro_err = 0xFF,
-        .baro2_err = 0xFF
+        .baro2_err = 0xFF,
+        .imu2_err = 0xFF
     };
 
     /* Use default config if none provided */
@@ -86,6 +88,9 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
 
     ms5607_sample_ring.head = 0;
     ms5607_sample_ring.tail = 0;
+
+    icm40609_sample_ring.head = 0;
+    icm40609_sample_ring.tail = 0;
 
     /*
      * Step 3: Initialize BMI088 Accelerometer with configuration
@@ -169,6 +174,39 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
         status.baro2_err = 1;  /* PROM read failed */
     }
 
+    /*
+     * Step 7: Initialize ICM-40609 IMU 2 with configuration
+     *
+     * This is a blocking operation that:
+     *   - Resets the device
+     *   - Verifies WHO_AM_I
+     *   - Configures accel/gyro ranges and ODRs
+     *   - Sets up data-ready interrupt
+     */
+#ifdef IMU2_CS_GPIO_Port
+    status.imu2_err = icm40609_init_with_config(&hspi4,
+                                                 IMU2_CS_GPIO_Port,
+                                                 IMU2_CS_Pin,
+                                                 &imu2,
+                                                 g_active_config.imu2.accel_fsr,
+                                                 g_active_config.imu2.accel_odr,
+                                                 g_active_config.imu2.gyro_fsr,
+                                                 g_active_config.imu2.gyro_odr,
+                                                 g_active_config.imu2.int_pin,
+                                                 g_active_config.imu2.int_drive,
+                                                 g_active_config.imu2.int_polarity);
+
+    if (status.imu2_err == 0) {
+        icm40609_ready = true;
+        status.imu2_ok = true;
+    } else {
+        icm40609_ready = false;
+    }
+#else
+    /* ICM-40609 GPIO not defined - skip initialization */
+    status.imu2_err = 0xFE;  /* Not configured */
+#endif
+
     return status;
 }
 
@@ -208,4 +246,14 @@ ms5611_poller_t *sensors_get_baro_poller(void)
 ms5607_poller_t *sensors_get_baro2_poller(void)
 {
     return &g_baro2_poller;
+}
+
+/**
+ * @brief Get pointer to the second IMU (ICM-40609) device instance.
+ *
+ * @return Pointer to the global IMU 2 device struct.
+ */
+icm40609_t *sensors_get_imu2(void)
+{
+    return &imu2;
 }

@@ -159,6 +159,31 @@ void log_service_log_baro2_sample(uint32_t timestamp_us,
                              sizeof(record));
 }
 
+void log_service_log_imu2_sample(uint32_t timestamp_us,
+                                 float ax_mps2, float ay_mps2, float az_mps2,
+                                 float gx_rad_s, float gy_rad_s, float gz_rad_s,
+                                 int16_t temp_centi)
+{
+    if (!log_service_ready()) {
+        return;
+    }
+
+    log_record_imu2_sample_t record = {
+        .timestamp_us = timestamp_us,
+        .ax_mps2 = ax_mps2,
+        .ay_mps2 = ay_mps2,
+        .az_mps2 = az_mps2,
+        .gx_rad_s = gx_rad_s,
+        .gy_rad_s = gy_rad_s,
+        .gz_rad_s = gz_rad_s,
+        .temp_centi = temp_centi
+    };
+
+    log_writer_append_record(LOG_RECORD_TYPE_imu2_sample,
+                             &record,
+                             sizeof(record));
+}
+
 void log_service_log_event(uint16_t event_code, uint16_t data, uint32_t timestamp_us)
 {
     if (!log_service_ready()) {

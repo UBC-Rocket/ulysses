@@ -23,6 +23,7 @@
 #include "stm32h5xx_hal.h"
 #include "spi_drivers/ms5611_poller.h"
 #include "spi_drivers/ms5607_poller.h"
+#include "spi_drivers/ICM40609_imu.h"
 #include "sensor_config.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -46,10 +47,12 @@ typedef struct {
     bool gyro_ok;       /**< BMI088 gyroscope initialized successfully */
     bool baro_ok;       /**< MS5611 barometer initialized successfully */
     bool baro2_ok;      /**< MS5607 barometer 2 initialized successfully */
+    bool imu2_ok;       /**< ICM-40609 IMU 2 initialized successfully */
     uint8_t accel_err;  /**< Accelerometer error code (0 = success) */
     uint8_t gyro_err;   /**< Gyroscope error code (0 = success) */
     uint8_t baro_err;   /**< Barometer error code (0 = success) */
     uint8_t baro2_err;  /**< Barometer 2 error code (0 = success) */
+    uint8_t imu2_err;   /**< IMU 2 error code (0 = success) */
 } sensors_init_status_t;
 
 /* -------------------------------------------------------------------------- */
@@ -117,7 +120,8 @@ static inline bool sensors_init_critical_ok(const sensors_init_status_t *status)
  */
 static inline bool sensors_init_all_ok(const sensors_init_status_t *status)
 {
-    return status->accel_ok && status->gyro_ok && status->baro_ok && status->baro2_ok;
+    return status->accel_ok && status->gyro_ok && status->baro_ok &&
+           status->baro2_ok && status->imu2_ok;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -141,6 +145,13 @@ ms5611_poller_t *sensors_get_baro_poller(void);
  * @return Pointer to the global barometer 2 poller.
  */
 ms5607_poller_t *sensors_get_baro2_poller(void);
+
+/**
+ * @brief Get pointer to the second IMU (ICM-40609) device instance.
+ *
+ * @return Pointer to the global IMU 2 device struct.
+ */
+icm40609_t *sensors_get_imu2(void);
 
 #ifdef __cplusplus
 }

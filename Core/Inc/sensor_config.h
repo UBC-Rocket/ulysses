@@ -20,6 +20,7 @@
 #include "spi_drivers/BMI088_gyro.h"
 #include "spi_drivers/MS5611_baro.h"
 #include "spi_drivers/MS5607_baro.h"
+#include "spi_drivers/ICM40609_imu.h"
 
 /* -------------------------------------------------------------------------- */
 /* BMI088 Accelerometer Configuration                                         */
@@ -195,6 +196,58 @@ typedef struct {
 }
 
 /* -------------------------------------------------------------------------- */
+/* ICM-40609 IMU 2 Configuration                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Configuration for ICM-40609 IMU (second IMU).
+ */
+typedef struct icm40609_config {
+    icm40609_accel_fsr_t accel_fsr;   /**< Accel full-scale range */
+    icm40609_accel_odr_t accel_odr;   /**< Accel output data rate */
+    icm40609_gyro_fsr_t  gyro_fsr;    /**< Gyro full-scale range */
+    icm40609_gyro_odr_t  gyro_odr;    /**< Gyro output data rate */
+
+    /* Interrupt configuration */
+    icm40609_int_pin_t      int_pin;      /**< Which INT pin to use */
+    icm40609_int_drive_t    int_drive;    /**< Push-pull or open-drain */
+    icm40609_int_polarity_t int_polarity; /**< Active high or low */
+} icm40609_config_t;
+
+/**
+ * @brief Default ICM-40609 configuration.
+ *
+ * Accel: ±16g, 1 kHz
+ * Gyro: ±1000 dps, 1 kHz
+ * INT1: Push-pull, active high
+ */
+#define ICM40609_CONFIG_DEFAULT {                \
+    .accel_fsr    = ICM40609_ACCEL_FSR_16G,       \
+    .accel_odr    = ICM40609_ACCEL_ODR_1KHZ,      \
+    .gyro_fsr     = ICM40609_GYRO_FSR_1000DPS,    \
+    .gyro_odr     = ICM40609_GYRO_ODR_1KHZ,       \
+    .int_pin      = ICM40609_INT1,                \
+    .int_drive    = ICM40609_INT_PUSH_PULL,       \
+    .int_polarity = ICM40609_INT_ACTIVE_HIGH      \
+}
+
+/**
+ * @brief High-G ICM-40609 configuration.
+ *
+ * Accel: ±32g, 1 kHz
+ * Gyro: ±2000 dps, 1 kHz
+ */
+#define ICM40609_CONFIG_HIGH_G {                 \
+    .accel_fsr    = ICM40609_ACCEL_FSR_32G,       \
+    .accel_odr    = ICM40609_ACCEL_ODR_1KHZ,      \
+    .gyro_fsr     = ICM40609_GYRO_FSR_2000DPS,    \
+    .gyro_odr     = ICM40609_GYRO_ODR_1KHZ,       \
+    .int_pin      = ICM40609_INT1,                \
+    .int_drive    = ICM40609_INT_PUSH_PULL,       \
+    .int_polarity = ICM40609_INT_ACTIVE_HIGH      \
+}
+
+/* -------------------------------------------------------------------------- */
 /* Complete System Configuration                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -206,6 +259,7 @@ typedef struct {
     bmi088_gyro_config_t  gyro;
     ms5611_config_t       baro;
     ms5607_config_t       baro2;
+    icm40609_config_t     imu2;
 } sensor_system_config_t;
 
 /**
@@ -215,7 +269,8 @@ typedef struct {
     .accel = BMI088_ACCEL_CONFIG_DEFAULT,       \
     .gyro  = BMI088_GYRO_CONFIG_DEFAULT,        \
     .baro  = MS5611_CONFIG_DEFAULT,             \
-    .baro2 = MS5607_CONFIG_DEFAULT              \
+    .baro2 = MS5607_CONFIG_DEFAULT,             \
+    .imu2  = ICM40609_CONFIG_DEFAULT            \
 }
 
 #endif /* SENSOR_CONFIG_H */

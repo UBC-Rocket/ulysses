@@ -19,6 +19,7 @@
 #include "BMI088_gyro.h"
 #include "MS5611_baro.h"
 #include "MS5607_baro.h"
+#include "ICM40609_imu.h"
 #include "ms5611_poller.h"
 #include "ms5607_poller.h"
 #include "sensor_config.h"
@@ -41,6 +42,7 @@ extern "C" {
 #define BMI088_GYRO_SAMPLE_FLAG   (1U << 1)
 #define MS5611_BARO_SAMPLE_FLAG   (1U << 2)
 #define MS5607_BARO2_SAMPLE_FLAG  (1U << 3)
+#define ICM40609_IMU2_SAMPLE_FLAG (1U << 4)
 
 /* -------------------------------------------------------------------------- */
 /* Global Instances                                                           */
@@ -55,6 +57,7 @@ extern bmi088_accel_sample_queue_t bmi088_acc_sample_ring;
 extern bmi088_gyro_sample_queue_t bmi088_gyro_sample_ring;
 extern ms5611_sample_queue_t ms5611_sample_ring;
 extern ms5607_sample_queue_t ms5607_sample_ring;
+extern icm40609_sample_queue_t icm40609_sample_ring;
 
 /** SPI job queues for each bus */
 extern spi_job_queue_t jobq_spi_1;
@@ -64,10 +67,12 @@ extern spi_job_queue_t jobq_spi_4;
 /** Device configuration structs */
 extern bmi088_accel_t accel;
 extern bmi088_gyro_t gyro;
+extern icm40609_t imu2;
 
 /** Device ready flags - set after successful initialization */
 extern volatile bool bmi088_accel_ready;
 extern volatile bool bmi088_gyro_ready;
+extern volatile bool icm40609_ready;
 
 /* -------------------------------------------------------------------------- */
 /* Device Initialization Functions                                            */
@@ -166,6 +171,48 @@ uint8_t ms5611_init(SPI_HandleTypeDef *hspi,
                     uint16_t cs_pin,
                     ms5611_t *dev);
 
+/**
+ * @brief Initialize ICM-40609 IMU with configuration parameters.
+ *
+ * @param hspi        SPI handle.
+ * @param cs_port     Chip select GPIO port.
+ * @param cs_pin      Chip select GPIO pin.
+ * @param dev         Device struct to populate with configuration.
+ * @param accel_fsr   Accelerometer full-scale range.
+ * @param accel_odr   Accelerometer output data rate.
+ * @param gyro_fsr    Gyroscope full-scale range.
+ * @param gyro_odr    Gyroscope output data rate.
+ * @param int_pin     Interrupt pin to use (INT1 or INT2).
+ * @param int_drive   Interrupt drive mode (push-pull or open-drain).
+ * @param int_polarity Interrupt polarity (active high or low).
+ * @return 0 on success, error code otherwise.
+ */
+uint8_t icm40609_init_with_config(SPI_HandleTypeDef *hspi,
+                                  GPIO_TypeDef *cs_port,
+                                  uint16_t cs_pin,
+                                  icm40609_t *dev,
+                                  icm40609_accel_fsr_t accel_fsr,
+                                  icm40609_accel_odr_t accel_odr,
+                                  icm40609_gyro_fsr_t gyro_fsr,
+                                  icm40609_gyro_odr_t gyro_odr,
+                                  icm40609_int_pin_t int_pin,
+                                  icm40609_int_drive_t int_drive,
+                                  icm40609_int_polarity_t int_polarity);
+
+/**
+ * @brief Initialize ICM-40609 IMU with default configuration.
+ *
+ * @param hspi    SPI handle.
+ * @param cs_port Chip select GPIO port.
+ * @param cs_pin  Chip select GPIO pin.
+ * @param dev     Device struct to populate with configuration.
+ * @return 0 on success, error code otherwise.
+ */
+uint8_t icm40609_init(SPI_HandleTypeDef *hspi,
+                      GPIO_TypeDef *cs_port,
+                      uint16_t cs_pin,
+                      icm40609_t *dev);
+
 /* -------------------------------------------------------------------------- */
 /* Interrupt Handlers                                                         */
 /* -------------------------------------------------------------------------- */
@@ -189,6 +236,22 @@ void bmi088_accel_interrupt(void);
  * Call from HAL_GPIO_EXTI_Rising_Callback when BMI_GYRO_INT_1_Pin fires.
  */
 void bmi088_gyro_interrupt(void);
+
+/**
+ * @brief Handle ICM-40609 data-ready interrupt.
+ *
+ * Submits an SPI job to read the latest IMU data.
+ * Call from HAL_GPIO_EXTI_Rising_Callback when ICM_INT1_Pin fires.
+ *
+ * @param dev     Device state struct (for scale factors).
+ * @param cs_port Chip select GPIO port.
+ * @param cs_pin  Chip select GPIO pin.
+ * @param jobq    SPI job queue to submit to.
+ */
+void icm40609_interrupt(icm40609_t *dev,
+                        GPIO_TypeDef *cs_port,
+                        uint16_t cs_pin,
+                        spi_job_queue_t *jobq);
 
 #ifdef __cplusplus
 }

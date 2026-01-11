@@ -102,6 +102,22 @@ RECORDS = {
         "format": "<IiiI",
         "struct": struct.Struct("<IiiI"),
     },
+    "imu2_sample": {
+        "id": 7,
+        "enum": "LOG_RECORD_TYPE_imu2_sample",
+        "fields": [
+            ("uint32_t", "timestamp_us"),
+            ("float", "ax_mps2"),
+            ("float", "ay_mps2"),
+            ("float", "az_mps2"),
+            ("float", "gx_rad_s"),
+            ("float", "gy_rad_s"),
+            ("float", "gz_rad_s"),
+            ("int16_t", "temp_centi"),
+        ],
+        "format": "<Iffffffh",
+        "struct": struct.Struct("<Iffffffh"),
+    },
 }
 
 MAX_RECORD_SIZE = max(rec['struct'].size for rec in RECORDS.values())
