@@ -58,12 +58,12 @@ uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
     delay_us(80000); // PLL lock time ≥80 ms
 
     /* --- 4. Configure range ±500 dps --- */
-    n = bmi088_gyro_build_range(BMI088_GYRO_RANGE_125DPS, tx, dev);
+    n = bmi088_gyro_build_range(BMI088_GYRO_RANGE_2000DPS, tx, dev);
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(5000);
 
     /* --- 5. Configure ODR 400 Hz / BW 116 Hz --- */
-    n = bmi088_gyro_build_odr(BMI088_GYRO_ODR_400_HZ_BW_116, tx, dev);
+    n = bmi088_gyro_build_odr(BMI088_GYRO_ODR_100_HZ_BW_23, tx, dev);
     write_frame(hspi, cs_port, cs_pin, tx, n);
     delay_us(5000);
 
@@ -104,7 +104,7 @@ static void bmi088_gyro_done(spi_job_t *job,
     (void)arg;
 
     bmi088_gyro_sample_t s;
-    if (bmi088_gyro_parse_data_xyz(&rx_buf[1], &s, &gyro)) {
+    if (bmi088_gyro_parse_data_xyz(&rx_buf[0], &s, &gyro)) {
         s.t_us = job->t_sample;
         bmi088_gyro_sample_queue(&bmi088_gyro_sample_ring, &s);
     }

@@ -109,22 +109,22 @@ void state_estimation_task_start(void *argument)
 
     __set_PRIMASK(primask);
 
-    static bmi088_accel_sample_t accel_samples[16];
-    static bmi088_gyro_sample_t gyro_samples[16];
-    static ms5611_sample_t baro_samples[16];
+    static bmi088_accel_sample_t accel_samples[FUSION_VECTOR_SAMPLE_SIZE];
+    static bmi088_gyro_sample_t gyro_samples[FUSION_VECTOR_SAMPLE_SIZE];
+    static ms5611_sample_t baro_samples[FUSION_VECTOR_SAMPLE_SIZE];
 
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
 
     float process_noise_quaternion[4][4] = 
-                   {{0.000001, 0, 0, 0},
-                    {0, 0.000001, 0, 0},
-                    {0, 0, 0.000001, 0},
-                    {0, 0, 0, 0.000001}};
+                   {{0.00001, 0, 0, 0},
+                    {0, 0.00001, 0, 0},
+                    {0, 0, 0.00001, 0},
+                    {0, 0, 0, 0.00001}};
 
     float measurement_noise_quaternion[3][3] = 
-                   {{0.1, 0, 0},
-                    {0, 0.1, 0},
-                    {0, 0, 0.1}};
+                   {{0.001, 0, 0},
+                    {0, 0.001, 0},
+                    {0, 0, 0.001}};
 
     float process_noise_body[6][6] = 
                    {{0.01, 0, 0, 0, 0, 0},
@@ -176,6 +176,8 @@ void state_estimation_task_start(void *argument)
         bmi088_gyro_sample_t gyro_sample;
 
         while(num_gyro_samples < FUSION_VECTOR_SAMPLE_SIZE){
+            //DLOG_PRINT("[%d, %d]\n", bmi088_gyro_sample_ring.head, bmi088_gyro_sample_ring.tail);
+
             if(!bmi088_gyro_sample_dequeue(&bmi088_gyro_sample_ring, &gyro_sample)) break;
 
             gyro_samples[num_gyro_samples] = gyro_sample;
@@ -215,7 +217,7 @@ void state_estimation_task_start(void *argument)
         else loops = num_accel_samples;
         
         for (uint8_t i = 0; i < loops; i++) {
-            float g_data_raw[3] = {gyro_samples[i].gx * M_PI / 180, gyro_samples[i].gy * M_PI / 180, gyro_samples[i].gz * M_PI / 180};
+            float g_data_raw[3] = {gyro_samples[i].gx, gyro_samples[i].gy, gyro_samples[i].gz};
             float a_data_raw[3] = {accel_samples[i].ax / -GRAV, accel_samples[i].ay / -GRAV, accel_samples[i].az / -GRAV};
             // accel should read [0, 0, 1] when sitting stationary upright
 
@@ -271,7 +273,8 @@ void state_estimation_task_start(void *argument)
             state_exchange_publish_state(&data);
 
             // logging (optional)
-            if (ticks % 100 == 0) {
+            if (ticks % 40 == 0) {
+                //DLOG_PRINT("[%f, %f, %f]deg, %f\n", g_data[0], g_data[1], g_data[2], (g_data[0]*g_data[0]+g_data[1]*g_data[1]+g_data[2]*g_data[2]));
                 DLOG_PRINT("[%f, %f, %f]deg\n", e[0], e[1], e[2]);
             }
 

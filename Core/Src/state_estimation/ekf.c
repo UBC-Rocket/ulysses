@@ -130,6 +130,8 @@ void tick_ekf(
 
     for (int i = 0; i < 3; i++) innovation_body[i][0] = gps_pos[i] - processing_position[i];
 
+    // DLOG_PRINT("[%f, %f, %f]g", innovation_quaternion[0], innovation_quaternion[1], innovation_quaternion[2]);
+
     // get new kalman gain ( KILL ME !!!)
     // half of the ram of ulysses will be dedicated to 4x4 matrices :thumbsup:
     float h_jacobian_quaternion[3][4];
