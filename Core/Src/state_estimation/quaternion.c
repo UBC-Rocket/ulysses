@@ -98,20 +98,26 @@ void get_h_jacobian_quaternion(float q[4], float eg[3], float H[3][4]) {
     // Where R^T is the rotation from World to Body
     
     // Row 0 (Gradient of a_x)
-    H[0][0] = 2.0f * (w * gx + z * gy - y * gz); // d/dw
-    H[0][1] = 2.0f * (x * gx + y * gy + z * gz); // d/dx
-    H[0][2] = 2.0f * (-y * gx + x * gy - w * gz); // d/dy
-    H[0][3] = 2.0f * (-z * gx + w * gy + x * gz); // d/dz
+    H[0][0] = -2.0f * y;
+    H[0][1] =  2.0f * z;
+    H[0][2] = -2.0f * w;
+    H[0][3] =  2.0f * x;
 
-    // Row 1 (Gradient of a_y)
-    H[1][0] = 2.0f * (-z * gx + w * gy + x * gz); // d/dw
-    H[1][1] = 2.0f * (y * gx - x * gy + w * gz);  // d/dx
-    H[1][2] = 2.0f * (x * gx + y * gy + z * gz);  // d/dy
-    H[1][3] = 2.0f * (-w * gx - z * gy + y * gz); // d/dz
+    // Row 1 (ay)
+    H[1][0] =  2.0f * x;
+    H[1][1] =  2.0f * w;
+    H[1][2] =  2.0f * z;
+    H[1][3] =  2.0f * y;
 
-    // Row 2 (Gradient of a_z)
-    H[2][0] = 2.0f * (y * gx - x * gy + w * gz);  // d/dw
-    H[2][1] = 2.0f * (z * gx - w * gy + x * gz);  // d/dx
-    H[2][2] = 2.0f * (w * gx + z * gy - y * gz);  // d/dy
-    H[2][3] = 2.0f * (x * gx + y * gy + z * gz);  // d/dz
+    // Row 2 (az)
+    H[2][0] =  2.0f * w;
+    H[2][1] = -2.0f * x;
+    H[2][2] = -2.0f * y;
+    H[2][3] =  2.0f * z;
+
+    // for(int i=0; i<3; i++) {
+    //     for(int j=0; j<4; j++) {
+    //         H[i][j] = -H[i][j];
+    //     }
+    // }
 }

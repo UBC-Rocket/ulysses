@@ -7,7 +7,7 @@
 #include <body.h>
 
 static EKF ekf;
-
+long long int mm = 0;
 void predict_covar_orientation(
     float jacobian[4][4],
     float predicted_covar[4][4]
@@ -94,6 +94,7 @@ void tick_ekf(
     float gps_pos[3]
 )
 {
+    mm += 1;
     /* prediction step */
     float processing_quaternion[4];
     float processing_position[3];
@@ -126,13 +127,25 @@ void tick_ekf(
     predict_accel_from_quat(processing_quaternion, predicted_accel, ekf.expected_g);
     //DLOG_PRINT("%f %f %f\n", predicted_accel[0], predicted_accel[1], predicted_accel[2]);
 
-    for (int i = 0; i < 3; i++) innovation_quaternion[i][0] = accel[i] - predicted_accel[i]; // minus predicted gravity 
+    float a_norm = sqrtf(accel[0]*accel[0] + accel[1]*accel[1] + accel[2]*accel[2]);
+    float a_normalized[3];
+    if (a_norm > 0.1f) {
+        for(int i=0; i<3; i++) a_normalized[i] = accel[i] / a_norm;
+    } else {
+        for(int i=0; i<3; i++) a_normalized[i] = ekf.expected_g[i];
+    }
+
+    // Use a_normalized for innovation
+    for (int i = 0; i < 3; i++) innovation_quaternion[i][0] = a_normalized[i] - predicted_accel[i];
+    if (mm % 40 == 0) DLOG_PRINT("delta: [%f, %f, %f]\n", predicted_accel[0], predicted_accel[1], predicted_accel[2]);
+
+    // for (int i = 0; i < 3; i++) innovation_quaternion[i][0] = accel[i] - predicted_accel[i]; // minus predicted gravity 
 
     for (int i = 0; i < 3; i++) innovation_body[i][0] = gps_pos[i] - processing_position[i];
 
     // DLOG_PRINT("[%f, %f, %f]g", innovation_quaternion[0], innovation_quaternion[1], innovation_quaternion[2]);
 
-    // get new kalman gain ( KILL ME !!!)
+    // get new kalman gain ( KILL ME !!! )
     // half of the ram of ulysses will be dedicated to 4x4 matrices :thumbsup:
     float h_jacobian_quaternion[3][4];
     float h_jacobian_body[3][6];

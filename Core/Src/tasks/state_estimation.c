@@ -19,8 +19,7 @@
 
 #define GRAV 9.807
 #define FUSION_VECTOR_SAMPLE_SIZE 32
-
-float EXPECTED_GRAVITY[3] = {1, 0, 0};
+#define PI 3.1415
 
 // External variable declarations
 extern SPI_HandleTypeDef hspi2;
@@ -116,13 +115,13 @@ void state_estimation_task_start(void *argument)
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
 
     float process_noise_quaternion[4][4] = 
-                   {{0.00001, 0, 0, 0},
-                    {0, 0.00001, 0, 0},
-                    {0, 0, 0.00001, 0},
-                    {0, 0, 0, 0.00001}};
+                {{0.01, 0, 0, 0},
+                    {0, 0.01, 0, 0},
+                    {0, 0, 0.01, 0},
+                    {0, 0, 0, 0.01}};
 
     float measurement_noise_quaternion[3][3] = 
-                   {{0.001, 0, 0},
+                {{0.001, 0, 0},
                     {0, 0.001, 0},
                     {0, 0, 0.001}};
 
@@ -236,8 +235,8 @@ void state_estimation_task_start(void *argument)
             }
 
             // Calibration finished
-            float g_data[3] = {g_data_raw[0] - g_bias[0], 
-                               g_data_raw[1] - g_bias[1], 
+            float g_data[3] = {g_data_raw[0] - g_bias[0],
+                               g_data_raw[1] - g_bias[1],     
                                g_data_raw[2] - g_bias[2]};
 
             float a_data[3] = {a_data_raw[0] - a_bias[0], 
@@ -275,7 +274,12 @@ void state_estimation_task_start(void *argument)
             // logging (optional)
             if (ticks % 40 == 0) {
                 //DLOG_PRINT("[%f, %f, %f]deg, %f\n", g_data[0], g_data[1], g_data[2], (g_data[0]*g_data[0]+g_data[1]*g_data[1]+g_data[2]*g_data[2]));
-                DLOG_PRINT("[%f, %f, %f]deg\n", e[0], e[1], e[2]);
+                //DLOG_PRINT("[%f, %f, %f]deg\n", a_data[0], a_data[1], a_data[2]);
+                // DLOG_PRINT("gyro:[%d,%d,%d]\n[%d, %d, %d,%d]deg\n", 
+                //    (int)(g_data[0]*180/PI), (int)(g_data[1]*180/PI), (int)(g_data[2]*180/PI),
+                //    ((int)q[0]), ((int)q[1]), ((int)q[2]),((int)q[3]));
+                DLOG_PRINT("%f, %f, %f, %f]deg\n", 
+                (q[0]), (q[1]), (q[2]), q[3]);
             }
 
             ticks += 1;
