@@ -83,6 +83,7 @@ uint8_t icm20948_read(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t c
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 
     icm20948_sample_t s;
+    s.timestamp_us = micros();
     if(icm20948_parse_6axis(rx, &s, dev)) {
         icm_queue_push(&icm_sample_ring, &s);
         return 0;
