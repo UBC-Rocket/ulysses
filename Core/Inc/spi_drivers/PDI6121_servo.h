@@ -22,6 +22,11 @@ typedef struct {
     bool enabled;
 } PDI6121_servo_t;
 
+typedef enum {
+    uint8_t us_min = 1000, 
+    uint8_t us_mid = 1500,
+    uint8_t us_max = 2000
+} PDI6121_servo_cal_t;
 
 void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm);
 
