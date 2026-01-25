@@ -1,324 +1,287 @@
 #include "ekf.h"
-#include <math.h>
-#include <stdio.h>
-#include "ekf.h"
-#include <math.h>
-#include <string.h>
+#include "math.h"
+#include "string.h"
+#include "matrix.h"
+#include "quaternion.h"
+#include "body.h"
+#include "state.h"
 
-/* ------------- helpers ---------------- */
-
-/* normalizes quaternion */
-void normalize(float q[4]) {
-    float norm = sqrtf(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
-    
-    for (int i = 0; i < 4; i++) q[i] = q[i] / norm;
-}
-
-#define N 3
-
-/* finds inverse of matrix
-    1 if successful, 0 if no inverse exists */
-int inverse(float a[N][N], float inverse[N][N]) {
-    // Initialize inverse as the identity matrix
-    for (int i = 0; i < N; i++)
-        for (int j = 0; j < N; j++)
-            inverse[i][j] = (i == j) ? 1.0 : 0.0;
-
-    // Perform elementary row operations
-    for (int i = 0; i < N; i++) {
-        // Find the pivot element
-        float pivot = a[i][i];
-        if (fabs(pivot) < 1e-6) {
-            // Find a row below with a non-zero element and swap
-            int swap_row = -1;
-            for (int r = i + 1; r < N; r++) {
-                if (fabs(a[r][i]) > 1e-6) {
-                    swap_row = r;
-                    break;
-                }
-            }
-            if (swap_row == -1) {
-                return 0; // No inverse
-            }
-
-            // Swap rows in both a and inverse
-            for (int c = 0; c < N; c++) {
-                float temp = a[i][c];
-                a[i][c] = a[swap_row][c];
-                a[swap_row][c] = temp;
-
-                temp = inverse[i][c];
-                inverse[i][c] = inverse[swap_row][c];
-                inverse[swap_row][c] = temp;
-            }
-
-            pivot = a[i][i];
-        }
-
-        // Normalize the pivot row
-        for (int j = 0; j < N; j++) {
-            a[i][j] /= pivot;
-            inverse[i][j] /= pivot;
-        }
-
-        // Eliminate all other elements in column i
-        for (int r = 0; r < N; r++) {
-            if (r != i) {
-                float factor = a[r][i];
-                for (int c = 0; c < N; c++) {
-                    a[r][c] -= factor * a[i][c];
-                    inverse[r][c] -= factor * inverse[i][c];
-                }
-            }
-        }
-    }
-
-    return 1; // Success
-}
-
-void transpose4x4(const float A[4][4], float AT[4][4])
-{
-    for (int i = 0; i < 4; ++i)
-        for (int j = 0; j < 4; ++j)
-            AT[j][i] = A[i][j];
-}
-
-void transpose3x4_to_4x3(const float A[3][4], float AT[4][3])
-{
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 4; ++j)
-            AT[j][i] = A[i][j];
-}
-
-/* ------------- EKF ---------------- */
 static EKF ekf;
+long long int mm = 0;
 
-void init_ekf(
-    float process_noise[STATE_DIM][STATE_DIM],
-    float measurement_noise[3][3])
-{
-    // init
-    ekf.x[0] = 1;
-    ekf.x[1] = 0;
-    ekf.x[2] = 0;
-    ekf.x[3] = 0;
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
 
-    // sets ekf.P to an identity matrix
-    for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) {
-        if (i==j) {
-            ekf.covar[i][j] = 1;
-            continue;
-        }
-
-        ekf.covar[i][j] = 0;
-    }
-
-    // copy inputs
-    for (int i = 0; i < STATE_DIM; i++) for (int j = 0; j < STATE_DIM; j++) ekf.process[i][j] = process_noise[i][j];
-    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) ekf.measurement[i][j] = measurement_noise[i][j];
-}
-
-void state_transition(
-    float p[4], // previous state
-    float next_state[4],
-    float time_step,
-    float g[3] // gyro data
-)
-{
-    float P[4][1];
-    for (int i = 0; i < 4; i++) P[i][0] = p[i];
-
-    /*
-    | 0   -gx   -gy  -gz  |
-    | gx   0     gz  -gy  |
-    | gy  -gz    0    gx  |
-    | gz   gy   -gx   0   |
-    */
-
-    float B[4][4] = {{0, -g[0], -g[1], -g[2]},
-                    {g[0], 0, g[2], -g[1]},
-                    {g[1], -g[2], 0, g[0]},
-                    {g[2], g[1], -g[0], 0}};
-
-
-    float C[4][1];
-
-    MAT_MUL(B, P, C, 4, 4, 1);
-
-    for (int i = 0; i < 4; i++) C[i][0] = C[i][0] * (time_step / 2);
-
-    for (int i = 0; i < 4; i++) {
-        next_state[i] = p[i] + C[i][0];
-    }
-
-    normalize(next_state);
-}
-
-void get_state_jacobian(
-    float g[3],
-    float dT,
-    float j[4][4]
-)
-{
-    /*
-    |  1    -gxdt   -gydt   -gzdt |
-    | gxdt    1      gzdt   -gydt |
-    | gydt  -gzdt     1      gxdt |
-    | gzdt   gydt   -gxdt     1   |
-    */
-    float xdt = 0.5f * g[0] * dT;
-    float ydt = 0.5f * g[1] * dT;
-    float zdt = 0.5f * g[2] * dT;
-
-    memcpy(j,
-        (float [4][4]){
-            {1,   -xdt, -ydt, -zdt},
-            {xdt,  1,    zdt, -ydt},
-            {ydt, -zdt,  1,    xdt},
-            {zdt,  ydt, -xdt,  1  }
-        },
-        sizeof(float[4][4]));
-
-    // j[0][0]=1;   j[0][1]=-xdt; j[0][2]=-ydt; j[0][3]=-zdt;
-    // j[1][0]=xdt; j[1][1]=1;    j[1][2]=zdt;  j[1][3]=-ydt;
-    // j[2][0]=ydt; j[2][1]=-zdt; j[2][2]=1;    j[2][3]=xdt;
-    // j[3][0]=zdt; j[3][1]=ydt;  j[3][2]=-xdt; j[3][3]=1;
-
-}
-
-void predict_covar(
-    float predicted_covar[4][4],
-    float jacobian[4][4]
-)
-{
+void predict_covar_orientation(float jacobian[4][4], float predicted_covar[4][4]) {
     float m1[4][4];
-
     float jacobian_transposed[4][4];
+    
     transpose4x4(jacobian, jacobian_transposed);
-
-    MAT_MUL(jacobian, ekf.covar, m1, 4, 4, 4);
+    MAT_MUL(jacobian, ekf.quaternion.covar, m1, 4, 4, 4);
     MAT_MUL(m1, jacobian_transposed, predicted_covar, 4, 4, 4);
 
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) predicted_covar[i][j] += ekf.process[i][j];
+    for (int i = 0; i < 4; i++) 
+        for (int j = 0; j < 4; j++) 
+            predicted_covar[i][j] += ekf.quaternion.process[i][j];
 }
 
-void predict_accel_from_quat(const float q[4], float accel_pred[3])
-{
-    float q0 = q[0];
-    float q1 = q[1];
-    float q2 = q[2];
-    float q3 = q[3];
+void predict_covar_body(float jacobian[6][6], float predicted_covar[6][6]) {
+    float m1[6][6];
+    float jacobian_transposed[6][6];
 
-    // v_body = q * v_world * q_conjugate
-    accel_pred[0] = 2.0f * (q1*q3 - q0*q2); // ax
-    accel_pred[1] = 2.0f * (q2*q3 + q0*q1); // ay
-    accel_pred[2] = q0*q0 - q1*q1 - q2*q2 + q3*q3; // az
+    transpose6x6(jacobian, jacobian_transposed);
+    MAT_MUL(jacobian, ekf.body.covar, m1, 6, 6, 6);
+    MAT_MUL(m1, jacobian_transposed, predicted_covar, 6, 6, 6);
+
+    for (int i = 0; i < 6; i++) 
+        for (int j = 0; j < 6; j++) 
+            predicted_covar[i][j] += ekf.body.process[i][j];
 }
 
-void get_h_jacobian(
-    float q[4],
-    float h_jacobian[3][4]
-)
-{
-    float q0 = 2 * q[0];
-    float q1 = 2 * q[1];
-    float q2 = 2 * q[2];
-    float q3 = 2 * q[3];
+// ==========================================
+// INITIALIZATION
+// ==========================================
 
-    memcpy(h_jacobian, 
-        (float[3][4]) {
-            {-q2, q3, -q0, q1},
-            {q1, q0, q3, q2},
-            {q0, -q1, -q2, q3}
-        }, 
-        sizeof(float[3][4]));
-}
+void init_ekf_orientation(
+    float process_noise[4][4],
+    float measurement_noise[3][3],
+    float expected_g[3]
+) {
+    // Initialize quaternion to identity
+    ekf.quaternion.vals[0] = 1;
+    ekf.quaternion.vals[1] = 0;
+    ekf.quaternion.vals[2] = 0;
+    ekf.quaternion.vals[3] = 0;
 
-void tick_ekf(
-    float deltaTime,
-    float gyro[3],
-    float accel[3]
-)
-{
-    /* prediction step */
-    float next_state[4];
-    state_transition(ekf.x, next_state, deltaTime, gyro);
-
-    float state_jacobian[4][4];
-    get_state_jacobian(gyro, deltaTime, state_jacobian);
-
-    float predicted_covar[4][4];
-
-    predict_covar(predicted_covar, state_jacobian);
-
-    /* update step */
-    // find innovation
-    float innovation[3][1];
-
-    float predicted_accel[3];
-    predict_accel_from_quat(next_state, predicted_accel);
-
-    for (int i = 0; i < 3; i++) innovation[i][0] = accel[i] - predicted_accel[i]; // minus predicted gravity 
-
-    // get new kalman gain ( KILL ME !!!)
-    // half of the ram of ulysses will be dedicated to 4x4 matrices :thumbsup:
-    float h_jacobian[3][4];
-    get_h_jacobian(next_state, h_jacobian);
-
-    float h_jacobian_t[4][3];
-    transpose3x4_to_4x3(h_jacobian, h_jacobian_t);
-
-    float mat1[4][3]; // p_{k, k-1} * H_k ^ T
-    MAT_MUL(predicted_covar, h_jacobian_t, mat1, 4, 4, 3);
-
-    float mat2[3][4]; // H_k * p_{k, k-1}
-    MAT_MUL(h_jacobian,predicted_covar, mat2, 3, 4, 4);
-
-    float mat3[3][3]; // mat2 * H_k ^ T
-    MAT_MUL(mat2, h_jacobian_t, mat3, 3, 4, 3);
-
-    // add measurement covariance
-    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) mat3[i][j] += ekf.measurement[i][j];
-
-    float inv_mat3[3][3]; // self-explanatory
-    int result = inverse(mat3, inv_mat3);
-
-    if (!result) {
-        /* matrix could not be inverted, cannot continue with ekf update (unlikely in typical conditions) */
-        return;
+    // Set Covariance to Identity
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            ekf.quaternion.covar[i][j] = (i == j) ? 1.0f : 0.0f;
+        }
     }
+
+    // Copy Noise and Gravity
+    for (int i = 0; i < 4; i++) 
+        for (int j = 0; j < 4; j++) 
+            ekf.quaternion.process[i][j] = process_noise[i][j];
+            
+    for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++) 
+            ekf.quaternion.measurement[i][j] = measurement_noise[i][j];
+
+    for (int i = 0; i < 3; i++) 
+        ekf.expected_g[i] = expected_g[i];
+}
+
+void init_ekf_body(
+    float process_noise[6][6],
+    float measurement_noise[3][3]
+) {
+    // Initialize state to 0
+    for (int i = 0; i < 3; i++) ekf.body.position[i] = 0;
+    for (int i = 0; i < 3; i++) ekf.body.velocity[i] = 0;
+
+    // Set Covariance to Identity
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 6; j++) {
+            ekf.body.covar[i][j] = (i == j) ? 1.0f : 0.0f;
+        }
+    }
+
+    // Copy Noise
+    for (int i = 0; i < 6; i++) 
+        for (int j = 0; j < 6; j++) 
+            ekf.body.process[i][j] = process_noise[i][j];
+
+    for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++) 
+            ekf.body.measurement[i][j] = measurement_noise[i][j];
+}
+
+// Wrapper for legacy initialization if needed
+void init_ekf(
+    float process_noise_quaternion[4][4],
+    float measurement_noise_quaternion[3][3],
+    float process_noise_body[6][6],
+    float measurement_noise_body[3][3],
+    float expected_g[3]
+) {
+    init_ekf_orientation(process_noise_quaternion, measurement_noise_quaternion, expected_g);
+    init_ekf_body(process_noise_body, measurement_noise_body);
+}
+
+// ==========================================
+// UPDATE LOOPS
+// ==========================================
+
+void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
+    mm++; 
+
+    // --- 1. PREDICTION ---
+    float processing_quaternion[4];
+    state_transition_orientation(&ekf.quaternion, deltaTime, gyro, processing_quaternion);
+
+    float state_jacobian_quaternion[4][4];
+    get_state_jacobian_orientation(gyro, deltaTime, state_jacobian_quaternion);
+
+    float predicted_covar_quaternion[4][4];
+    predict_covar_orientation(state_jacobian_quaternion, predicted_covar_quaternion);
+
+    // --- 2. UPDATE (Correction) ---
+    float innovation_quaternion[3][1];
+    float predicted_accel[3];
     
-    float kalman_gain[4][3]; // mat1 * inv_mat3
-    MAT_MUL(mat1, inv_mat3, kalman_gain, 4, 3, 3);
+    // Project current quaternion to expected gravity vector
+    predict_accel_from_quat(processing_quaternion, predicted_accel, ekf.expected_g);
 
-    // compute adjustment
-    float adjustment[4][1];
-    MAT_MUL(kalman_gain, innovation, adjustment, 4, 3, 1);
+    // Normalize accel for innovation
+    float a_norm = sqrtf(accel[0]*accel[0] + accel[1]*accel[1] + accel[2]*accel[2]);
+    float a_normalized[3];
+    if (a_norm > 0.1f) {
+        for(int i=0; i<3; i++) a_normalized[i] = accel[i] / a_norm;
+    } else {
+        for(int i=0; i<3; i++) a_normalized[i] = ekf.expected_g[i];
+    }
 
-    for (int i = 0; i < 4; i++) ekf.x[i] = next_state[i] + adjustment[i][0];
-    normalize(ekf.x);
+    // Calculate Innovation
+    for (int i = 0; i < 3; i++) 
+        innovation_quaternion[i][0] = a_normalized[i] - predicted_accel[i];
 
-    float KH[4][4];
-    MAT_MUL(kalman_gain, h_jacobian, KH, 4, 3, 4);
+    // H Jacobian
+    float h_jacobian_quaternion[3][4];
+    get_h_jacobian_quaternion(processing_quaternion, ekf.expected_g, h_jacobian_quaternion);
 
-    float I[4][4] = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
+    float h_jacobian_quaternion_t[4][3];
+    transpose3x4_to_4x3(h_jacobian_quaternion, h_jacobian_quaternion_t);
 
-    float I_minus_KH[4][4];
+    // Calculate S = H * P * H' + R
+    float mat1_q[4][3]; 
+    MAT_MUL(predicted_covar_quaternion, h_jacobian_quaternion_t, mat1_q, 4, 4, 3); // P * H'
+
+    float mat2_q[3][4]; 
+    MAT_MUL(h_jacobian_quaternion, predicted_covar_quaternion, mat2_q, 3, 4, 4); // H * P
+
+    float mat3_q[3][3]; // S
+    MAT_MUL(mat2_q, h_jacobian_quaternion_t, mat3_q, 3, 4, 3);
+
+    // Add Measurement Noise (R)
+    for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++) 
+            mat3_q[i][j] += ekf.quaternion.measurement[i][j];
+
+    // Invert S
+    float inv_mat3_q[3][3]; 
+    if (!inverse(mat3_q, inv_mat3_q)) return; // Failed to invert
+
+    // Calculate Kalman Gain: K = P * H' * S^-1
+    float kalman_gain_quaternion[4][3]; 
+    MAT_MUL(mat1_q, inv_mat3_q, kalman_gain_quaternion, 4, 3, 3);
+
+    // Update State
+    float adjustment_quaternion[4][1];
+    MAT_MUL(kalman_gain_quaternion, innovation_quaternion, adjustment_quaternion, 4, 3, 1);
+
+    for (int i = 0; i < 4; i++) 
+        ekf.quaternion.vals[i] = processing_quaternion[i] + adjustment_quaternion[i][0];
+    
+    normalize(ekf.quaternion.vals);
+
+    // Update Covariance: P = (I - K * H) * P
+    float KH_q[4][4];
+    MAT_MUL(kalman_gain_quaternion, h_jacobian_quaternion, KH_q, 4, 3, 4);
+
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            I_minus_KH[i][j] = I[i][j] - KH[i][j];
+            KH_q[i][j] = (i == j) ? (1 - KH_q[i][j]) : (-KH_q[i][j]);
 
-    float new_p[4][4];
-    MAT_MUL(I_minus_KH, predicted_covar, new_p, 4, 4, 4);
-
-    // store it
-    memcpy(ekf.covar, new_p, sizeof(new_p));
+    float new_covar_quaternion[4][4];
+    MAT_MUL(KH_q, predicted_covar_quaternion, new_covar_quaternion, 4, 4, 4);
+    
+    memcpy(ekf.quaternion.covar, new_covar_quaternion, sizeof(new_covar_quaternion));
 }
 
-void get_state_x(float out[4])
+void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]) {
+    // --- 1. PREDICTION ---
+    float processing_position[3];
+    float processing_velocity[3];
+
+    // Note: Ideally, accel should be transformed by ekf.quaternion.vals here if needed
+    state_transition_body(&ekf.body, deltaTime, accel, processing_position, processing_velocity);
+
+    float state_jacobian_body[6][6];
+    get_state_jacobian_body(deltaTime, state_jacobian_body);
+
+    float predicted_covar_body[6][6];
+    predict_covar_body(state_jacobian_body, predicted_covar_body);
+
+    // --- 2. UPDATE (Correction) ---
+    float innovation_body[3][1];
+    for (int i = 0; i < 3; i++) 
+        innovation_body[i][0] = gps_pos[i] - processing_position[i];
+
+    // H Jacobian
+    float h_jacobian_body[3][6];
+    get_h_jacobian_body(h_jacobian_body);
+
+    float h_jacobian_body_t[6][3];
+    transpose3x6_to_6x3(h_jacobian_body, h_jacobian_body_t);
+
+    // Calculate S = H * P * H' + R
+    float mat1_b[6][3];
+    MAT_MUL(predicted_covar_body, h_jacobian_body_t, mat1_b, 6, 6, 3); // P * H'
+
+    float mat2_b[3][6];
+    MAT_MUL(h_jacobian_body, predicted_covar_body, mat2_b, 3, 6, 6); // H * P
+
+    float mat3_b[3][3]; // S
+    MAT_MUL(mat2_b, h_jacobian_body_t, mat3_b, 3, 6, 3);
+
+    // Add Measurement Noise (R)
+    for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++) 
+            mat3_b[i][j] += ekf.body.measurement[i][j];
+
+    // Invert S
+    float inv_mat3_b[3][3];
+    if (!inverse(mat3_b, inv_mat3_b)) return; // Failed to invert
+
+    // Calculate Kalman Gain: K = P * H' * S^-1
+    float kalman_gain_body[6][3];
+    MAT_MUL(mat1_b, inv_mat3_b, kalman_gain_body, 6, 3, 3);
+
+    // Update State
+    float adjustment_body[6][1];
+    MAT_MUL(kalman_gain_body, innovation_body, adjustment_body, 6, 3, 1);
+
+    for (int i = 0; i < 3; i++) ekf.body.position[i] = processing_position[i] + adjustment_body[i][0];
+    for (int i = 0; i < 3; i++) ekf.body.velocity[i] = processing_velocity[i] + adjustment_body[i + 3][0];
+
+    // Update Covariance: P = (I - K * H) * P
+    float KH_b[6][6];
+    MAT_MUL(kalman_gain_body, h_jacobian_body, KH_b, 6, 3, 6);
+
+    for (int i = 0; i < 6; i++)
+        for (int j = 0; j < 6; j++)
+            KH_b[i][j] = (i == j) ? (1 - KH_b[i][j]) : (-KH_b[i][j]);
+
+    float new_covar_body[6][6];
+    MAT_MUL(KH_b, predicted_covar_body, new_covar_body, 6, 6, 6);
+
+    memcpy(ekf.body.covar, new_covar_body, sizeof(new_covar_body));
+}
+
+// ==========================================
+// GETTERS
+// ==========================================
+
+void get_state(float quaternion[4], float position[3], float velocity[3])
 {
     for (int i = 0; i < 4; i++)
-        out[i] = ekf.x[i];
+        quaternion[i] = ekf.quaternion.vals[i];
+
+    for (int i = 0; i < 3; i++) {
+        position[i] = ekf.body.position[i];
+        velocity[i] = ekf.body.velocity[i];
+    }
 }
-
-
