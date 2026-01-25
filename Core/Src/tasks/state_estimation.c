@@ -21,6 +21,8 @@
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 #define PI 3.1415
 
+float EXPECTED_GRAVITY[3] = {0, 0, 1};
+
 // External variable declarations
 extern SPI_HandleTypeDef hspi2;
 extern spi_job_queue_t jobq_spi_2;
@@ -243,7 +245,10 @@ void state_estimation_task_start(void *argument)
                                a_data_raw[1] - a_bias[1], 
                                a_data_raw[2] - a_bias[2]};
 
-            tick_ekf(delta_time, g_data, a_data, (float[3]){0, 0, 0});
+            // tick_ekf(delta_time, g_data, a_data, (float[3]){0, 0, 0});
+
+            tick_ekf_orientation(delta_time, g_data, a_data);
+            tick_ekf_body(delta_time, a_data, (float[3]){0, 0, 0});
 
             float q[4];
             float pos[3];

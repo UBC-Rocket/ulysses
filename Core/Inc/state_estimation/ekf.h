@@ -36,12 +36,9 @@ void init_ekf(
     float expected_g[3]
 );
 
-void tick_ekf(
-    float deltaTime,
-    float gyro[3],
-    float accel[3],
-    float gps_pos[3]
-);
+void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]);
+
+void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]);
 
 /* Macro to multiply any given A (r1 x c1) by B (c1 x c2), producing (r1 x c2) */
 #define MAT_MUL(A, B, C, r1, c1, c2)                          \
