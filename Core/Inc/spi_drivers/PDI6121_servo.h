@@ -4,7 +4,7 @@
 #include "stdbool.h"
 
 typedef struct {
-    void $htim;
+    void *htim;
     uint32_t channel;
     uint32_t timer_hz;
     uint32_t period_ticks;
@@ -18,7 +18,7 @@ typedef struct {
     uint16_t us_mid;
     uint16_t us_max;
 
-    unint16_t us_last;
+    uint16_t us_last;
     bool enabled;
 } PDI6121_servo_t;
 
