@@ -22,7 +22,7 @@ static float clamp_f(float x, float lo, float hi) {
 }
 
 /* Convert microseconds to timer ticks */
-static uint32_t us_to_ticks(PDI6121_servo_pwm_t *pwm, uint16_t us) {
+static uint32_t us_to_ticks(const PDI6121_servo_pwm_t *pwm, uint16_t us) {
     if (pwm == NULL || pwm->timer_hz == 0) {
         return 0;
     }
