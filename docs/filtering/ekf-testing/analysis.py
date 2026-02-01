@@ -287,7 +287,6 @@ class Data:
         entries = []
         entryCount = 0
 
-
     def add_entry(self, entry, expected_value):
         self.entries.append(entry)
         self.expected_values.append(expected_value)
@@ -419,7 +418,7 @@ def test_rotation(ekf):
     print("TEST 3: Orientation EKF - Z-Axis Rotation")
     print("="*60)
     
-    process_noise = np.eye(4, dtype=np.float32) * 0.1
+    process_noise = np.eye(4, dtype=np.float32) * 0.01
     measurement_noise = np.eye(3, dtype=np.float32) * 0.1
     expected_g = np.array([0.0, 0.0, 1], dtype=np.float32)
     delta = []
@@ -429,7 +428,7 @@ def test_rotation(ekf):
     
     dt = 0.01
     def omega_z(t):
-        return 0.01 * (t / 400) ** 2 - .05  # rad/s
+        return min(t / 400, 0.04)  # rad/s
     
     expected_angle = 0
     
@@ -437,7 +436,8 @@ def test_rotation(ekf):
     print(f"Time step: {dt}s, Total steps: 200\n")
     
     for i in range(1000):
-        gyro = np.array([0.0, omega_z(i), 0.0])
+        gyro_noise = random.choice([-1,1]) * random.random() * 0.01 * math.pi / 180
+        gyro = np.array([0.0, omega_z(i) + gyro_noise, 0.0])
         accel = np.array(get_expected_accel(0, expected_angle, 0))
         
         ekf.tick_orientation(dt, gyro, accel)
