@@ -10,24 +10,24 @@ void normalize(float q[4]) {
     for (int i = 0; i < 4; i++) q[i] = q[i] / norm;
 }
 
-#define N 3
+#define DIM_N 3
 
 /* finds inverse of matrix
     1 if successful, 0 if no inverse exists */
-int inverse(float a[N][N], float inverse[N][N]) {
+int inverse(float a[DIM_N][DIM_N], float inverse[DIM_N][DIM_N]) {
     // Initialize inverse as the identity matrix
-    for (int i = 0; i < N; i++)
-        for (int j = 0; j < N; j++)
+    for (int i = 0; i < DIM_N; i++)
+        for (int j = 0; j < DIM_N; j++)
             inverse[i][j] = (i == j) ? 1.0 : 0.0;
 
     // Perform elementary row operations
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < DIM_N; i++) {
         // Find the pivot element
         float pivot = a[i][i];
         if (fabs(pivot) < 1e-6) {
             // Find a row below with a non-zero element and swap
             int swap_row = -1;
-            for (int r = i + 1; r < N; r++) {
+            for (int r = i + 1; r < DIM_N; r++) {
                 if (fabs(a[r][i]) > 1e-6) {
                     swap_row = r;
                     break;
@@ -38,7 +38,7 @@ int inverse(float a[N][N], float inverse[N][N]) {
             }
 
             // Swap rows in both a and inverse
-            for (int c = 0; c < N; c++) {
+            for (int c = 0; c < DIM_N; c++) {
                 float temp = a[i][c];
                 a[i][c] = a[swap_row][c];
                 a[swap_row][c] = temp;
@@ -52,16 +52,16 @@ int inverse(float a[N][N], float inverse[N][N]) {
         }
 
         // Normalize the pivot row
-        for (int j = 0; j < N; j++) {
+        for (int j = 0; j < DIM_N; j++) {
             a[i][j] /= pivot;
             inverse[i][j] /= pivot;
         }
 
         // Eliminate all other elements in column i
-        for (int r = 0; r < N; r++) {
+        for (int r = 0; r < DIM_N; r++) {
             if (r != i) {
                 float factor = a[r][i];
-                for (int c = 0; c < N; c++) {
+                for (int c = 0; c < DIM_N; c++) {
                     a[r][c] -= factor * a[i][c];
                     inverse[r][c] -= factor * inverse[i][c];
                 }

@@ -1,15 +1,15 @@
 #ifndef EKF_H
 #define EKF_H
 
-#include "FreeRTOS.h"
-
 #define STATE_DIM 4
+#define UPDATE_COVAR 10
 
 typedef struct {
     float vals[4];            // real, i, j, k (or w, x, y, z)
     float covar[4][4];        // covariance matrix
     float process[4][4];      // process noise
     float measurement[3][3];  // measurement noise (of accel)
+    int index;
 } quaternion_state;
 
 typedef struct {
@@ -18,6 +18,7 @@ typedef struct {
     float covar[6][6];        // covariance matrix
     float process[6][6];      // process noise
     float measurement[3][3];  // measurement noise (of gps)
+    int index;
 } body_state;
 
 typedef struct {
@@ -25,6 +26,17 @@ typedef struct {
     body_state body;  
     float expected_g[3];               
 } EKF;
+
+void init_ekf_body(
+    float process_noise[6][6],
+    float measurement_noise[3][3]
+);
+
+void init_ekf_orientation(
+    float process_noise[4][4],
+    float measurement_noise[3][3],
+    float expected_g[3]
+);
 
 void get_state(float quat[4], float pos[3], float vel[3]);
 

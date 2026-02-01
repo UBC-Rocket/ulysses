@@ -275,7 +275,7 @@ void state_estimation_task_start(void *argument)
             };
 
             state_exchange_publish_state(&data);
-
+            //DLOG_PRINT("here\n");
             // logging (optional)
             if (ticks % 40 == 0) {
                 //DLOG_PRINT("[%f, %f, %f]deg, %f\n", g_data[0], g_data[1], g_data[2], (g_data[0]*g_data[0]+g_data[1]*g_data[1]+g_data[2]*g_data[2]));
