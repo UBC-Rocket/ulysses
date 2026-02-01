@@ -152,8 +152,9 @@ void state_estimation_task_start(void *argument)
     uint64_t CALIBRATION = 2000;
     uint64_t ticks = 0;
 
-    float a_bias[3] = {0, 0, 0};
-    float g_bias[3] = {0, 0, 0};
+    float accel_bias[3] = {0, 0, 0};
+    float gyro_bias[3] = {0, 0, 0};
+    float gps_bias[3] = {0, 0, 0};
 
     while (true) {
         uint64_t cycle_start = xTaskGetTickCount(); 
@@ -203,6 +204,9 @@ void state_estimation_task_start(void *argument)
             num_baro_samples++;
         }
 
+        uint8_t num_gps_samples = 0;
+        // pulling gps
+
         state_t fused_state = {0};
         fused_state.u_s = timestamp_us();
         state_exchange_publish_state(&fused_state);
@@ -213,11 +217,15 @@ void state_estimation_task_start(void *argument)
 
         ms5611_poller_tick_1khz(&baro_poll);
 
-        uint8_t loops = 0;
-        if (num_accel_samples > num_gyro_samples) loops = num_gyro_samples;
-        else loops = num_accel_samples;
+        uint8_t imu_loops = 0;
+        if (num_accel_samples > num_gyro_samples) imu_loops = num_gyro_samples;
+        else imu_loops = num_accel_samples;
+
+        uint8_t body_loops = 0;
+        if (num_gps_samples > num_accel_samples) body_loops = num_gps_samples;
+        else body_loops = num_accel_samples;
         
-        for (uint8_t i = 0; i < loops; i++) {
+        for (uint8_t i = 0; i < imu_loops; i++) {
             float g_data_raw[3] = {gyro_samples[i].gx, gyro_samples[i].gy, gyro_samples[i].gz};
             float a_data_raw[3] = {accel_samples[i].ax / -GRAV, accel_samples[i].ay / -GRAV, accel_samples[i].az / -GRAV};
             // accel should read [0, 0, 1] when sitting stationary upright
@@ -231,24 +239,25 @@ void state_estimation_task_start(void *argument)
             // Calibration
             if (ticks < CALIBRATION) {
                 ticks += 1;
-                update_bias(g_bias, g_data_raw, a_bias, a_data_raw, EXPECTED_GRAVITY, ticks);
+                update_bias(gyro_bias, g_data_raw, accel_bias, a_data_raw, EXPECTED_GRAVITY, ticks);
 
                 continue;
             }
 
             // Calibration finished
-            float g_data[3] = {g_data_raw[0] - g_bias[0],
-                               g_data_raw[1] - g_bias[1],     
-                               g_data_raw[2] - g_bias[2]};
+            float g_data[3] = {g_data_raw[0] - gyro_bias[0],
+                               g_data_raw[1] - gyro_bias[1],     
+                               g_data_raw[2] - gyro_bias[2]};
 
-            float a_data[3] = {a_data_raw[0] - a_bias[0], 
-                               a_data_raw[1] - a_bias[1], 
-                               a_data_raw[2] - a_bias[2]};
+            float a_data[3] = {a_data_raw[0] - accel_bias[0], 
+                               a_data_raw[1] - accel_bias[1], 
+                               a_data_raw[2] - accel_bias[2]};
 
-            // tick_ekf(delta_time, g_data, a_data, (float[3]){0, 0, 0});
-
-            tick_ekf_orientation(delta_time, g_data, a_data);
-            tick_ekf_body(delta_time, a_data, (float[3]){0, 0, 0});
+            tick_ekf_orientation(delta_time, g_data, a_data);   
+            
+            if (body_loops > i) {
+                tick_ekf_body(delta_time, a_data, (float[3]){0, 0, 0});
+            }
 
             float q[4];
             float pos[3];
