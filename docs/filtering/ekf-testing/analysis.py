@@ -13,6 +13,34 @@ import subprocess
 import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
+import math
+import random
+
+def quat_to_euler(w, x, y, z):
+    sinr_cosp = 2 * (w * x + y * z)
+    cosr_cosp = 1 - 2 * (x * x + y * y)
+    roll = math.atan2(sinr_cosp, cosr_cosp)
+
+    sinp = 2 * (w * y - z * x)
+    pitch = math.asin(sinp) if abs(sinp) <= 1 else math.copysign(math.pi / 2, sinp)
+
+    siny_cosp = 2 * (w * z + x * y)
+    cosy_cosp = 1 - 2 * (y * y + z * z)
+    yaw = math.atan2(siny_cosp, cosy_cosp)
+
+    return roll * 180 / math.pi, pitch * 180 / math.pi, yaw * 180 / math.pi # Radians
+
+def get_expected_accel(roll_deg, pitch_deg, yaw_deg=0):
+    r = np.radians(roll_deg)
+    p = np.radians(pitch_deg)
+    
+    gx = -np.sin(p)
+    gy = np.sin(r) * np.cos(p)
+    gz = np.cos(r) * np.cos(p)
+
+    sg = [0.02 * random.random() * random.choice([-1,1]), 0.02 * random.random() * random.choice([-1,1]), 0.02 * random.random() * random.choice([-1,1])]
+
+    return np.array([gx+sg[0], gy+sg[1], gz+sg[2]])
 
 class EKFTestSetup:
     """Handles building and setting up the EKF test environment"""
@@ -370,9 +398,7 @@ def test_body_motion(ekf):
            
             print(f"Step {i:3d}: pos=[{pos[0]:6.3f}, {pos[1]:6.3f}, {pos[2]:6.3f}], "
                   f"vel=[{vel[0]:6.3f}, {vel[1]:6.3f}, {vel[2]:6.3f}]")
-        
-    print(delta)
-    
+            
     _, final_pos, final_vel = ekf.get_state()
     expected_vel = accel * (200 * dt)
     print(f"\nFinal velocity:   [{final_vel[0]:6.3f}, {final_vel[1]:6.3f}, {final_vel[2]:6.3f}]")
@@ -382,7 +408,97 @@ def test_body_motion(ekf):
 
     delta_array = np.array(delta)
     time_steps = np.arange(len(delta)) * dt
+
+    # plot(delta_array, time_steps)
     
+
+
+def test_rotation(ekf):
+    """Test orientation EKF with rotation"""
+    print("\n" + "="*60)
+    print("TEST 3: Orientation EKF - Z-Axis Rotation")
+    print("="*60)
+    
+    process_noise = np.eye(4, dtype=np.float32) * 0.1
+    measurement_noise = np.eye(3, dtype=np.float32) * 0.1
+    expected_g = np.array([0.0, 0.0, 1], dtype=np.float32)
+    delta = []
+    
+    ekf.init_orientation(process_noise, measurement_noise, expected_g)
+    ekf.init_body(np.eye(6) * 0.01, np.eye(3) * 0.1)
+    
+    dt = 0.01
+    def omega_z(t):
+        return 0.01 * (t / 400) ** 2 - .05  # rad/s
+    
+    expected_angle = 0
+    
+    # print(f"Rotating around Z-axis at {omega_z} rad/s ({omega_z*180/np.pi:.1f}°/s)")
+    print(f"Time step: {dt}s, Total steps: 200\n")
+    
+    for i in range(1000):
+        gyro = np.array([0.0, omega_z(i), 0.0])
+        accel = np.array(get_expected_accel(0, expected_angle, 0))
+        
+        ekf.tick_orientation(dt, gyro, accel)
+        quat, _, _ = ekf.get_state()
+
+        euler = quat_to_euler(quat[0], quat[1], quat[2], quat[3])
+        delta.append([0-euler[0], expected_angle-euler[1],0-euler[2]])
+
+        expected_angle += omega_z(i) * dt * 180/np.pi
+
+        if i % 100 == 0:
+            print(euler)
+            angle = 2 * np.arccos(np.clip(quat[0], -1, 1)) * 180/np.pi
+            print(f"Step {i:3d}: quat=[{quat[0]:7.4f}, {quat[1]:7.4f}, "
+                  f"{quat[2]:7.4f}, {quat[3]:7.4f}], angle={angle:6.2f}°")
+    
+    delta_array = np.array(delta)
+    time_steps = np.arange(len(delta)) * dt
+
+    quat, _, _ = ekf.get_state()
+    total_angle = 2 * np.arccos(np.clip(quat[0], -1, 1)) * 180/np.pi
+    print(f"\nTotal rotation: {total_angle:.2f}° (expected ~{expected_angle:.2f}°)")
+
+    plot(delta_array, time_steps)
+
+
+def main():
+    print("="*60)
+    print("EKF C Code Test Suite with Auto-Build")
+    print("="*60)
+    
+    # Setup and build
+    setup = EKFTestSetup()
+    
+    if not setup.setup():
+        print("\nERRRR.")
+        return 1
+    
+    print("\n✓ Build successful!")
+    
+    # Run tests
+    try:
+        ekf = EKFTester(setup.get_library_path())
+        
+        test_orientation_static(ekf)
+        test_body_motion(ekf)
+        test_rotation(ekf)
+        
+        print("\n" + "="*60)
+        print("chilling")
+        print("="*60)
+        
+        return 0
+        
+    except Exception as e:
+        print(f"\nTest failed with error: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
+def plot(delta_array, time_steps):
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     fig.suptitle('Position Error (True - Estimated) Over Time', fontsize=14, fontweight='bold')
     
@@ -423,82 +539,6 @@ def test_body_motion(ekf):
     
     plt.tight_layout()
     plt.show()
-
-
-def test_rotation(ekf):
-    """Test orientation EKF with rotation"""
-    print("\n" + "="*60)
-    print("TEST 3: Orientation EKF - Z-Axis Rotation")
-    print("="*60)
-    
-    process_noise = np.eye(4, dtype=np.float32) * 0.001
-    measurement_noise = np.eye(3, dtype=np.float32) * 0.1
-    expected_g = np.array([0.0, 0.0, 1], dtype=np.float32)
-    
-    ekf.init_orientation(process_noise, measurement_noise, expected_g)
-    ekf.init_body(np.eye(6) * 0.01, np.eye(3) * 0.1)
-    
-    dt = 0.01
-    def omega_z(t):
-        return 0.01 * (t / 400) ** 2 - .05  # rad/s
-    
-    expected_angle = 0
-    
-    # print(f"Rotating around Z-axis at {omega_z} rad/s ({omega_z*180/np.pi:.1f}°/s)")
-    print(f"Time step: {dt}s, Total steps: 200\n")
-    
-    for i in range(1000):
-        gyro = np.array([0.0, 0.0, omega_z(i)])
-        accel = np.array([0.0, 0.0, 1])
-        expected_angle += omega_z(i) * dt * 180/np.pi
-        
-        ekf.tick_orientation(dt, gyro, accel)
-        
-        if i % 100 == 0:
-            quat, _, _ = ekf.get_state()
-            angle = 2 * np.arccos(np.clip(quat[0], -1, 1)) * 180/np.pi
-            print(f"Step {i:3d}: quat=[{quat[0]:7.4f}, {quat[1]:7.4f}, "
-                  f"{quat[2]:7.4f}, {quat[3]:7.4f}], angle={angle:6.2f}°")
-    
-    quat, _, _ = ekf.get_state()
-    total_angle = 2 * np.arccos(np.clip(quat[0], -1, 1)) * 180/np.pi
-    print(f"\nTotal rotation: {total_angle:.2f}° (expected ~{expected_angle:.2f}°)")
-
-
-def main():
-    print("="*60)
-    print("EKF C Code Test Suite with Auto-Build")
-    print("="*60)
-    
-    # Setup and build
-    setup = EKFTestSetup()
-    
-    if not setup.setup():
-        print("\nERRRR.")
-        return 1
-    
-    print("\n✓ Build successful!")
-    
-    # Run tests
-    try:
-        ekf = EKFTester(setup.get_library_path())
-        
-        test_orientation_static(ekf)
-        test_body_motion(ekf)
-        test_rotation(ekf)
-        
-        print("\n" + "="*60)
-        print("chilling")
-        print("="*60)
-        
-        return 0
-        
-    except Exception as e:
-        print(f"\nTest failed with error: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
-
 
 if __name__ == "__main__":
     sys.exit(main())
