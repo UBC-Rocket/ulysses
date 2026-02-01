@@ -63,11 +63,15 @@ volatile uint32_t g_hardfault_sp;
 /* External variables --------------------------------------------------------*/
 extern XSPI_HandleTypeDef hospi1;
 extern SD_HandleTypeDef hsd1;
+extern DMA_HandleTypeDef handle_GPDMA1_Channel5;
+extern DMA_HandleTypeDef handle_GPDMA1_Channel4;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel1;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel3;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel2;
+extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi4;
 extern DMA_HandleTypeDef handle_GPDMA2_Channel5;
 extern DMA_HandleTypeDef handle_GPDMA2_Channel4;
 extern DMA_HandleTypeDef handle_GPDMA2_Channel0;
@@ -369,6 +373,34 @@ void GPDMA1_Channel3_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles GPDMA1 Channel 4 global interrupt.
+  */
+void GPDMA1_Channel4_IRQHandler(void)
+{
+  /* USER CODE BEGIN GPDMA1_Channel4_IRQn 0 */
+
+  /* USER CODE END GPDMA1_Channel4_IRQn 0 */
+  HAL_DMA_IRQHandler(&handle_GPDMA1_Channel4);
+  /* USER CODE BEGIN GPDMA1_Channel4_IRQn 1 */
+
+  /* USER CODE END GPDMA1_Channel4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles GPDMA1 Channel 5 global interrupt.
+  */
+void GPDMA1_Channel5_IRQHandler(void)
+{
+  /* USER CODE BEGIN GPDMA1_Channel5_IRQn 0 */
+
+  /* USER CODE END GPDMA1_Channel5_IRQn 0 */
+  HAL_DMA_IRQHandler(&handle_GPDMA1_Channel5);
+  /* USER CODE BEGIN GPDMA1_Channel5_IRQn 1 */
+
+  /* USER CODE END GPDMA1_Channel5_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM6 global interrupt.
   */
 void TIM6_IRQHandler(void)
@@ -380,6 +412,20 @@ void TIM6_IRQHandler(void)
   /* USER CODE BEGIN TIM6_IRQn 1 */
 
   /* USER CODE END TIM6_IRQn 1 */
+}
+
+/**
+  * @brief This function handles SPI1 global interrupt.
+  */
+void SPI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI1_IRQn 0 */
+
+  /* USER CODE END SPI1_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi1);
+  /* USER CODE BEGIN SPI1_IRQn 1 */
+
+  /* USER CODE END SPI1_IRQn 1 */
 }
 
 /**
@@ -464,6 +510,20 @@ void SDMMC1_IRQHandler(void)
   /* USER CODE BEGIN SDMMC1_IRQn 1 */
 
   /* USER CODE END SDMMC1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles SPI4 global interrupt.
+  */
+void SPI4_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI4_IRQn 0 */
+
+  /* USER CODE END SPI4_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi4);
+  /* USER CODE BEGIN SPI4_IRQn 1 */
+
+  /* USER CODE END SPI4_IRQn 1 */
 }
 
 /**

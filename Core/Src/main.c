@@ -58,6 +58,8 @@ SD_HandleTypeDef hsd1;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi4;
+DMA_HandleTypeDef handle_GPDMA1_Channel5;
+DMA_HandleTypeDef handle_GPDMA1_Channel4;
 DMA_HandleTypeDef handle_GPDMA1_Channel1;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 DMA_HandleTypeDef handle_GPDMA1_Channel3;
@@ -283,6 +285,10 @@ static void MX_GPDMA1_Init(void)
     HAL_NVIC_EnableIRQ(GPDMA1_Channel2_IRQn);
     HAL_NVIC_SetPriority(GPDMA1_Channel3_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(GPDMA1_Channel3_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel4_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel4_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel5_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel5_IRQn);
 
   /* USER CODE BEGIN GPDMA1_Init 1 */
 
@@ -798,7 +804,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : EXT_INT_1_Pit */
+  /*Configure GPIO pin : EXT_INT_1_Pin */
   GPIO_InitStruct.Pin = EXT_INT_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;

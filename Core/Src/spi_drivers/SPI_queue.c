@@ -99,6 +99,7 @@ static void start_job(spi_job_t *job, spi_job_queue_t *q) {
  * @note Critical section covers both busy check AND enqueue to prevent race
  *       conditions when called from multiple contexts (ISR + task).
  */
+
 bool spi_submit_job(spi_job_t job, spi_job_queue_t *q)
 {
     bool started = false;
@@ -114,7 +115,9 @@ bool spi_submit_job(spi_job_t job, spi_job_queue_t *q)
      * This prevents race when called from both ISR and task contexts.
      */
     uint32_t primask;
+    volatile uint32_t basepre = __get_BASEPRI();
     SYNC_ENTER_CRITICAL_RAW(primask);
+
 
     if (!q->spi_busy) {
         /* Bus is free - start immediately */
