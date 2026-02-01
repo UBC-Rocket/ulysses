@@ -32,18 +32,35 @@ extern bmi088_gyro_t gyro;
 
 static ms5611_poller_t baro_poll;
 
+void longlat_to_meters(float reference_point[3], float gps[3], float relative_distance[3]) {
+    // we just want our distance from some reference point that's close enough to where we are now (so small-angle approximations hold)
+    // we can correct for drift or a bad first reference point during start up calibration
+
+    gps[2] = reference_point[2]; // assuming that altitude remains the same
+
+    float R = 6371000; // earth radius
+
+    // x1 ~=~ R * psi
+    // x2 ~=~ R * theta
+    // |relative_distance| ~=~ R * sqrt(psi^2 + theta^2)
+    float delta_longlat[2] = {gps[0] - reference_point[0], gps[1] - reference_point[1]};
+
+    relative_distance[0] = R * delta_longlat[0];
+    relative_distance[1] = R * delta_longlat[1];
+}
+
 void quat_to_euler(float q[4], float e[3]) {
     float w = q[0];
     float x = q[1];
     float y = q[2];
     float z = q[3];
 
-    // Roll (x-axis rotation)
+    // x-axis rotation
     float sinr = 2.0f * (w*x + y*z);
     float cosr = 1.0f - 2.0f * (x*x + y*y);
     e[0] = atan2f(sinr, cosr) * 180 / M_PI;
 
-    // Pitch (y-axis rotation)
+    // y-axis rotation
     float sinp = 2.0f * (w*y - z*x);
     if (fabsf(sinp) >= 1.0f)
         e[1] = copysignf(M_PI / 2.0f, sinp) * 180 / M_PI; // clamp at ±90°
@@ -155,6 +172,7 @@ void state_estimation_task_start(void *argument)
     float accel_bias[3] = {0, 0, 0};
     float gyro_bias[3] = {0, 0, 0};
     float gps_bias[3] = {0, 0, 0};
+    uint64_t gps_ticks = 0;
 
     while (true) {
         uint64_t cycle_start = xTaskGetTickCount(); 
@@ -191,6 +209,7 @@ void state_estimation_task_start(void *argument)
         }
 
         uint8_t num_baro_samples = 0;
+        float gps_reference_point[3];
         ms5611_sample_t baro_sample;
 
         while(num_baro_samples < FUSION_VECTOR_SAMPLE_SIZE){
@@ -204,6 +223,7 @@ void state_estimation_task_start(void *argument)
             num_baro_samples++;
         }
 
+        bool have_gps_reference_point = 0;
         uint8_t num_gps_samples = 0;
         // pulling gps
 
@@ -232,6 +252,17 @@ void state_estimation_task_start(void *argument)
             if (ticks < CALIBRATION) {
                 ticks += 1;
                 update_bias(gyro_bias, g_data_raw, accel_bias, a_data_raw, EXPECTED_GRAVITY, ticks);
+
+                if (!have_gps_reference_point && num_gps_samples > 0) {
+                    // TODO: set gps reference point 
+                    gps_reference_point; // = gps_samples[....]
+                    have_gps_reference_point = 1;
+                }
+                else if (num_gps_samples > 0) {
+                    float gps_point[3]; // TODO: FETCH CURRENT POINT
+                    float relative_distance[3];
+                    longlat_to_meters(gps_reference_point, gps_point, relative_distance);
+                }
 
                 continue;
             }
@@ -275,6 +306,7 @@ void state_estimation_task_start(void *argument)
                 .u_s = gyro_samples[i].t_us
             };
 
+            // this is where data is sent 
             state_exchange_publish_state(&data);
 
             // logging (optional)
