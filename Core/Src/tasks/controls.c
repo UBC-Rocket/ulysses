@@ -10,26 +10,20 @@
 
 void controls_task_start(void *argument)
 {
+    (void)argument;
+
     state_t current_state = {0};
     flight_state_t flight_state = IDLE;
 
-    const TickType_t period_ticks = pdMS_TO_TICKS(1);
-
     for (;;) {
-        TickType_t cycle_start = xTaskGetTickCount(); 
-        
+        // Wait for timer notification from TIM3 OC interrupt
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
         state_exchange_get_state(&current_state);
         state_exchange_get_flight_state(&flight_state);
 
         // TODO: controls
 
         // TODO: actuator drivers esc, servos
-
-        TickType_t elapsed = xTaskGetTickCount() - cycle_start;
-        if (elapsed < period_ticks) {
-            vTaskDelay(period_ticks - elapsed);
-        } else {
-            taskYIELD();
-        }
     }
 }
