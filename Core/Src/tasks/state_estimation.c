@@ -207,14 +207,6 @@ void state_estimation_task_start(void *argument)
         uint8_t num_gps_samples = 0;
         // pulling gps
 
-        state_t fused_state = {0};
-        fused_state.u_s = timestamp_us();
-        state_exchange_publish_state(&fused_state);
-
-        flight_state_t flight_state;
-        state_exchange_get_flight_state(&flight_state);
-        log_service_log_state(&fused_state, flight_state);
-
         ms5611_poller_tick_1khz(&baro_poll);
 
         uint8_t imu_loops = 0;
@@ -274,8 +266,8 @@ void state_estimation_task_start(void *argument)
             };
 
             state_t data = {
-                .pos = {0, 0, 0},
-                .vel = {0, 0, 0},
+                .pos = {pos[0], pos[1], pos[2]},
+                .vel = {vel[0], vel[1], vel[2]},
 
                 .omega_b = {g_data[0], g_data[1], g_data[2]},
                 .q_bn = new_quaternion,
@@ -284,14 +276,9 @@ void state_estimation_task_start(void *argument)
             };
 
             state_exchange_publish_state(&data);
-            //DLOG_PRINT("here\n");
+
             // logging (optional)
             if (ticks % 40 == 0) {
-                //DLOG_PRINT("[%f, %f, %f]deg, %f\n", g_data[0], g_data[1], g_data[2], (g_data[0]*g_data[0]+g_data[1]*g_data[1]+g_data[2]*g_data[2]));
-                //DLOG_PRINT("[%f, %f, %f]deg\n", a_data[0], a_data[1], a_data[2]);
-                // DLOG_PRINT("gyro:[%d,%d,%d]\n[%d, %d, %d,%d]deg\n", 
-                //    (int)(g_data[0]*180/PI), (int)(g_data[1]*180/PI), (int)(g_data[2]*180/PI),
-                //    ((int)q[0]), ((int)q[1]), ((int)q[2]),((int)q[3]));
                 DLOG_PRINT("%f, %f, %f, %f]deg\n", 
                 (q[0]), (q[1]), (q[2]), q[3]);
             }
