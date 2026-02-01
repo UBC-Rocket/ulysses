@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 class EKFTestSetup:
     """Handles building and setting up the EKF test environment"""
@@ -226,6 +227,73 @@ class EKFTester:
         
         return quat, pos, vel
 
+class Entry:
+    accel = [0, 0, 0]
+    gyro = [0, 0, 0]
+    gps = [0, 0, 0]
+    dt = 0
+
+    def __init__(self, accel, gyro, gps, dt):
+        self.accel = accel[:]
+        self.gyro = gyro[:]
+        self.gps = gps[:]
+        self.dt = dt
+ 
+class Truth:
+    pos = [0, 0, 0]
+    vel = [0, 0, 0]
+    quat = [0, 0, 0, 0]
+
+    def __init__(self, pos, vel, quat):
+        self.pos = pos[:]
+        self.vel = vel[:]
+        self.quat = quat[:]
+
+class Data:
+    entries = []
+    expected_values = []
+    entryCount = 0
+    index = 0
+
+    def __init__(self):
+        entries = []
+        entryCount = 0
+
+
+    def add_entry(self, entry, expected_value):
+        self.entries.append(entry)
+        self.expected_values.append(expected_value)
+
+    def get_next_data(self):
+        if (self.index >= self.entryCount):
+            return -1
+        
+        index = self.index
+        self.index += 1
+
+        return (self.entries[index], self.expected_values[index])
+
+class Tester:
+    process_noise = np.eye(4, dtype=np.float32) * 0.001
+    measurement_noise = np.eye(3, dtype=np.float32) * 0.1
+    expected_g = np.array([0.0, 0.0, 1], dtype=np.float32)
+
+    def __init__(self, ekf, data):
+        ekf.init_orientation(self.process_noise, self.measurement_noise, self.expected_g)
+        ekf.init_body(np.eye(6) * 0.01, np.eye(3) * 0.1)
+        self.data = data
+
+    def run_tests(self, ekf):
+        for i in range(self.data.entryCount):
+            input_data = self.data.entries[i]
+            true_data = self.data.expected_values[i]
+
+            ekf.tick_orientation(input_data.dt, input_data.gyro, input_data.accel)
+            ekf.tick_body(input_data.dt, input_data.accel, input_data.gps)
+
+
+
+
 
 # ============================================
 # TEST CASES
@@ -272,6 +340,8 @@ def test_body_motion(ekf):
     
     process_noise = np.eye(6, dtype=np.float32) * 0.01
     measurement_noise = np.eye(3, dtype=np.float32) * 1.0
+
+    delta = []
     
     ekf.init_orientation(np.eye(4) * 0.001, np.eye(3) * 0.1, np.array([0, 0, -1]))
     ekf.init_body(process_noise, measurement_noise)
@@ -288,16 +358,71 @@ def test_body_motion(ekf):
         gps_pos = true_pos + noise
         
         ekf.tick_body(dt, accel, gps_pos)
+        _, pos, vel = ekf.get_state()
+
+        ds = [0, 0, 0]
+        for j in range(3):
+            ds[j] = float(true_pos[j] - pos[j])
+
+        delta.append(ds)
         
         if i % 50 == 0:
-            _, pos, vel = ekf.get_state()
+           
             print(f"Step {i:3d}: pos=[{pos[0]:6.3f}, {pos[1]:6.3f}, {pos[2]:6.3f}], "
                   f"vel=[{vel[0]:6.3f}, {vel[1]:6.3f}, {vel[2]:6.3f}]")
+        
+    print(delta)
     
     _, final_pos, final_vel = ekf.get_state()
     expected_vel = accel * (200 * dt)
     print(f"\nFinal velocity:   [{final_vel[0]:6.3f}, {final_vel[1]:6.3f}, {final_vel[2]:6.3f}]")
     print(f"Expected velocity: [{expected_vel[0]:6.3f}, {expected_vel[1]:6.3f}, {expected_vel[2]:6.3f}]")
+    print(f"\nFinal pos:   [{final_pos[0]:6.3f}, {final_pos[1]:6.3f}, {final_pos[2]:6.3f}]")
+    print(f"Expected pos: [{true_pos[0]:6.3f}, {true_pos[1]:6.3f}, {true_pos[2]:6.3f}]")
+
+    delta_array = np.array(delta)
+    time_steps = np.arange(len(delta)) * dt
+    
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig.suptitle('Position Error (True - Estimated) Over Time', fontsize=14, fontweight='bold')
+    
+    # X-axis error
+    axes[0, 0].plot(time_steps, delta_array[:, 0], 'r-', linewidth=1.5)
+    axes[0, 0].set_xlabel('Time (s)')
+    axes[0, 0].set_ylabel('Error (m)')
+    axes[0, 0].set_title('X-axis Error')
+    axes[0, 0].grid(True, alpha=0.3)
+    axes[0, 0].axhline(y=0, color='k', linestyle='--', linewidth=0.8, alpha=0.5)
+    
+    # Y-axis error
+    axes[0, 1].plot(time_steps, delta_array[:, 1], 'g-', linewidth=1.5)
+    axes[0, 1].set_xlabel('Time (s)')
+    axes[0, 1].set_ylabel('Error (m)')
+    axes[0, 1].set_title('Y-axis Error')
+    axes[0, 1].grid(True, alpha=0.3)
+    axes[0, 1].axhline(y=0, color='k', linestyle='--', linewidth=0.8, alpha=0.5)
+    
+    # Z-axis error
+    axes[1, 0].plot(time_steps, delta_array[:, 2], 'b-', linewidth=1.5)
+    axes[1, 0].set_xlabel('Time (s)')
+    axes[1, 0].set_ylabel('Error (m)')
+    axes[1, 0].set_title('Z-axis Error')
+    axes[1, 0].grid(True, alpha=0.3)
+    axes[1, 0].axhline(y=0, color='k', linestyle='--', linewidth=0.8, alpha=0.5)
+    
+    # All axes combined
+    axes[1, 1].plot(time_steps, delta_array[:, 0], 'r-', linewidth=1.5, label='X-axis', alpha=0.8)
+    axes[1, 1].plot(time_steps, delta_array[:, 1], 'g-', linewidth=1.5, label='Y-axis', alpha=0.8)
+    axes[1, 1].plot(time_steps, delta_array[:, 2], 'b-', linewidth=1.5, label='Z-axis', alpha=0.8)
+    axes[1, 1].set_xlabel('Time (s)')
+    axes[1, 1].set_ylabel('Error (m)')
+    axes[1, 1].set_title('All Axes Combined')
+    axes[1, 1].grid(True, alpha=0.3)
+    axes[1, 1].axhline(y=0, color='k', linestyle='--', linewidth=0.8, alpha=0.5)
+    axes[1, 1].legend(loc='best')
+    
+    plt.tight_layout()
+    plt.show()
 
 
 def test_rotation(ekf):
@@ -314,18 +439,22 @@ def test_rotation(ekf):
     ekf.init_body(np.eye(6) * 0.01, np.eye(3) * 0.1)
     
     dt = 0.01
-    omega_z = 0.5  # rad/s
+    def omega_z(t):
+        return 0.01 * (t / 400) ** 2 - .05  # rad/s
     
-    print(f"Rotating around Z-axis at {omega_z} rad/s ({omega_z*180/np.pi:.1f}°/s)")
+    expected_angle = 0
+    
+    # print(f"Rotating around Z-axis at {omega_z} rad/s ({omega_z*180/np.pi:.1f}°/s)")
     print(f"Time step: {dt}s, Total steps: 200\n")
     
-    for i in range(200):
-        gyro = np.array([0.0, 0.0, omega_z])
+    for i in range(1000):
+        gyro = np.array([0.0, 0.0, omega_z(i)])
         accel = np.array([0.0, 0.0, 1])
+        expected_angle += omega_z(i) * dt * 180/np.pi
         
         ekf.tick_orientation(dt, gyro, accel)
         
-        if i % 50 == 0:
+        if i % 100 == 0:
             quat, _, _ = ekf.get_state()
             angle = 2 * np.arccos(np.clip(quat[0], -1, 1)) * 180/np.pi
             print(f"Step {i:3d}: quat=[{quat[0]:7.4f}, {quat[1]:7.4f}, "
@@ -333,7 +462,6 @@ def test_rotation(ekf):
     
     quat, _, _ = ekf.get_state()
     total_angle = 2 * np.arccos(np.clip(quat[0], -1, 1)) * 180/np.pi
-    expected_angle = omega_z * 200 * dt * 180/np.pi
     print(f"\nTotal rotation: {total_angle:.2f}° (expected ~{expected_angle:.2f}°)")
 
 

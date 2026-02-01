@@ -53,6 +53,7 @@ void init_ekf_orientation(
     ekf.quaternion.vals[1] = 0;
     ekf.quaternion.vals[2] = 0;
     ekf.quaternion.vals[3] = 0;
+    ekf.quaternion.index = 0;
 
     // Set Covariance to Identity
     for (int i = 0; i < 4; i++) {
@@ -81,6 +82,7 @@ void init_ekf_body(
     // Initialize state to 0
     for (int i = 0; i < 3; i++) ekf.body.position[i] = 0;
     for (int i = 0; i < 3; i++) ekf.body.velocity[i] = 0;
+    ekf.body.index = 0;
 
     // Set Covariance to Identity
     for (int i = 0; i < 6; i++) {
@@ -116,7 +118,7 @@ void init_ekf(
 // ==========================================
 
 void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
-    mm++; 
+    ekf.quaternion.index += 1;
 
     // --- 1. PREDICTION ---
     float processing_quaternion[4];
@@ -188,6 +190,12 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
     normalize(ekf.quaternion.vals);
 
     // Update Covariance: P = (I - K * H) * P
+    if (ekf.quaternion.index <= UPDATE_COVAR) {
+        return;
+    }
+
+    ekf.quaternion.index = 0;
+
     float KH_q[4][4];
     MAT_MUL(kalman_gain_quaternion, h_jacobian_quaternion, KH_q, 4, 3, 4);
 
@@ -202,6 +210,8 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
 }
 
 void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]) {
+    ekf.body.index += 1;
+
     // --- 1. PREDICTION ---
     float processing_position[3];
     float processing_velocity[3];
@@ -258,6 +268,12 @@ void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]) {
     for (int i = 0; i < 3; i++) ekf.body.velocity[i] = processing_velocity[i] + adjustment_body[i + 3][0];
 
     // Update Covariance: P = (I - K * H) * P
+    if (ekf.body.index <= UPDATE_COVAR) {
+        return;
+    }
+
+    ekf.body.index = 0;
+
     float KH_b[6][6];
     MAT_MUL(kalman_gain_body, h_jacobian_body, KH_b, 6, 3, 6);
 

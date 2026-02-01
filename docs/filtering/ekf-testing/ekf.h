@@ -2,12 +2,14 @@
 #define EKF_H
 
 #define STATE_DIM 4
+#define UPDATE_COVAR 10
 
 typedef struct {
     float vals[4];            // real, i, j, k (or w, x, y, z)
     float covar[4][4];        // covariance matrix
     float process[4][4];      // process noise
     float measurement[3][3];  // measurement noise (of accel)
+    int index;
 } quaternion_state;
 
 typedef struct {
@@ -16,6 +18,7 @@ typedef struct {
     float covar[6][6];        // covariance matrix
     float process[6][6];      // process noise
     float measurement[3][3];  // measurement noise (of gps)
+    int index;
 } body_state;
 
 typedef struct {
