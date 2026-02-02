@@ -23,9 +23,9 @@ typedef struct {
 } PDI6121_servo_t;
 
 typedef enum {
-    uint8_t US_MIN = 1000, 
-    uint8_t US_MID = 1500,
-    uint8_t US_MAX = 2000
+    US_MIN = 1000, 
+    US_MID = 1500,
+    US_MAX = 2000
 } PDI6121_servo_cal_t;
 
 void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm);
@@ -39,3 +39,9 @@ void PDI6121_servo_set_norm(PDI6121_servo_t *servo, float norm);
 void PDI6121_servo_set_deg(PDI6121_servo_t *servo, float degrees);
 
 void PDI6121_servo_set_cal(PDI6121_servo_t *servo);
+
+
+/* Device layer hooks */
+void PDI6121_servo_device_init(PDI6121_servo_pwm_t *pwm);
+void PDI6121_servo_pwm_device_enable(PDI6121_servo_pwm_t *pwm, bool enable);
+void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks);

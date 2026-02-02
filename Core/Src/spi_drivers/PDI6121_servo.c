@@ -3,10 +3,7 @@
 #include <stddef.h> 
 #include <stdint.h>
 
-/* Device layer hooks */
-void PDI6121_servo_pwm_device_init(PDI6121_servo_pwm_t *pwm);
-void PDI6121_servo_pwm_device_enable(PDI6121_servo_pwm_t *pwm, bool enable);
-void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks);
+
 
 /* Local helper clamp functions */
 static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
@@ -69,7 +66,7 @@ void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm) {
     servo->us_last = servo->us_mid;
 
     /* Hardware init */
-    PDI6121_servo_pwm_device_init(&servo->pwm);
+    PDI6121_servo_device_init(&servo->pwm);
 
     /* Put hardware into a known safe state:
      * - Set compare to mid
