@@ -4,7 +4,7 @@
  *
  * Implements two-phase push mode reading from the GNSS Radio slave board:
  * - Phase 1: Read TYPE byte (1 byte) to determine message type
- * - Phase 2: Read PAYLOAD based on type (GPS: 48 bytes, Radio: 256 bytes)
+ * - Phase 2: Read PAYLOAD based on type (GPS: 87 bytes NMEA, Radio: 256 bytes)
  *
  * Priority assignment:
  * - GPS messages: SPI1_PRIO_HIGH (small, time-sensitive)
@@ -35,7 +35,7 @@ gnss_radio_context_t gnss_radio_ctx;
 static void submit_type_read(void);
 static void submit_payload_read(uint8_t type);
 static void submit_full_read(void);
-static bool enqueue_gps_fix(const gnss_gps_fix_t *fix);
+static bool enqueue_gps_nmea(const uint8_t *nmea);
 static bool enqueue_radio_msg(const uint8_t *msg);
 
 /* -------------------------------------------------------------------------- */
@@ -242,17 +242,14 @@ void gnss_radio_phase2_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg)
     uint8_t type = (uint8_t)(uintptr_t)arg;
 
     switch (type) {
-    case GNSS_PUSH_TYPE_GPS: {
-        /* Parse GPS fix from rx_buf */
-        const gnss_gps_fix_t *fix = (const gnss_gps_fix_t *)rx_buf;
-
-        if (enqueue_gps_fix(fix)) {
+    case GNSS_PUSH_TYPE_GPS:
+        /* Raw NMEA sentence from rx_buf */
+        if (enqueue_gps_nmea(rx_buf)) {
             gnss_radio_ctx.gps_fixes_received++;
         } else {
             gnss_radio_ctx.queue_overflows++;
         }
         break;
-    }
 
     case GNSS_PUSH_TYPE_RADIO:
         if (enqueue_radio_msg(rx_buf)) {
@@ -324,16 +321,14 @@ void gnss_radio_single_phase_done(spi1_job_t *job, const uint8_t *rx_buf, void *
     const uint8_t *payload = &rx_buf[GNSS_PUSH_TYPE_BYTES];
 
     switch (type) {
-    case GNSS_PUSH_TYPE_GPS: {
-        const gnss_gps_fix_t *fix = (const gnss_gps_fix_t *)payload;
-
-        if (enqueue_gps_fix(fix)) {
+    case GNSS_PUSH_TYPE_GPS:
+        /* Raw NMEA sentence */
+        if (enqueue_gps_nmea(payload)) {
             gnss_radio_ctx.gps_fixes_received++;
         } else {
             gnss_radio_ctx.queue_overflows++;
         }
         break;
-    }
 
     case GNSS_PUSH_TYPE_RADIO:
         if (enqueue_radio_msg(payload)) {
@@ -363,19 +358,19 @@ void gnss_radio_single_phase_done(spi1_job_t *job, const uint8_t *rx_buf, void *
 /* -------------------------------------------------------------------------- */
 
 /**
- * @brief Enqueue a GPS fix (called from ISR context)
+ * @brief Enqueue a GPS NMEA sentence (called from ISR context)
  */
-static bool enqueue_gps_fix(const gnss_gps_fix_t *fix)
+static bool enqueue_gps_nmea(const uint8_t *nmea)
 {
-    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_full()) {
         return false;
     }
 
-    memcpy(&q->fixes[q->head], fix, sizeof(gnss_gps_fix_t));
+    memcpy(q->sentences[q->head], nmea, GNSS_NMEA_MAX_LEN);
     SYNC_DMB();
-    q->head = (q->head + 1) % GNSS_GPS_FIX_QUEUE_LEN;
+    q->head = (q->head + 1) % GNSS_GPS_NMEA_QUEUE_LEN;
     return true;
 }
 
@@ -396,45 +391,45 @@ static bool enqueue_radio_msg(const uint8_t *msg)
     return true;
 }
 
-bool gnss_gps_dequeue(gnss_gps_fix_t *fix)
+bool gnss_gps_dequeue(uint8_t *nmea)
 {
-    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_empty()) {
         return false;
     }
 
     SYNC_DMB();
-    memcpy(fix, &q->fixes[q->tail], sizeof(gnss_gps_fix_t));
+    memcpy(nmea, q->sentences[q->tail], GNSS_NMEA_MAX_LEN);
     SYNC_DMB();
-    q->tail = (q->tail + 1) % GNSS_GPS_FIX_QUEUE_LEN;
+    q->tail = (q->tail + 1) % GNSS_GPS_NMEA_QUEUE_LEN;
     return true;
 }
 
-bool gnss_gps_peek(gnss_gps_fix_t *fix)
+bool gnss_gps_peek(uint8_t *nmea)
 {
-    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_empty()) {
         return false;
     }
 
     SYNC_DMB();
-    memcpy(fix, &q->fixes[q->tail], sizeof(gnss_gps_fix_t));
+    memcpy(nmea, q->sentences[q->tail], GNSS_NMEA_MAX_LEN);
     return true;
 }
 
-const gnss_gps_fix_t* gnss_gps_get_latest(void)
+const uint8_t* gnss_gps_get_latest(void)
 {
-    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_empty()) {
         return NULL;
     }
 
     /* Get most recent (head - 1) */
-    uint8_t latest_idx = (q->head == 0) ? (GNSS_GPS_FIX_QUEUE_LEN - 1) : (q->head - 1);
-    return &q->fixes[latest_idx];
+    uint8_t latest_idx = (q->head == 0) ? (GNSS_GPS_NMEA_QUEUE_LEN - 1) : (q->head - 1);
+    return q->sentences[latest_idx];
 }
 
 bool gnss_radio_dequeue(uint8_t *msg)

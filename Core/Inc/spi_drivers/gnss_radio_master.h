@@ -75,19 +75,22 @@ typedef enum {
 } gnss_push_state_t;
 
 /* -------------------------------------------------------------------------- */
-/* GPS Fix Queue                                                              */
+/* GPS NMEA Queue                                                             */
 /* -------------------------------------------------------------------------- */
 
-#define GNSS_GPS_FIX_QUEUE_LEN    8
+#define GNSS_GPS_NMEA_QUEUE_LEN    8
 
 /**
- * @brief GPS fix queue for received GPS data
+ * @brief GPS NMEA queue for received raw NMEA sentences
+ *
+ * Stores raw NMEA sentences (up to 87 bytes each) from the GNSS Radio slave.
+ * The master is responsible for parsing these into position data.
  */
 typedef struct {
-    gnss_gps_fix_t fixes[GNSS_GPS_FIX_QUEUE_LEN];
+    uint8_t sentences[GNSS_GPS_NMEA_QUEUE_LEN][GNSS_NMEA_MAX_LEN];
     volatile uint8_t head;
     volatile uint8_t tail;
-} gnss_gps_fix_queue_t;
+} gnss_gps_nmea_queue_t;
 
 /* -------------------------------------------------------------------------- */
 /* Radio Message Queue                                                        */
@@ -124,7 +127,7 @@ typedef struct {
     uint16_t irq_pin;
 
     /* ── Data queues ── */
-    gnss_gps_fix_queue_t gps_queue;
+    gnss_gps_nmea_queue_t gps_queue;
     gnss_radio_msg_queue_t radio_queue;
 
     /* ── RX buffers for two-phase read ── */
@@ -188,54 +191,54 @@ void gnss_radio_set_split_mode(bool enable);
 void gnss_radio_irq_handler(void);
 
 /* -------------------------------------------------------------------------- */
-/* GPS Fix Queue API                                                          */
+/* GPS NMEA Queue API                                                         */
 /* -------------------------------------------------------------------------- */
 
 /**
- * @brief Check if GPS fix queue is empty
+ * @brief Check if GPS NMEA queue is empty
  */
 static inline bool gnss_gps_queue_empty(void) {
     return gnss_radio_ctx.gps_queue.head == gnss_radio_ctx.gps_queue.tail;
 }
 
 /**
- * @brief Check if GPS fix queue is full
+ * @brief Check if GPS NMEA queue is full
  */
 static inline bool gnss_gps_queue_full(void) {
-    return ((gnss_radio_ctx.gps_queue.head + 1) % GNSS_GPS_FIX_QUEUE_LEN) ==
+    return ((gnss_radio_ctx.gps_queue.head + 1) % GNSS_GPS_NMEA_QUEUE_LEN) ==
            gnss_radio_ctx.gps_queue.tail;
 }
 
 /**
- * @brief Get number of GPS fixes in queue
+ * @brief Get number of GPS NMEA sentences in queue
  */
 static inline uint8_t gnss_gps_queue_count(void) {
     return (gnss_radio_ctx.gps_queue.head - gnss_radio_ctx.gps_queue.tail +
-            GNSS_GPS_FIX_QUEUE_LEN) % GNSS_GPS_FIX_QUEUE_LEN;
+            GNSS_GPS_NMEA_QUEUE_LEN) % GNSS_GPS_NMEA_QUEUE_LEN;
 }
 
 /**
- * @brief Dequeue a GPS fix
+ * @brief Dequeue a GPS NMEA sentence
  *
- * @param fix Pointer to store the GPS fix data
- * @return true if fix was dequeued, false if queue empty
+ * @param nmea Buffer to store the NMEA sentence (must be at least GNSS_NMEA_MAX_LEN bytes)
+ * @return true if sentence was dequeued, false if queue empty
  */
-bool gnss_gps_dequeue(gnss_gps_fix_t *fix);
+bool gnss_gps_dequeue(uint8_t *nmea);
 
 /**
- * @brief Peek at the oldest GPS fix without removing it
+ * @brief Peek at the oldest GPS NMEA sentence without removing it
  *
- * @param fix Pointer to store the GPS fix data
- * @return true if fix is available, false if queue empty
+ * @param nmea Buffer to store the NMEA sentence
+ * @return true if sentence is available, false if queue empty
  */
-bool gnss_gps_peek(gnss_gps_fix_t *fix);
+bool gnss_gps_peek(uint8_t *nmea);
 
 /**
- * @brief Get pointer to newest GPS fix (most recent)
+ * @brief Get pointer to newest GPS NMEA sentence (most recent)
  *
- * @return Pointer to fix, or NULL if queue empty
+ * @return Pointer to sentence, or NULL if queue empty
  */
-const gnss_gps_fix_t* gnss_gps_get_latest(void);
+const uint8_t* gnss_gps_get_latest(void);
 
 /* -------------------------------------------------------------------------- */
 /* Radio Message Queue API                                                    */

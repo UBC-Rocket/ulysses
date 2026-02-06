@@ -62,7 +62,7 @@ typedef enum {
 #define GNSS_PULL_DUMMY_BYTES         4    /**< CRITICAL: 4 bytes needed to avoid TX FIFO prefetch race */
 #define GNSS_CMD_OVERHEAD             (GNSS_PULL_CMD_BYTES + GNSS_PULL_DUMMY_BYTES)  /* 5 bytes */
 #define GNSS_PULL_RADIO_PAYLOAD       256
-#define GNSS_PULL_GPS_PAYLOAD         87   /**< Max NMEA sentence length */
+#define GNSS_PULL_GPS_PAYLOAD         87   /**< Max NMEA sentence length (82 chars + margin) */
 #define GNSS_PULL_BUFLEN_PAYLOAD      1    /**< Single byte count */
 
 #define GNSS_PULL_RADIO_TOTAL         (GNSS_PULL_CMD_BYTES + GNSS_PULL_DUMMY_BYTES + GNSS_PULL_RADIO_PAYLOAD)  /* 261 */
@@ -72,10 +72,10 @@ typedef enum {
 /** Push mode transaction sizes (TYPE + PAYLOAD) */
 #define GNSS_PUSH_TYPE_BYTES          1
 #define GNSS_PUSH_RADIO_PAYLOAD       256
-#define GNSS_PUSH_GPS_PAYLOAD         48   /**< sizeof(gnss_gps_fix_t) */
+#define GNSS_PUSH_GPS_PAYLOAD         87   /**< Raw NMEA sentence (82 chars + margin) */
 
 #define GNSS_PUSH_RADIO_TOTAL         (GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_RADIO_PAYLOAD)  /* 257 */
-#define GNSS_PUSH_GPS_TOTAL           (GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_GPS_PAYLOAD)    /* 49 */
+#define GNSS_PUSH_GPS_TOTAL           (GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_GPS_PAYLOAD)    /* 88 */
 
 /** Maximum transaction size (for buffer allocation) */
 #define GNSS_MAX_TRANSACTION_SIZE     GNSS_PULL_RADIO_TOTAL  /* 261 bytes */
@@ -110,13 +110,22 @@ typedef enum {
 #define GNSS_RADIO_PAYLOAD_DURATION_US (GNSS_PUSH_RADIO_PAYLOAD * GNSS_SPI_US_PER_BYTE + 20)
 
 /* -------------------------------------------------------------------------- */
-/* GPS Fix Structure (Push Mode)                                              */
+/* GPS Data Structures                                                        */
 /* -------------------------------------------------------------------------- */
 
 /**
- * @brief GPS fix data structure for push mode
+ * @brief Raw NMEA sentence buffer for push mode GPS
  *
- * This structure matches the slave-side gps_fix_t exactly.
+ * GPS push mode sends raw NMEA sentences. NMEA 0183 specifies max 82 chars
+ * including $, *, checksum, CR, LF. We use 87 bytes for safety margin.
+ * The master is responsible for parsing NMEA to extract position data.
+ */
+#define GNSS_NMEA_MAX_LEN             87
+
+/**
+ * @brief Parsed GPS fix structure (for future use)
+ *
+ * Reserved for when NMEA parsing is implemented on the slave.
  * Total size: 48 bytes
  */
 typedef struct {
@@ -140,10 +149,6 @@ typedef struct {
 
     uint8_t  padding2[8];      /**< Padding to 48 bytes total             [8 bytes] */
 } __attribute__((packed)) gnss_gps_fix_t;
-
-/* Verify struct size matches GNSS_PUSH_GPS_PAYLOAD */
-_Static_assert(sizeof(gnss_gps_fix_t) == GNSS_PUSH_GPS_PAYLOAD,
-               "gnss_gps_fix_t size mismatch with protocol");
 
 /* -------------------------------------------------------------------------- */
 /* Radio Message Constants                                                    */
