@@ -25,6 +25,8 @@
 #include "debug/log.h"
 #include "sensors_init.h"
 #include "timestamp.h"
+#include "spi1_bus.h"
+#include "gnss_radio_master.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -476,6 +478,12 @@ static void MX_SPI1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* Initialize SPI1 priority bus driver */
+  spi1_bus_init(&hspi1);
+
+  /* Initialize GNSS Radio push mode driver */
+  gnss_radio_init();
 
   /* USER CODE END SPI1_Init 2 */
 

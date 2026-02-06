@@ -24,6 +24,6 @@ void controls_task_start(void *argument)
 
         // TODO: controls
 
-        // TODO: actuator drivers esc, servos
+        // TODO: change the controls output in the other timer interrupt. 
     }
 }

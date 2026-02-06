@@ -75,6 +75,8 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5607_baro.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/spi1_bus.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/gnss_radio_master.c
 )
 
 # Link directories setup

@@ -1,5 +1,6 @@
 #include "SPI_queue.h"
 #include "SPI_device_interactions.h"
+#include "spi1_bus.h"
 #include "sync.h"
 #include "stm32h5xx_hal.h"
 #include "FreeRTOS.h"
@@ -168,11 +169,15 @@ static void spi_dma_complete_common(SPI_HandleTypeDef *hspi) {
     BaseType_t xWoken = pdFALSE;
     bool should_start_next = false;
 
-    /* Identify which queue this SPI belongs to */
+    /* SPI1 uses the new priority bus driver */
+    if (hspi == spi1_ctx.hspi) {
+        spi1_dma_complete_handler();
+        return;
+    }
+
+    /* Identify which queue this SPI belongs to (SPI2/SPI4) */
     spi_job_queue_t *jobq;
-    if (hspi == jobq_spi_1.spi_bus) {
-        jobq = &jobq_spi_1;
-    } else if (hspi == jobq_spi_2.spi_bus) {
+    if (hspi == jobq_spi_2.spi_bus) {
         jobq = &jobq_spi_2;
     } else if (hspi == jobq_spi_4.spi_bus) {
         jobq = &jobq_spi_4;
