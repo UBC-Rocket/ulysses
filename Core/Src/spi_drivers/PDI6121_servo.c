@@ -1,9 +1,7 @@
 #include "PDI6121_servo.h"
 
-#include <stddef.h> 
+#include <stddef.h>
 #include <stdint.h>
-
-
 
 /* Local helper clamp functions */
 static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
@@ -46,9 +44,15 @@ static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t p
 
 /* Default calibration for a typical hobby servo signal. */
 static void set_default_cal(PDI6121_servo_t *servo) {
-    servo->us_min = US_MIN; 
-    servo->us_mid = US_MID;
-    servo->us_max = US_MAX;
+
+    // Bottom Servo Offset: 750 (To be at one end) 975 (To be at middle)
+	// Top Servo Offset: 500 (To be at one end) 750 (To be at middle)
+
+	int offset = 750;
+
+    servo->us_min = US_MIN + offset;
+    servo->us_mid = US_MID + offset;
+    servo->us_max = US_MAX + offset;
 }
 
 /* Public API implementations */
@@ -161,19 +165,21 @@ void PDI6121_servo_set_deg(PDI6121_servo_t *servo, float degrees) {
      * - change this function signature to accept deg_min/deg_max, OR
      * - don’t use degrees and use norm/deflection instead.
      */
-    float d = clamp_f(degrees, 0.0f, 180.0f);
 
-    if (d <= 90.0f) {
-        float t = d / 90.0f; 
-        float us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
-        uint16_t us = (uint16_t)(us_f + 0.5f);
-        PDI6121_servo_set_us(servo, us);
-    } else {
-        float t = (d - 90.0f) / 90.0f; 
-        float us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
-        uint16_t us = (uint16_t)(us_f + 0.5f);
-        PDI6121_servo_set_us(servo, us);
-    }
+     float d = clamp_f(degrees, 0.0f, 180.0f);
+
+     if (d <= 90.0f) {
+         float t = d / 90.0f;
+         float us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
+         uint16_t us = (uint16_t)(us_f + 0.5f);
+         PDI6121_servo_set_us(servo, us);
+     } else {
+         float t = (d - 90.0f) / 90.0f;
+         float us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
+         uint16_t us = (uint16_t)(us_f + 0.5f);
+         PDI6121_servo_set_us(servo, us);
+     }
+
 }
 
 void PDI6121_servo_set_cal(PDI6121_servo_t *servo) {
