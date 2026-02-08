@@ -19,6 +19,7 @@
 #include "BMI088_gyro.h"
 #include "MS5611_baro.h"
 #include "icm20948_imu.h"
+#include "icm20948_imu.h"
 #include "MS5607_baro.h"
 #include "ms5611_poller.h"
 #include "ms5607_poller.h"
@@ -57,6 +58,7 @@ extern bmi088_gyro_sample_queue_t bmi088_gyro_sample_ring;
 extern ms5611_sample_queue_t ms5611_sample_ring;
 extern icm20948_sample_queue_t icm_sample_ring;
 extern ms5607_sample_queue_t ms5607_sample_ring;
+extern icm20948_sample_queue_t icm_sample_ring;
 
 /** SPI job queues for each bus */
 extern spi_job_queue_t jobq_spi_1;
@@ -66,6 +68,7 @@ extern spi_job_queue_t jobq_spi_4;
 /** Device configuration structs */
 extern bmi088_accel_t accel;
 extern bmi088_gyro_t gyro;
+extern icm20948_t icm20948;
 extern icm20948_t icm20948;
 
 /** Device ready flags - set after successful initialization */
@@ -112,7 +115,8 @@ uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
  * @param cs_pin  Chip select GPIO pin.
  * @param dev     Device struct to populate with configuration.
  * @return 0 on success, error code otherwise.
- */
+ */extern volatile bool icm20948_ready;
+
 uint8_t bmi088_accel_init(SPI_HandleTypeDef *hspi,
                           GPIO_TypeDef *cs_port,
                           uint16_t cs_pin,
