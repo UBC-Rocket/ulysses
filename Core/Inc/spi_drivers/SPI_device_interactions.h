@@ -1,6 +1,7 @@
 #include "BMI088_accel.h"
 #include "BMI088_gyro.h"
 #include "MS5611_baro.h"
+#include "icm20948_imu.h"
 #include "SPI_queue.h"
 #include "main.h"
 #include "stm32h5xx_hal.h"
@@ -14,15 +15,18 @@
 extern bmi088_accel_sample_queue_t bmi088_acc_sample_ring;
 extern bmi088_gyro_sample_queue_t bmi088_gyro_sample_ring;
 extern ms5611_sample_queue_t ms5611_sample_ring;
+extern icm20948_sample_queue_t icm_sample_ring;
 
 extern spi_job_queue_t jobq_spi_1;
 extern spi_job_queue_t jobq_spi_2;
 
 extern bmi088_accel_t accel;
 extern bmi088_gyro_t gyro;
+extern icm20948_t icm20948;
 
 extern volatile bool bmi088_accel_ready;
 extern volatile bool bmi088_gyro_ready;
+extern volatile bool icm20948_ready;
 
 uint8_t bmi088_accel_init(SPI_HandleTypeDef *hspi,
                        GPIO_TypeDef *cs_port,
@@ -37,6 +41,16 @@ uint8_t bmi088_gyro_init(SPI_HandleTypeDef *hspi,
                          bmi088_gyro_t *dev);
 
 void bmi088_gyro_interrupt(void);
+
+uint8_t icm20948_init(SPI_HandleTypeDef *hspi,
+                      GPIO_TypeDef *cs_port,
+                      uint16_t cs_pin,
+                      icm20948_t *dev);
+
+uint8_t icm20948_read(SPI_HandleTypeDef *hspi,
+                      GPIO_TypeDef *cs_port,
+                      uint16_t cs_pin,
+                      icm20948_t *dev);
 
 /**
  * @brief Initialize MS5611 barometer.
