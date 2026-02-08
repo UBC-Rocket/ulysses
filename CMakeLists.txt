@@ -87,6 +87,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${SPI_DRIVER_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/controls/pid.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/controls/flight_controller.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
