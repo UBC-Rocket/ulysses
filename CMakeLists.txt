@@ -7,6 +7,9 @@ cmake_minimum_required(VERSION 3.22)
 # User is free to modify the file as much as necessary
 #
 
+# Add our own CMake module directory to the search path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -32,12 +35,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 project(${CMAKE_PROJECT_NAME})
 
 option(ULYSSES_ENABLE_DEBUG_LOGGING "Enable serial debug logging" ON)
-option(ULYSSES_USE_SD_CARD "Enable SD card initialization (requires SD card to be inserted)" OFF)
+option(ULYSSES_USE_USB "Enable USB support" OFF)
 
 # Display a summary of the build configuration
 message("Build type: " ${CMAKE_BUILD_TYPE})
 message("Debug logging: " ${ULYSSES_ENABLE_DEBUG_LOGGING})
-message("SD card initialization: " ${ULYSSES_USE_SD_CARD})
+message("USB support: " ${ULYSSES_USE_USB})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
@@ -49,16 +52,7 @@ add_executable(${CMAKE_PROJECT_NAME})
 add_subdirectory(cmake/stm32cubemx)
 
 # Add dependencies
-include(cmake/printf-library.cmake)
-
-FetchContent_MakeAvailable(printf)
-
-# Library requires a native 64-bit integer type, so must be be compiled
-# with at least C99 standard
-set_target_properties(printf PROPERTIES
-    C_STANDARD 11
-    C_STANDARD_REQUIRED ON
-)
+include(dependencies)
 
 set(DEBUG_MODULE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug/log.c
@@ -77,9 +71,13 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5611_device.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5607_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_accel.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5607_baro.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/spi1_bus.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/gnss_radio_master.c
 )
 
 set(STATE_SRC
@@ -96,6 +94,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/sensors_init.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timestamp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
@@ -103,6 +103,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/quaternion.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/body.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
     ${DEBUG_MODULE_SRC}
@@ -124,7 +125,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     BMI_ACC_Chip_Select_Pin=BMI_ACC_CS_Pin
     BMI_GYRO_Chip_Select_GPIO_Port=BMI_GYRO_CS_GPIO_Port
     BMI_GYRO_Chip_Select_Pin=BMI_GYRO_CS_Pin
-    $<$<BOOL:${ULYSSES_USE_SD_CARD}>:ULYSSES_USE_SD_CARD>
+    $<$<BOOL:${ULYSSES_USE_USB}>:ULYSSES_USE_USB>
     $<$<BOOL:${ULYSSES_ENABLE_DEBUG_LOGGING}>:ULYSSES_ENABLE_DEBUG_LOGGING>
 )
 
