@@ -109,6 +109,10 @@ void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_
     }
 }
 
+float pressure_to_height(uint32_t pressure_centi) {
+    return (44307.69)*(1 - pow(((float)pressure_centi /  (float)101325),0.190284));
+}
+
 void state_estimation_task_start(void *argument)
 {
     (void)argument;
@@ -118,6 +122,8 @@ void state_estimation_task_start(void *argument)
 
     static bmi088_accel_sample_t accel_samples[FUSION_VECTOR_SAMPLE_SIZE];
     static bmi088_gyro_sample_t gyro_samples[FUSION_VECTOR_SAMPLE_SIZE];
+    static float baro1_heights[FUSION_VECTOR_SAMPLE_SIZE];
+    static float baro2_heights[FUSION_VECTOR_SAMPLE_SIZE];
     // static ms5611_sample_t baro_samples[FUSION_VECTOR_SAMPLE_SIZE]; 
 
     float process_noise_quaternion[4][4] = {{0.01, 0, 0, 0}, {0, 0.01, 0, 0}, {0, 0, 0.01, 0}, {0, 0, 0, 0.01}};
@@ -146,13 +152,16 @@ void state_estimation_task_start(void *argument)
     uint32_t ISR_flags = 0;
 
     while (true) {
+        DLOG_PRINT("BEGIN\n");
         // Event-driven wait (New Branch)
         xTaskNotifyWaitIndexed(0, 0, UINT32_MAX, &ISR_flags, period_ticks);
 
         // Counters for the current batch
         uint8_t num_accel_samples = 0;
         uint8_t num_gyro_samples = 0;
-        uint8_t num_gps_samples = 0; 
+        uint8_t num_gps_samples = 0;
+        uint8_t num_baro1_samples = 0;
+        uint8_t num_baro2_samples = 0;
 
         if (ISR_flags != 0) {            
             if (ISR_flags & BMI088_ACCEL_SAMPLE_FLAG) {
@@ -179,7 +188,9 @@ void state_estimation_task_start(void *argument)
                 ms5611_sample_t baro_sample;
                 while (ms5611_sample_dequeue(&ms5611_sample_ring, &baro_sample)) {
                     log_service_log_baro_sample(baro_sample.t_us, baro_sample.temp_centi, baro_sample.pressure_centi, baro_sample.seq);
-                    // get baro...
+                    if (num_baro1_samples < FUSION_VECTOR_SAMPLE_SIZE) {
+                        baro1_heights[num_baro1_samples++] = pressure_to_height(baro_sample.pressure_centi);
+                    }
                 }
             }
 
@@ -187,9 +198,12 @@ void state_estimation_task_start(void *argument)
                 ms5607_sample_t baro2_sample;
                 while (ms5607_sample_dequeue(&ms5607_sample_ring, &baro2_sample)) {
                     log_service_log_baro2_sample(baro2_sample.t_us, baro2_sample.temp_centi, baro2_sample.pressure_centi, baro2_sample.seq);
-                    // get baro 2...
+                    if (num_baro2_samples < FUSION_VECTOR_SAMPLE_SIZE) {
+                        baro2_heights[num_baro2_samples++] = pressure_to_height(baro2_sample.pressure_centi);
+                    }
                 }
             }
+
 
             gps_data_t current_gps;
             float pos_meters[3];
@@ -216,7 +230,25 @@ void state_estimation_task_start(void *argument)
             uint8_t imu_loops = (num_accel_samples < num_gyro_samples) ? num_accel_samples : num_gyro_samples;
             uint8_t body_loops = (num_gps_samples > num_accel_samples) ? num_gps_samples : num_accel_samples; // Simplified, assumes 0 gps currently
 
+            float h1 = -1;
+            float h2 = -1;
+
+            for (int i = 0; i < num_baro1_samples; i++) {
+                h1 = h1 * (i / (i + 1)) + baro1_heights[i] * 1 / (i + 1);
+            }
+
+            for (int i = 0; i < num_baro2_samples; i++) {
+                h2 = h2 * (i / (i + 1)) + baro2_heights[i] * 1 / (i + 1);
+            }
+
             for (uint8_t i = 0; i < imu_loops; i++) {
+                if (h1!=-1) {
+                    continue;
+                }
+
+                if (h2!=-1) {
+                    continue;
+                }
                 float g_data_raw[3] = {gyro_samples[i].gx, gyro_samples[i].gy, gyro_samples[i].gz};
                 float a_data_raw[3] = {accel_samples[i].ax / -GRAV, accel_samples[i].ay / -GRAV, accel_samples[i].az / -GRAV};
 
@@ -248,6 +280,9 @@ void state_estimation_task_start(void *argument)
                 float q[4], pos[3], vel[3];
                 get_state(q, pos, vel);
 
+                float e[3];
+                quat_to_euler(q,e);
+
                 state_t data = {
                     .pos = {pos[0], pos[1], pos[2]},
                     .vel = {vel[0], vel[1], vel[2]},
@@ -263,8 +298,8 @@ void state_estimation_task_start(void *argument)
                 state_exchange_get_flight_state(&flight_state);
                 log_service_log_state(&data, flight_state);
 
-                if (ticks % 40 == 0) {
-                    // DLOG_PRINT("%f, %f, %f, %f]deg\n", q[0], q[1], q[2], q[3]);
+                if (ticks % 400 == 0) {
+                    DLOG_PRINT("%f, %f, %f, %f]deg\n", q[0], q[1], q[2], q[3]);
                 }
                 ticks++;
             }
