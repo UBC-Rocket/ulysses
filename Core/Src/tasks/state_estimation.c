@@ -23,12 +23,21 @@
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
 #include "SD_logging/log_service.h"
+#include  "spi_drivers/gnss_radio_master.h"
 
 #define GRAV 9.807f
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 #define PI 3.1415f
 
 float EXPECTED_GRAVITY[3] = {0, 0, 1};
+
+typedef struct {
+    float lat;
+    float lon;
+    float alt;
+    uint8_t fix_quality;
+    uint8_t num_sats;
+} gps_data_t;
 
 // Math Helpers
 void longlat_to_meters(float reference_point[3], float gps[3], float relative_distance[3]) {
@@ -37,6 +46,34 @@ void longlat_to_meters(float reference_point[3], float gps[3], float relative_di
     float delta_longlat[2] = {gps[0] - reference_point[0], gps[1] - reference_point[1]};
     relative_distance[0] = R * delta_longlat[0];
     relative_distance[1] = R * delta_longlat[1];
+}
+
+static float nmea_to_decimal(float nmea_coord, char quadrant) {
+    int degrees = (int)(nmea_coord / 100);
+    float minutes = nmea_coord - (degrees * 100);
+    float decimal = degrees + (minutes / 60.0f);
+    if (quadrant == 'S' || quadrant == 'W') decimal = -decimal;
+    return decimal;
+}
+
+bool parse_gpgga(const char *nmea, gps_data_t *data) {
+    if (strncmp(nmea, "$GPGGA", 6) != 0) return false;
+
+    char lat_dir, lon_dir;
+    float raw_lat, raw_lon;
+
+    // Scan the string
+    // Format: $GPGGA,time,lat,N,lon,E,fix,sats,hdop,alt,M,...
+    int count = sscanf(nmea, "$GPGGA,%*f,%f,%c,%f,%c,%hhu,%hhu,%*f,%f", 
+                       &raw_lat, &lat_dir, &raw_lon, &lon_dir, 
+                       &data->fix_quality, &data->num_sats, &data->alt);
+
+    if (count < 7) return false;
+
+    data->lat = nmea_to_decimal(raw_lat, lat_dir);
+    data->lon = nmea_to_decimal(raw_lon, lon_dir);
+    
+    return true;
 }
 
 void quat_to_euler(float q[4], float e[3]) {
@@ -100,10 +137,10 @@ void state_estimation_task_start(void *argument)
 
     float accel_bias[3] = {0, 0, 0};
     float gyro_bias[3] = {0, 0, 0};
-    // float gps_bias[3] = {0, 0, 0}; 
+    float gps_bias[3] = {0, 0, 0}; 
     // uint64_t gps_ticks = 0;
-    // float gps_reference_point[3];
-    // bool have_gps_reference_point = 0;
+    float gps_reference_point[3];
+    bool have_gps_reference_point = 0;
 
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
     uint32_t ISR_flags = 0;
@@ -154,6 +191,28 @@ void state_estimation_task_start(void *argument)
                 }
             }
 
+            gps_data_t current_gps;
+            float pos_meters[3];
+            const uint8_t *nmea_sentence = gnss_gps_get_latest();
+
+            if (nmea_sentence != NULL && parse_gpgga(nmea_sentence, &current_gps)) {
+    
+            if (current_gps.fix_quality > 0) {
+                // current_gps.lat, current_gps.lon, current_gps.alt
+                
+                if (!have_gps_reference_point) {
+                    gps_reference_point[0] = current_gps.lat;
+                    gps_reference_point[1] = current_gps.lon;
+                    gps_reference_point[2] = current_gps.alt;
+                    have_gps_reference_point = true;
+                } else {
+                    float gps_vec[3] = {current_gps.lat, current_gps.lon, current_gps.alt};
+                    longlat_to_meters(gps_reference_point, gps_vec, pos_meters);
+                    }
+                }
+            }
+            
+
             uint8_t imu_loops = (num_accel_samples < num_gyro_samples) ? num_accel_samples : num_gyro_samples;
             uint8_t body_loops = (num_gps_samples > num_accel_samples) ? num_gps_samples : num_accel_samples; // Simplified, assumes 0 gps currently
 
@@ -165,6 +224,8 @@ void state_estimation_task_start(void *argument)
                     delta_time = (gyro_samples[i].t_us - last_tick) / 1000000.0f;
                 }
                 last_tick = gyro_samples[i].t_us;
+
+                
 
                 // Calibration
                 if (ticks < CALIBRATION) {
@@ -180,7 +241,7 @@ void state_estimation_task_start(void *argument)
                 tick_ekf_orientation(delta_time, g_data, a_data);
 
                 if (body_loops > i) {
-                    tick_ekf_body(delta_time, a_data, (float[3]){0, 0, 0});
+                    tick_ekf_body(delta_time, a_data, pos_meters);
                 }
 
                 // Publish State
