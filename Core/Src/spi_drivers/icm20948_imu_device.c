@@ -3,6 +3,9 @@
 #include "main.h"
 #include <stm32h563xx.h>
 
+#define ICM20948_GYRO_CFG_2000DPS_DLPF0 0x07U
+#define ICM20948_ACCEL_CFG_16G_DLPF0    0x07U
+
 /* Helper: SPI Transmit */
 static void icm_tx(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin, uint8_t *tx, size_t len) {
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
@@ -35,14 +38,15 @@ uint8_t icm20948_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t c
     size_t n;
     
     icm20948_init_struct(dev);
+    icm20948_ready = false;
 
     /* 1. Reset (Bank 0) */
     icm_bank(hspi, cs_port, cs_pin, dev, 0);
     icm_write(hspi, cs_port, cs_pin, ICM20948_REG_PWR_MGMT_1, 0x80); // Reset bit
-    HAL_Delay(100);
+    HAL_Delay(10);
     
     icm_write(hspi, cs_port, cs_pin, ICM20948_REG_PWR_MGMT_1, 0x01); // Auto Clock
-    HAL_Delay(50);
+    HAL_Delay(10);
 
     /* 2. Check ID */
     n = icm20948_build_read(ICM20948_REG_WHO_AM_I, tx);
@@ -55,14 +59,18 @@ uint8_t icm20948_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t c
     /* 3. Configure Accel & Gyro (Bank 2) */
     icm_bank(hspi, cs_port, cs_pin, dev, 2);
     
-    // Gyro Config: ±2000dps, DLPF Enabled (Low Pass Filter)
-    icm_write(hspi, cs_port, cs_pin, ICM20948_REG_GYRO_CONFIG_1, 0x07); 
+    // Gyro Config: ±2000 dps, DLPF enabled (DLPFCFG=0, FCHOICE=1)
+    icm_write(hspi, cs_port, cs_pin, ICM20948_REG_GYRO_CONFIG_1, ICM20948_GYRO_CFG_2000DPS_DLPF0); 
     
-    // Accel Config: ±16g, DLPF Enabled
-    icm_write(hspi, cs_port, cs_pin, ICM20948_REG_ACCEL_CONFIG, 0x07);
+    // Accel Config: ±16 g, DLPF enabled (DLPFCFG=0, FCHOICE=1)
+    icm_write(hspi, cs_port, cs_pin, ICM20948_REG_ACCEL_CONFIG, ICM20948_ACCEL_CFG_16G_DLPF0);
 
     /* 4. Return to Bank 0 for Data Reading */
     icm_bank(hspi, cs_port, cs_pin, dev, 0);
+
+    icm_sample_ring.head = 0;
+    icm_sample_ring.tail = 0;
+    icm20948_ready = true;
     
     return 0; // Success
 }
@@ -72,6 +80,8 @@ uint8_t icm20948_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t c
  */
 uint8_t icm20948_read(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin, icm20948_t *dev) {
     uint8_t tx[15], rx[15]; // Buffer size reduced (1 command + 12 data)
+
+    if (!icm20948_ready) return 3;
     
     // Ensure we are in Bank 0
     icm_bank(hspi, cs_port, cs_pin, dev, 0);
@@ -83,10 +93,9 @@ uint8_t icm20948_read(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t c
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 
     icm20948_sample_t s;
-    s.timestamp_us = micros();
+    s.timestamp_us = timestamp_us();
     if(icm20948_parse_6axis(rx, &s, dev)) {
-        icm_queue_push(&icm_sample_ring, &s);
-        return 0;
+        return icm_queue_push(&icm_sample_ring, &s) ? 0 : 2;
     }
     return 1;
 }

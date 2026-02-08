@@ -2,6 +2,7 @@
 #define ICM20948_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <math.h> 
 
@@ -50,6 +51,12 @@ typedef struct {
     bool  first_sample;
 } icm20948_t;
 
+typedef struct {
+    icm20948_sample_t samples[ICM20948_SAMPLE_Q_SIZE];
+    volatile uint8_t head;
+    volatile uint8_t tail;
+} icm20948_sample_queue_t;
+
 /* -------------------------------------------------------------------------- */
 /* Logic Prototypes                                                           */
 /* -------------------------------------------------------------------------- */
@@ -63,5 +70,27 @@ size_t icm20948_build_read_6axis(uint8_t *tx_buf);
 /* Note: 'dev' is no longer const because we update its state (timestamp/angles) */
 bool icm20948_parse_6axis(const uint8_t *rx_buf, icm20948_sample_t *out, icm20948_t *dev);
 void icm20948_init_struct(icm20948_t *dev);
+
+static inline bool icm_queue_empty(icm20948_sample_queue_t *q) {
+    return q->head == q->tail;
+}
+
+static inline bool icm_queue_full(icm20948_sample_queue_t *q) {
+    return ((q->head + 1U) % ICM20948_SAMPLE_Q_SIZE) == q->tail;
+}
+
+static inline bool icm_queue_push(icm20948_sample_queue_t *q, const icm20948_sample_t *sample) {
+    if (icm_queue_full(q)) return false;
+    q->samples[q->head] = *sample;
+    q->head = (uint8_t)((q->head + 1U) % ICM20948_SAMPLE_Q_SIZE);
+    return true;
+}
+
+static inline bool icm_queue_pop(icm20948_sample_queue_t *q, icm20948_sample_t *sample) {
+    if (icm_queue_empty(q)) return false;
+    *sample = q->samples[q->tail];
+    q->tail = (uint8_t)((q->tail + 1U) % ICM20948_SAMPLE_Q_SIZE);
+    return true;
+}
 
 #endif
