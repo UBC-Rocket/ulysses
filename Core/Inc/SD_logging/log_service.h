@@ -45,6 +45,11 @@ void log_service_log_baro_sample(uint32_t timestamp_us,
                                  int32_t pressure_centi,
                                  uint32_t seq);
 
+void log_service_log_baro2_sample(uint32_t timestamp_us,
+                                  int32_t temp_centi,
+                                  int32_t pressure_centi,
+                                  uint32_t seq);
+
 /**
  * @brief Append an event record to the log (e.g., estop, state changes).
  */

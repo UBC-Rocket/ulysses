@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define LOG_SCHEMA_VERSION 1U
+#define LOG_SCHEMA_VERSION 2U
 #define LOG_RECORD_MAGIC 0xA5U
 
 typedef enum {
@@ -25,17 +25,23 @@ typedef struct __attribute__((packed)) {
 
 #define LOG_RECORD_FIELDS_ACCEL_SAMPLE(FIELD) \
     FIELD(uint32_t, timestamp_us) \
-    FIELD(int16_t, ax_mm_s2) \
-    FIELD(int16_t, ay_mm_s2) \
-    FIELD(int16_t, az_mm_s2)
+    FIELD(float, ax_mps2) \
+    FIELD(float, ay_mps2) \
+    FIELD(float, az_mps2)
 
 #define LOG_RECORD_FIELDS_GYRO_SAMPLE(FIELD) \
     FIELD(uint32_t, timestamp_us) \
-    FIELD(int16_t, gx_mrad_s) \
-    FIELD(int16_t, gy_mrad_s) \
-    FIELD(int16_t, gz_mrad_s)
+    FIELD(float, gx_rad_s) \
+    FIELD(float, gy_rad_s) \
+    FIELD(float, gz_rad_s)
 
 #define LOG_RECORD_FIELDS_BARO_SAMPLE(FIELD) \
+    FIELD(uint32_t, timestamp_us) \
+    FIELD(int32_t, temp_centi) \
+    FIELD(int32_t, pressure_centi) \
+    FIELD(uint32_t, seq)
+
+#define LOG_RECORD_FIELDS_BARO2_SAMPLE(FIELD) \
     FIELD(uint32_t, timestamp_us) \
     FIELD(int32_t, temp_centi) \
     FIELD(int32_t, pressure_centi) \
@@ -66,7 +72,8 @@ typedef struct __attribute__((packed)) {
     APP(0x02, gyro_sample, LOG_RECORD_FIELDS_GYRO_SAMPLE) \
     APP(0x03, baro_sample, LOG_RECORD_FIELDS_BARO_SAMPLE) \
     APP(0x04, state_snapshot, LOG_RECORD_FIELDS_STATE_SNAPSHOT) \
-    APP(0x05, event, LOG_RECORD_FIELDS_EVENT)
+    APP(0x05, event, LOG_RECORD_FIELDS_EVENT) \
+    APP(0x06, baro2_sample, LOG_RECORD_FIELDS_BARO2_SAMPLE)
 
 #define DECLARE_ENUM(id, name, fields) LOG_RECORD_TYPE_##name = id,
 typedef enum {
