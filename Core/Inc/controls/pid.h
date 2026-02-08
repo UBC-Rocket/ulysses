@@ -2,8 +2,6 @@
  ******************************************************************************
  * @file    pid.h
  * @brief   PID Controller Library for Drone Flight Control
- * @author  Ulysses Flight Controller
- * @date    2025-11-23
  ******************************************************************************
  * @attention
  *
@@ -16,15 +14,16 @@
  * Usage Example:
  * @code
  * // Initialize PID controller for roll axis
- * PID_Controller_t rollPID;
- * PID_Init(&rollPID, 1.5f, 0.5f, 0.05f, 100.0f, -500.0f, 500.0f);
+ * pid_controller_t roll_pid;
+ * pid_init(&roll_pid, 1.5f, 0.5f, 0.05f, 100.0f, -500.0f, 500.0f);
  *
  * // In your main flight control loop:
  * float dt = 0.002f;  // 2ms loop time (500Hz)
- * float desiredRollRate = 45.0f;  // deg/s from pilot stick input
- * float currentGyroRate = gyro.x;  // deg/s from IMU
+ * float desired_roll_rate = 45.0f;  // deg/s from pilot stick input
+ * float current_gyro_rate = gyro.x;  // deg/s from IMU
  *
- * float motorCorrection = PID_Compute(&rollPID, desiredRollRate, currentGyroRate, dt);
+ * float motor_correction = pid_compute(&roll_pid, desired_roll_rate,
+ *                                      current_gyro_rate, dt);
  * @endcode
  *
  ******************************************************************************
@@ -49,24 +48,24 @@ extern "C" {
  * For drone control, you'll typically need three instances: roll, pitch, yaw.
  */
 typedef struct {
-    /* Tuning gains */
-    float Kp;                   /**< Proportional gain */
-    float Ki;                   /**< Integral gain */
-    float Kd;                   /**< Derivative gain */
+  /* Tuning gains */
+  float kp; /**< Proportional gain */
+  float ki; /**< Integral gain */
+  float kd; /**< Derivative gain */
 
-    /* Internal state (do not modify directly) */
-    float integralSum;          /**< Accumulated integral term */
-    float prevMeasurement;      /**< Previous measurement for derivative calculation */
+  /* Internal state (do not modify directly) */
+  float integral_sum;      /**< Accumulated integral term */
+  float prev_measurement; /**< Previous measurement for derivative calculation */
 
-    /* Limits */
-    float integralLimit;        /**< Maximum absolute value for integral term (anti-windup) */
-    float outputMin;            /**< Minimum output value */
-    float outputMax;            /**< Maximum output value */
+  /* Limits */
+  float integral_limit; /**< Maximum absolute value for integral term (anti-windup) */
+  float output_min;    /**< Minimum output value */
+  float output_max;    /**< Maximum output value */
 
-    /* Configuration */
-    float dt;                   /**< Last time step used (for reference) */
+  /* Configuration */
+  float dt; /**< Last time step used (for reference) */
 
-} PID_Controller_t;
+} pid_controller_t;
 
 /* Exported functions --------------------------------------------------------*/
 
@@ -76,21 +75,21 @@ typedef struct {
  * @param  kp: Proportional gain
  * @param  ki: Integral gain
  * @param  kd: Derivative gain
- * @param  integralLimit: Maximum absolute value for integral term (anti-windup)
- * @param  outputMin: Minimum output limit
- * @param  outputMax: Maximum output limit
+ * @param  integral_limit: Maximum absolute value for integral term (anti-windup)
+ * @param  output_min: Minimum output limit
+ * @param  output_max: Maximum output limit
  * @retval None
  *
  * @note   After initialization, all internal state is zeroed. Call this once
  *         during setup for each PID controller instance.
  */
-void PID_Init(PID_Controller_t *pid,
+void pid_init(pid_controller_t *pid,
               float kp,
               float ki,
               float kd,
-              float integralLimit,
-              float outputMin,
-              float outputMax);
+              float integral_limit,
+              float output_min,
+              float output_max);
 
 /**
  * @brief  Compute PID output
@@ -98,7 +97,7 @@ void PID_Init(PID_Controller_t *pid,
  * @param  setpoint: Desired value (e.g., desired roll rate in deg/s)
  * @param  measurement: Current measured value (e.g., current gyro rate in deg/s)
  * @param  dt: Time step since last call in seconds (e.g., 0.002 for 500Hz)
- * @retval PID output value (constrained to outputMin/outputMax)
+ * @retval PID output value (constrained to output_min/output_max)
  *
  * @note   This function should be called at a consistent rate in your control loop.
  *         The dt parameter accounts for timing variations if needed.
@@ -106,11 +105,11 @@ void PID_Init(PID_Controller_t *pid,
  * Algorithm:
  *   - error = setpoint - measurement
  *   - integral += error * dt (with anti-windup limiting)
- *   - derivative = -(measurement - prevMeasurement) / dt  (derivative on measurement)
- *   - output = Kp*error + Ki*integral + Kd*derivative
- *   - output is clamped to [outputMin, outputMax]
+ *   - derivative = -(measurement - prev_measurement) / dt  (derivative on measurement)
+ *   - output = kp*error + ki*integral + kd*derivative
+ *   - output is clamped to [output_min, output_max]
  */
-float PID_Compute(PID_Controller_t *pid,
+float pid_compute(pid_controller_t *pid,
                   float setpoint,
                   float measurement,
                   float dt);
@@ -126,7 +125,7 @@ float PID_Compute(PID_Controller_t *pid,
  *         - After a crash/disarm
  *         - When PID has been inactive
  */
-void PID_Reset(PID_Controller_t *pid);
+void pid_reset(pid_controller_t *pid);
 
 /**
  * @brief  Update PID gains at runtime
@@ -139,22 +138,22 @@ void PID_Reset(PID_Controller_t *pid);
  * @note   Useful for in-flight tuning or adaptive control.
  *         Does not reset integral or other state.
  */
-void PID_SetGains(PID_Controller_t *pid, float kp, float ki, float kd);
+void pid_set_gains(pid_controller_t *pid, float kp, float ki, float kd);
 
 /**
  * @brief  Update output and integral limits at runtime
  * @param  pid: Pointer to PID controller structure
- * @param  integralLimit: New maximum absolute value for integral term
- * @param  outputMin: New minimum output limit
- * @param  outputMax: New maximum output limit
+ * @param  integral_limit: New maximum absolute value for integral term
+ * @param  output_min: New minimum output limit
+ * @param  output_max: New maximum output limit
  * @retval None
  *
  * @note   Immediately clamps existing integral sum if it exceeds new limits.
  */
-void PID_SetLimits(PID_Controller_t *pid,
-                   float integralLimit,
-                   float outputMin,
-                   float outputMax);
+void pid_set_limits(pid_controller_t *pid,
+                    float integral_limit,
+                    float output_min,
+                    float output_max);
 
 /**
  * @brief  Get current integral term value
@@ -163,7 +162,7 @@ void PID_SetLimits(PID_Controller_t *pid,
  *
  * @note   Useful for debugging and monitoring controller state.
  */
-float PID_GetIntegral(PID_Controller_t *pid);
+float pid_get_integral(pid_controller_t *pid);
 
 #ifdef __cplusplus
 }
