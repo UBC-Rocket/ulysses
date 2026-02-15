@@ -49,9 +49,13 @@ static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t p
 
 /* Default calibration for a typical hobby servo signal. */
 static void set_default_cal(PDI6121_servo_t *servo) {
-    servo->us_min = US_MIN; 
-    servo->us_mid = US_MID;
-    servo->us_max = US_MAX;
+
+    // Bottom Servo Offset: 750 (To be at one end) 975 (To be at middle)
+	// Top Servo Offset: 500 (To be at one end) 750 (To be at middle)
+
+    servo->us_min = US_MIN + servo->offset;
+    servo->us_mid = US_MID + servo->offset;
+    servo->us_max = US_MAX + servo->offset;
 }
 
 /* Public API implementations */
