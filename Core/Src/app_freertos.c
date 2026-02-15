@@ -48,7 +48,7 @@
 osThreadId_t DebugLoggingTaskHandle;
 const osThreadAttr_t DebugLoggingTask_attributes = {
   .name = "DebugLogging",
-  .priority = (osPriority_t) osPriorityBelowNormal,
+  .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 128 * 4,
 };
 #endif // ULYSSES_ENABLE_DEBUG_LOGGING
@@ -73,7 +73,7 @@ osThreadId_t StateEstimationHandle;
 const osThreadAttr_t StateEstimation_attributes = {
   .name = "StateEstimation",
   .priority = (osPriority_t) osPriorityAboveNormal,
-  .stack_size = 512 * 4
+  .stack_size = 1024 * 4
 };
 
 /* Private function prototypes -----------------------------------------------*/

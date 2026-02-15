@@ -1,4 +1,6 @@
 #include "SPI_device_interactions.h"
+#include "ms5611_poller.h"
+#include "SPI_queue.h"
 #include "main.h"
 #include <string.h>
 
@@ -104,7 +106,7 @@ void ms5611_poller_init(ms5611_poller_t *p,
 
     ms5611_poller_set_rate(p, osr, odr_hz);
 
-    p->state           = MS_IDLE;
+    p->state           = MS5611_POLLER_IDLE;
     p->t_cycle_start_us= timestamp_us();
     p->t_next_action_us= p->t_cycle_start_us; // ready to start anytime
     p->fresh           = false;
@@ -154,6 +156,7 @@ static void ms5611_submit_read_d1(void)
     j.len     = ms5611_build_adc_read(j.tx);
     j.type    = SPI_XFER_TXRX; j.sensor = SENSOR_ID_BARO;
     j.done    = ms5611_cb_read_d1;
+    j.task_notification_flag = MS5611_BARO_SAMPLE_FLAG;
     spi_submit_job(j, &jobq_spi_2);
 }
 
@@ -167,6 +170,7 @@ static void ms5611_submit_read_d2(void)
     j.t_sample= timestamp_us();
     j.type    = SPI_XFER_TXRX; j.sensor = SENSOR_ID_BARO;
     j.done    = ms5611_cb_read_d2;
+    j.task_notification_flag = MS5611_BARO_SAMPLE_FLAG;
     spi_submit_job(j, &jobq_spi_2);
 }
 
@@ -200,48 +204,56 @@ static void ms5611_cb_read_d2(spi_job_t *job, const uint8_t *rx, void *arg)
     ms5611_sample_queue(&ms5611_sample_ring, &sample);
 }
 
-void ms5611_poller_tick_1khz(ms5611_poller_t *p)
+void ms5611_poller_tick(ms5611_poller_t *p)
 {
     const uint32_t now = timestamp_us();
 
     switch (p->state) {
-        case MS_IDLE:
+        case MS5611_POLLER_IDLE:
             if ((int32_t)(now - p->t_next_action_us) >= 0) {
                 p->t_cycle_start_us = now;
                 ms5611_submit_convert_d1();
-                p->t_next_action_us = now + p->conv_us;  // when D1 is ready
-                p->state = MS_WAIT_D1;
+                p->t_next_action_us = now + p->conv_us;  /* when D1 is ready */
+                p->state = MS5611_POLLER_WAIT_D1;
             }
             break;
 
-        case MS_WAIT_D1:
+        case MS5611_POLLER_WAIT_D1:
             if ((int32_t)(now - p->t_next_action_us) >= 0) {
                 ms5611_submit_read_d1();
                 p->t_next_action_us = now;
-                p->state = MS_READ_D1;
+                p->state = MS5611_POLLER_READ_D1;
             }
             break;
 
-        case MS_READ_D1:
+        case MS5611_POLLER_READ_D1:
             if ((int32_t)(now - p->t_next_action_us) >= 0) {
                 ms5611_submit_convert_d2();
                 p->t_next_action_us = now + p->conv_us;
-                p->state = MS_WAIT_D2;
+                p->state = MS5611_POLLER_WAIT_D2;
             }
             break;
 
-        case MS_WAIT_D2:
+        case MS5611_POLLER_WAIT_D2:
             if ((int32_t)(now - p->t_next_action_us) >= 0) {
                 ms5611_submit_read_d2();
                 p->t_next_action_us = p->t_cycle_start_us + p->period_us;
-                p->state = MS_READ_D2;
+                p->state = MS5611_POLLER_READ_D2;
             }
             break;
 
-        case MS_READ_D2:
+        case MS5611_POLLER_READ_D2:
             if ((int32_t)(now - p->t_next_action_us) >= 0) {
-                p->state = MS_IDLE;
+                p->state = MS5611_POLLER_IDLE;
             }
+            break;
+
+        case MS5611_POLLER_CONV_D1:
+        case MS5611_POLLER_CONV_D2:
+        case MS5611_POLLER_READY:
+        default:
+            /* Unused states - fall through to idle */
+            p->state = MS5611_POLLER_IDLE;
             break;
     }
 }

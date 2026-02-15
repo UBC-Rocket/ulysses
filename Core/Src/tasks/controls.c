@@ -79,11 +79,10 @@ void controls_task_start(void *argument)
     flight_controller_ref_t ref = {0};
     control_output_t control_output = {0};
     uint8_t config_done = 0;
+    const TickType_t period_ticks = pdMS_TO_TICKS(1);
 
     init_default_config(&config);
     init_default_ref(&ref);
-
-    const TickType_t period_ticks = pdMS_TO_TICKS(1);
 
     for (;;) {
         TickType_t cycle_start = xTaskGetTickCount();
