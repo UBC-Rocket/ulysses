@@ -120,7 +120,7 @@ static void bmi088_gyro_done(spi_job_t *job,
     (void)arg;
 
     bmi088_gyro_sample_t s;
-    if (bmi088_gyro_parse_data_xyz(&rx_buf[1], &s, &gyro)) {
+    if (bmi088_gyro_parse_data_xyz(&rx_buf[0], &s, &gyro)) {
         s.t_us = job->t_sample;
         bmi088_gyro_sample_queue(&bmi088_gyro_sample_ring, &s);
     }
