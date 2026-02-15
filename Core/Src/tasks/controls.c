@@ -19,6 +19,7 @@
 #include "controls/flight_controller.h"
 
 #define CONTROLS_DT_S 0.001f  /**< Control period [s] (1 kHz). */
+#define STALE_STATE_THRESHOLD_TICKS 100  /**< If state_seq unchanged for this many ticks, treat as stale and output safe (zero). */
 
 /** Fill config with default gains and limits (tune in use). */
 static void init_default_config(flight_controller_config_t *cfg)
@@ -80,6 +81,8 @@ void controls_task_start(void *argument)
     control_output_t control_output = {0};
     uint8_t config_done = 0;
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
+    uint32_t last_state_seq = 0;
+    uint32_t stale_tick_count = 0;
 
     init_default_config(&config);
     init_default_ref(&ref);
@@ -87,7 +90,7 @@ void controls_task_start(void *argument)
     for (;;) {
         TickType_t cycle_start = xTaskGetTickCount();
 
-        state_exchange_get_state(&current_state);
+        uint32_t state_seq = state_exchange_get_state(&current_state);
         state_exchange_get_flight_state(&flight_state);
 
         if (!config_done) {
@@ -95,7 +98,21 @@ void controls_task_start(void *argument)
             config_done = 1;
         }
 
-        flight_controller_run(&current_state, &ref, &config, &control_output, CONTROLS_DT_S);
+        /* Staleness: if state sequence has not changed for N ticks, treat as stale. */
+        if (state_seq == last_state_seq) {
+            stale_tick_count++;
+        } else {
+            last_state_seq = state_seq;
+            stale_tick_count = 0;
+        }
+        bool state_stale = (stale_tick_count >= STALE_STATE_THRESHOLD_TICKS);
+
+        /* Do not run controller on uninitialized or stale state. */
+        if (state_seq == 0 || state_stale) {
+            memset(&control_output, 0, sizeof(control_output));
+        } else {
+            flight_controller_run(&current_state, &ref, &config, &control_output, CONTROLS_DT_S);
+        }
         state_exchange_publish_control_output(&control_output);
 
         /* TODO: actuator drivers esc, servos */

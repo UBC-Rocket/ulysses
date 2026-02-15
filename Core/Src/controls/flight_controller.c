@@ -3,7 +3,7 @@
  * @brief   Flight control body: torque, allocation, thrust PID, gimbal angles.
  *
  * Pipeline: torque_module -> control_allocation -> thrust_controller -> gimbal_angles.
- * Quaternion error uses q_ref * conj(q_bn) (body-to-nav). Z-PID uses
+ * Quaternion error uses conj(q_ref) * q_bn per proposal (Δq = q_ref ⊗ q* with world-to-body q). Z-PID uses
  * derivative-on-measurement (vz_ref not in derivative term).
  */
 
@@ -28,7 +28,7 @@ static float clampf(float value, float min_val, float max_val)
 }
 
 /**
- * @brief Body torque control: Δq = q_ref*conj(q_bn), φ = 2*vec(Δq), τ = -Kp*φ - Kd*ω + ω×(I*ω).
+ * @brief Body torque control: Δq = conj(q_ref)*q_bn, φ = 2*vec(Δq), τ = -Kp*φ - Kd*ω + ω×(I*ω).
  * @param state Current state (q_bn, omega_b).
  * @param ref   Desired q_ref (body-to-nav).
  * @param cfg   Attitude gains and inertia.
@@ -39,7 +39,7 @@ static void torque_module(const state_t *state,
                           const flight_controller_attitude_config_t *cfg,
                           float tau_cmd[3])
 {
-    quaternion_t q_bn_conj;
+    quaternion_t q_ref_conj;
     quaternion_t dq;
     float phi[3];
     float Kp_phi[3];
@@ -47,9 +47,9 @@ static void torque_module(const state_t *state,
     float I_omega[3];
     float omega_cross_I_omega[3];
 
-    /* Δq = q_ref ⊗ conjugate(q_bn); shortest path: if dq.w < 0 then negate */
-    quaternion_conjugate(&state->q_bn, &q_bn_conj);
-    quaternion_multiply(&ref->q_ref, &q_bn_conj, &dq);
+    /* Δq = conj(q_ref) ⊗ q_bn per proposal (world-to-body q: Δq = q_ref ⊗ q* with q = conj(q_bn)); shortest path: if dq.w < 0 then negate */
+    quaternion_conjugate(&ref->q_ref, &q_ref_conj);
+    quaternion_multiply(&q_ref_conj, &state->q_bn, &dq);
     if (dq.w < 0.0f) {
         dq.w = -dq.w;
         dq.x = -dq.x;

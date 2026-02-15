@@ -18,6 +18,7 @@
 #include "stm32h5xx_hal.h"
 #include "main.h"
 #include "ekf.h"
+#include "state_estimation/body.h"
 #include "debug/log.h"
 #include "state_exchange.h"
 #include "state_estimation/state.h"
@@ -39,13 +40,14 @@ typedef struct {
     uint8_t num_sats;
 } gps_data_t;
 
-// Math Helpers
-void longlat_to_meters(float reference_point[3], float gps[3], float relative_distance[3]) {
-    gps[2] = reference_point[2]; 
-    float R = 6371000; 
-    float delta_longlat[2] = {gps[0] - reference_point[0], gps[1] - reference_point[1]};
-    relative_distance[0] = R * delta_longlat[0];
-    relative_distance[1] = R * delta_longlat[1];
+/* Math Helpers: convert lat/lon/alt to meters relative to reference. Does not mutate gps[]. */
+void longlat_to_meters(const float reference_point[3], const float gps[3], float relative_distance[3]) {
+    const float R = 6371000.0f;
+    float delta_lat = gps[0] - reference_point[0];
+    float delta_lon = gps[1] - reference_point[1];
+    relative_distance[0] = R * delta_lat;
+    relative_distance[1] = R * delta_lon;
+    relative_distance[2] = gps[2] - reference_point[2];  /* altitude in meters */
 }
 
 static float nmea_to_decimal(float nmea_coord, char quadrant) {
@@ -207,28 +209,24 @@ void state_estimation_task_start(void *argument)
 
             gps_data_t current_gps;
             float pos_meters[3];
+            bool have_pos_meters_this_cycle = false;
             const uint8_t *nmea_sentence = gnss_gps_get_latest();
 
-            if (nmea_sentence != NULL && parse_gpgga(nmea_sentence, &current_gps)) {
-    
-            if (current_gps.fix_quality > 0) {
-                // current_gps.lat, current_gps.lon, current_gps.alt
-                
+            if (nmea_sentence != NULL && parse_gpgga((const char *)nmea_sentence, &current_gps)
+                && current_gps.fix_quality > 0) {
                 if (!have_gps_reference_point) {
                     gps_reference_point[0] = current_gps.lat;
                     gps_reference_point[1] = current_gps.lon;
                     gps_reference_point[2] = current_gps.alt;
                     have_gps_reference_point = true;
                 } else {
-                    float gps_vec[3] = {current_gps.lat, current_gps.lon, current_gps.alt};
+                    float gps_vec[3] = { current_gps.lat, current_gps.lon, current_gps.alt };
                     longlat_to_meters(gps_reference_point, gps_vec, pos_meters);
-                    }
+                    have_pos_meters_this_cycle = true;
                 }
             }
-            
 
             uint8_t imu_loops = (num_accel_samples < num_gyro_samples) ? num_accel_samples : num_gyro_samples;
-            uint8_t body_loops = (num_gps_samples > num_accel_samples) ? num_gps_samples : num_accel_samples; // Simplified, assumes 0 gps currently
 
             float h1 = -1;
             float h2 = -1;
@@ -242,13 +240,6 @@ void state_estimation_task_start(void *argument)
             }
 
             for (uint8_t i = 0; i < imu_loops; i++) {
-                if (h1!=-1) {
-                    continue;
-                }
-
-                if (h2!=-1) {
-                    continue;
-                }
                 float g_data_raw[3] = {gyro_samples[i].gx, gyro_samples[i].gy, gyro_samples[i].gz};
                 float a_data_raw[3] = {accel_samples[i].ax / -GRAV, accel_samples[i].ay / -GRAV, accel_samples[i].az / -GRAV};
 
@@ -272,13 +263,17 @@ void state_estimation_task_start(void *argument)
 
                 tick_ekf_orientation(delta_time, g_data, a_data);
 
-                if (body_loops > i) {
-                    tick_ekf_body(delta_time, a_data, pos_meters);
-                }
-
-                // Publish State
+                /* Body EKF: use nav-frame acceleration and only when we have valid GPS this cycle. */
                 float q[4], pos[3], vel[3];
                 get_state(q, pos, vel);
+                float a_nav[3];
+                transform_accel_data(a_data, q, a_nav);
+                if (have_pos_meters_this_cycle) {
+                    tick_ekf_body(delta_time, a_nav, pos_meters);
+                }
+                get_state(q, pos, vel);
+
+                /* Publish State */
 
                 float e[3];
                 quat_to_euler(q,e);

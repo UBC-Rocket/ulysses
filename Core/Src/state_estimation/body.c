@@ -2,19 +2,34 @@
 #include <ekf.h>
 #include <string.h>
 #include <quaternion.h>
+#include "state_estimation/state.h"
 
+#define GRAV_MPS2 9.807f
+
+/**
+ * Rotate body-frame acceleration to nav frame and subtract gravity.
+ * a is in g (specific force); new_a is linear acceleration in nav frame [m/s^2].
+ */
 void transform_accel_data(
-    float a[3], // raw_data
-    float q[4], // orientation in quat
+    float a[3], // body-frame accel in g
+    float q[4], // orientation in quat (body-to-nav, w,x,y,z)
     float new_a[3]
 )
 {
-    // predict_accel_from_quat(q, new_a);
+    quaternion_t quat;
+    quat.w = q[0];
+    quat.x = q[1];
+    quat.y = q[2];
+    quat.z = q[3];
+    rotation_matrix_t R;
+    quaternion_to_rotation_matrix(&quat, &R);
 
-    // for (int i = 0; i < 3; i++) {
-    //     new_a[i] = a[i] - new_a[i];
-    // }
-
+    float a_body_ms2[3] = { a[0] * GRAV_MPS2, a[1] * GRAV_MPS2, a[2] * GRAV_MPS2 };
+    rotation_matrix_vector_mul(&R, a_body_ms2, new_a);
+    /* Linear accel in nav: a_linear = f_nav - g_nav. Z-up => g_nav = [0,0,-GRAV]. With f = a_data*GRAV (at rest f_nav = [0,0,+GRAV]), subtract [0,0,GRAV] to get a_linear = 0. */
+    new_a[0] += 0.0f;
+    new_a[1] += 0.0f;
+    new_a[2] -= GRAV_MPS2;
 }
 
 void state_transition_body(

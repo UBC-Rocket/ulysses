@@ -110,11 +110,11 @@ void MX_FREERTOS_Init(void) {
   /* creation of MissionManager */
   MissionManagerHandle = osThreadNew(mission_manager_task_start, NULL, &MissionManager_attributes);
 
+  /* creation of StateEstimation (before Controls so state is published before controller runs) */
+  StateEstimationHandle = osThreadNew(state_estimation_task_start, NULL, &StateEstimation_attributes);
+
   /* creation of Controls */
   ControlsHandle = osThreadNew(controls_task_start, NULL, &Controls_attributes);
-
-  /* creation of StateEstimation */
-  StateEstimationHandle = osThreadNew(state_estimation_task_start, NULL, &StateEstimation_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 

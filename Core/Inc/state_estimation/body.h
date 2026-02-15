@@ -13,7 +13,7 @@ void transform_accel_data(
 void state_transition_body(
     body_state *state,
     float time_step,
-    float a[3], // gyro data
+    float a[3], // accel data (nav-frame linear accel [m/s^2])
     float out_p[3],
     float out_v[3]
 );
