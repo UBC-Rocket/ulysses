@@ -19,6 +19,7 @@
 /* -------------------------------------------------------------------------- */
 /* Register map (gyroscope side of BMI088)                                    */
 /* -------------------------------------------------------------------------- */
+// memory barrier (:
 #define BMI088_GYRO_CHIP_ID_REG         0x00
 #define BMI088_GYRO_CHIP_ID_VAL         0x0F  ///< Expected chip ID
 
