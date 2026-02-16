@@ -5,11 +5,11 @@
  * This driver handles communication with the ulysses-gnss-radio slave board
  * using push mode (slave-initiated via IRQ). It implements:
  * - Two-phase transaction reading (TYPE byte first, then PAYLOAD)
- * - Priority-based scheduling (GPS=HIGH, Radio=NORMAL)
  * - GPS fix and radio message queues
+ * - Radio TX (master to slave) via raw 256-byte payloads
  *
  * Hardware:
- * - SPI1 bus (shared with motor control)
+ * - SPI1 bus (GNSS Radio only)
  * - EXT_INT_2 (PE7) for slave IRQ signal
  * - EXT_CS_2 (PE8) for chip select
  *
@@ -75,22 +75,22 @@ typedef enum {
 } gnss_push_state_t;
 
 /* -------------------------------------------------------------------------- */
-/* GPS NMEA Queue                                                             */
+/* GPS Fix Queue                                                              */
 /* -------------------------------------------------------------------------- */
 
-#define GNSS_GPS_NMEA_QUEUE_LEN    8
+#define GNSS_GPS_FIX_QUEUE_LEN    8
 
 /**
- * @brief GPS NMEA queue for received raw NMEA sentences
+ * @brief GPS fix queue for received parsed GPS fixes
  *
- * Stores raw NMEA sentences (up to 87 bytes each) from the GNSS Radio slave.
- * The master is responsible for parsing these into position data.
+ * Stores parsed gnss_gps_fix_t structs (48 bytes each) from the GNSS Radio
+ * slave. In push mode, the slave decodes NMEA and sends structured fixes.
  */
 typedef struct {
-    uint8_t sentences[GNSS_GPS_NMEA_QUEUE_LEN][GNSS_NMEA_MAX_LEN];
+    gnss_gps_fix_t fixes[GNSS_GPS_FIX_QUEUE_LEN];
     volatile uint8_t head;
     volatile uint8_t tail;
-} gnss_gps_nmea_queue_t;
+} gnss_gps_fix_queue_t;
 
 /* -------------------------------------------------------------------------- */
 /* Radio Message Queue                                                        */
@@ -127,7 +127,7 @@ typedef struct {
     uint16_t irq_pin;
 
     /* ── Data queues ── */
-    gnss_gps_nmea_queue_t gps_queue;
+    gnss_gps_fix_queue_t gps_queue;
     gnss_radio_msg_queue_t radio_queue;
 
     /* ── RX buffers for two-phase read ── */
@@ -144,8 +144,7 @@ typedef struct {
     volatile uint32_t transaction_errors;
     volatile uint32_t queue_overflows;
 
-    /* ── Configuration ── */
-    bool split_transactions;             /**< Enable two-phase reads (default: true) */
+    /* ── State ── */
     bool initialized;
 } gnss_radio_context_t;
 
@@ -168,16 +167,6 @@ extern gnss_radio_context_t gnss_radio_ctx;
  */
 void gnss_radio_init(void);
 
-/**
- * @brief Enable or disable two-phase (split) transactions
- *
- * When enabled (default), TYPE is read first, then PAYLOAD.
- * This allows priority re-evaluation between phases.
- *
- * @param enable true to enable split transactions
- */
-void gnss_radio_set_split_mode(bool enable);
-
 /* -------------------------------------------------------------------------- */
 /* IRQ Handler                                                                */
 /* -------------------------------------------------------------------------- */
@@ -191,77 +180,50 @@ void gnss_radio_set_split_mode(bool enable);
 void gnss_radio_irq_handler(void);
 
 /* -------------------------------------------------------------------------- */
-/* GPS NMEA Queue API                                                         */
+/* GPS Fix Queue API                                                          */
 /* -------------------------------------------------------------------------- */
 
-/**
- * @brief Check if GPS NMEA queue is empty
- */
 static inline bool gnss_gps_queue_empty(void) {
     return gnss_radio_ctx.gps_queue.head == gnss_radio_ctx.gps_queue.tail;
 }
 
-/**
- * @brief Check if GPS NMEA queue is full
- */
 static inline bool gnss_gps_queue_full(void) {
-    return ((gnss_radio_ctx.gps_queue.head + 1) % GNSS_GPS_NMEA_QUEUE_LEN) ==
+    return ((gnss_radio_ctx.gps_queue.head + 1) % GNSS_GPS_FIX_QUEUE_LEN) ==
            gnss_radio_ctx.gps_queue.tail;
 }
 
-/**
- * @brief Get number of GPS NMEA sentences in queue
- */
 static inline uint8_t gnss_gps_queue_count(void) {
     return (gnss_radio_ctx.gps_queue.head - gnss_radio_ctx.gps_queue.tail +
-            GNSS_GPS_NMEA_QUEUE_LEN) % GNSS_GPS_NMEA_QUEUE_LEN;
+            GNSS_GPS_FIX_QUEUE_LEN) % GNSS_GPS_FIX_QUEUE_LEN;
 }
 
 /**
- * @brief Dequeue a GPS NMEA sentence
- *
- * @param nmea Buffer to store the NMEA sentence (must be at least GNSS_NMEA_MAX_LEN bytes)
- * @return true if sentence was dequeued, false if queue empty
+ * @brief Dequeue a GPS fix
+ * @param fix Pointer to store the GPS fix struct
+ * @return true if fix was dequeued, false if queue empty
  */
-bool gnss_gps_dequeue(uint8_t *nmea);
+bool gnss_gps_dequeue(gnss_gps_fix_t *fix);
 
 /**
- * @brief Peek at the oldest GPS NMEA sentence without removing it
- *
- * @param nmea Buffer to store the NMEA sentence
- * @return true if sentence is available, false if queue empty
+ * @brief Peek at the oldest GPS fix without removing it
+ * @param fix Pointer to store the GPS fix struct
+ * @return true if fix is available, false if queue empty
  */
-bool gnss_gps_peek(uint8_t *nmea);
-
-/**
- * @brief Get pointer to newest GPS NMEA sentence (most recent)
- *
- * @return Pointer to sentence, or NULL if queue empty
- */
-const uint8_t* gnss_gps_get_latest(void);
+bool gnss_gps_peek(gnss_gps_fix_t *fix);
 
 /* -------------------------------------------------------------------------- */
 /* Radio Message Queue API                                                    */
 /* -------------------------------------------------------------------------- */
 
-/**
- * @brief Check if radio message queue is empty
- */
 static inline bool gnss_radio_queue_empty(void) {
     return gnss_radio_ctx.radio_queue.head == gnss_radio_ctx.radio_queue.tail;
 }
 
-/**
- * @brief Check if radio message queue is full
- */
 static inline bool gnss_radio_queue_full(void) {
     return ((gnss_radio_ctx.radio_queue.head + 1) % GNSS_RADIO_MSG_QUEUE_LEN) ==
            gnss_radio_ctx.radio_queue.tail;
 }
 
-/**
- * @brief Get number of radio messages in queue
- */
 static inline uint8_t gnss_radio_queue_count(void) {
     return (gnss_radio_ctx.radio_queue.head - gnss_radio_ctx.radio_queue.tail +
             GNSS_RADIO_MSG_QUEUE_LEN) % GNSS_RADIO_MSG_QUEUE_LEN;
@@ -269,7 +231,6 @@ static inline uint8_t gnss_radio_queue_count(void) {
 
 /**
  * @brief Dequeue a radio message
- *
  * @param msg Buffer to store the message (must be at least 256 bytes)
  * @return true if message was dequeued, false if queue empty
  */
@@ -277,7 +238,6 @@ bool gnss_radio_dequeue(uint8_t *msg);
 
 /**
  * @brief Peek at the oldest radio message without removing it
- *
  * @param msg Buffer to store the message
  * @return true if message is available, false if queue empty
  */
@@ -290,7 +250,8 @@ bool gnss_radio_peek(uint8_t *msg);
 /**
  * @brief Send a radio message to the slave for transmission
  *
- * Uses pull mode CMD_RADIO_TX to send data to the slave's radio.
+ * Sends a raw 256-byte payload to the slave. The slave detects master
+ * data via pattern matching on the RX buffer.
  *
  * @param msg Message data (up to 256 bytes)
  * @param len Message length
@@ -304,7 +265,6 @@ bool gnss_radio_send(const uint8_t *msg, uint16_t len);
 
 /**
  * @brief Get driver statistics
- *
  * @param gps_count Pointer to receive GPS fix count
  * @param radio_count Pointer to receive radio message count
  * @param errors Pointer to receive error count
@@ -331,7 +291,7 @@ gnss_push_state_t gnss_radio_get_state(void);
  * @brief Phase 1 completion callback (TYPE read done)
  *
  * Called by SPI1 bus driver when TYPE byte read completes.
- * Parses type and submits phase 2 job with appropriate priority.
+ * Parses type and submits phase 2 job.
  */
 void gnss_radio_phase1_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg);
 
@@ -342,14 +302,6 @@ void gnss_radio_phase1_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg);
  * Parses payload and enqueues to appropriate data queue.
  */
 void gnss_radio_phase2_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg);
-
-/**
- * @brief Single-phase completion callback (non-split mode)
- *
- * Called when split_transactions is false and entire TYPE+PAYLOAD
- * is read in one transaction.
- */
-void gnss_radio_single_phase_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg);
 
 #ifdef __cplusplus
 }
