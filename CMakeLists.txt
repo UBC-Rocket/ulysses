@@ -54,6 +54,10 @@ add_subdirectory(cmake/stm32cubemx)
 # Add dependencies
 include(dependencies)
 
+set(SERVO_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/motor_drivers/servo_driver.c
+)
+
 set(DEBUG_MODULE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug/log.c
 )
@@ -131,6 +135,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
     ${DEBUG_MODULE_SRC}
     ${ALGO_SRC}
+
+    ${SERVO_SRC}
 )
 
 # Add include paths
