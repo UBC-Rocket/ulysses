@@ -71,3 +71,5 @@ void set_servo_pair_degrees(float s1, float s2);
 void apply_servo_pair_degrees(void);
 
 void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2);
+
+void servo_pair_enable(bool enable);

@@ -94,6 +94,14 @@ void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2) {
     g_servo_pair_ready = true;
 }
 
+void servo_pair_enable(bool enable) {
+    if (!g_servo_pair_ready) {
+        return;
+    }
+    PDI6121_servo_enable(&servos.servo1, enable);
+    PDI6121_servo_enable(&servos.servo2, enable);
+}
+
 /* Local helper clamp functions */
 static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
     if (x < lo) {

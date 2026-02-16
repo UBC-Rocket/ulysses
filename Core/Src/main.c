@@ -180,6 +180,7 @@ int main(void)
       .period_ticks = 2500U,
     };
     servo_pair_init(&pwm1, &pwm2);
+    servo_pair_enable(true); /* for test: enable at beginning */
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
   }
