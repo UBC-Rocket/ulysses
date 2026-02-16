@@ -3,6 +3,9 @@
 #include "stdint.h"
 #include "stdbool.h"
 
+#define CLOCK_FREQUQNCY 
+#define AUTO_RELOAD_VALUE 
+
 typedef struct {
     void *htim;
     uint32_t channel;
@@ -68,4 +71,9 @@ void set_servo_degree(PDI6121_servo_t *servo, float degree);
 
 void set_servo_pair_degrees(float s1, float s2);
 
-void apply_servo_pair_degrees();
+void apply_servo_pair_degrees(void);
+
+
+
+
+void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2);

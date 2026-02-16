@@ -1,14 +1,19 @@
-#include "PDI6121_servo.h"
+#include "motor_drivers/servo_driver.h"
 
 #include "main.h"
-#include "tim.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
+static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi);
+static float clamp_f(float x, float lo, float hi);
+static uint32_t us_to_ticks(PDI6121_servo_pwm_t *pwm, uint16_t us);
+static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks);
+static void set_default_cal(PDI6121_servo_t *servo);
+
 /* Global Variables for the Interrupt to access */
 static servo_pair_t servos;
-static uint32_t compare_val;
+static volatile bool g_servo_pair_ready = false;
 
 /* Controls Methods */
 void set_servo_degree(PDI6121_servo_t *servo, float degree) {
@@ -33,25 +38,29 @@ void set_servo_degree(PDI6121_servo_t *servo, float degree) {
 
     float d = clamp_f(degree, min_deg, max_deg);
 
+    float us_f;
     if (d <= 90.0f) {
         float t = d / 90.0f;
-        float us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
+        us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
     } else {
         float t = (d - 90.0f) / 90.0f;
-        float us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
+        us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
     }
 
     uint16_t us = (uint16_t)(us_f + 0.5f);
-    compare_val = us_to_ticks(&servo->pwm, us);
+    servo->compare_val = us_to_ticks(&servo->pwm, us);
 }
 
 void set_servo_pair_degrees(float degree1, float degree2) {
     set_servo_degree(&servos.servo1, degree1);
-    set_servo_degree(&servo2.servo2, degree2);
+    set_servo_degree(&servos.servo2, degree2);
 }
 
 /* Hardware Functions */
 void apply_servo_pair_degrees() {
+    if (!g_servo_pair_ready) {
+        return;
+    }
     PDI6121_servo_pwm_device_set_ticks(&servos.servo1.pwm, servos.servo1.compare_val);
     PDI6121_servo_pwm_device_set_ticks(&servos.servo2.pwm, servos.servo2.compare_val);
 }
@@ -89,6 +98,16 @@ void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse
 
     __HAL_TIM_SET_COMPARE(htim, pwm->channel, pulse_ticks);
 }
+
+
+void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2) {
+    PDI6121_servo_init(&servos.servo1, pwm1);
+    PDI6121_servo_init(&servos.servo2, pwm2);
+    g_servo_pair_ready = true;
+}
+
+
+
 
 /* Local helper clamp functions */
 static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
@@ -142,6 +161,9 @@ void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm) {
         return;
     }
 
+    
+
+
     servo->pwm = *pwm;
 
     /* Set default calibration */
@@ -151,7 +173,7 @@ void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm) {
     servo->us_last = servo->us_mid;
 
     /* Hardware init */
-    PDI6121_servo_pwm_device_init(&servo->pwm);
+    PDI6121_servo_device_init(&servo->pwm);
 
     /* Put hardware into a known safe state:
      * - Set compare to mid
@@ -239,12 +261,13 @@ void PDI6121_servo_set_deg(PDI6121_servo_t *servo, float degrees) {
 
     float d = clamp_f(degrees, min_deg, max_deg);
 
+    float us_f;
     if (d <= 90.0f) {
         float t = d / 90.0f;
-        float us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
+        us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
     } else {
         float t = (d - 90.0f) / 90.0f;
-        float us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
+        us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
     }
 
     uint16_t us = (uint16_t)(us_f + 0.5f);

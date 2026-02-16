@@ -2,6 +2,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "app_freertos.h"
+#include "motor_drivers/servo_driver.h"
 
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM4) {
@@ -16,7 +17,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
             // Your SPI bus arbitration / command latch goes here
             // dummy for now latch_actuator_command();
 
-            apply_servo_positions();
+            apply_servo_pair_degrees();
         }
     }
 }
