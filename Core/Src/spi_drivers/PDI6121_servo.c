@@ -1,12 +1,99 @@
+#include "tim.h"
+#include "main.h"
 #include "PDI6121_servo.h"
 
 #include <stddef.h> 
 #include <stdint.h>
 
-/* Device layer hooks */
-void PDI6121_servo_pwm_device_init(PDI6121_servo_pwm_t *pwm);
-void PDI6121_servo_pwm_device_enable(PDI6121_servo_pwm_t *pwm, bool enable);
-void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks);
+/*Global Variables for the Interrupt to access*/
+static servo_pair_t servos;
+
+void set_servo_degrees(float s1, float s2) {
+    float mid1 = servos.servo1.mid_pt;
+    float mid2 = servos.servo2.mid_pt;
+    float range1 = servos.servo1.deg_range;
+    float range2 = servos.servo2.deg_range;
+
+    if (range1 <= 0.0f) range1 = 180.0f;
+    if (range2 <= 0.0f) range2 = 180.0f;
+
+    float min1 = mid1 - (range1 * 0.5f);
+    float max1 = mid1 + (range1 * 0.5f);
+    float min2 = mid2 - (range2 * 0.5f);
+    float max2 = mid2 + (range2 * 0.5f);
+
+    float d1 = s1;
+    float d2 = s2;
+    if (d1 < min1) d1 = min1;
+    if (d1 > max1) d1 = max1;
+    if (d2 < min2) d2 = min2;
+    if (d2 > max2) d2 = max2;
+
+    float t1 = (max1 > min1) ? ((d1 - min1) / (max1 - min1)) : 0.5f;
+    float t2 = (max2 > min2) ? ((d2 - min2) / (max2 - min2)) : 0.5f;
+
+    uint16_t us1 = (uint16_t)((float)servos.servo1.us_min +
+                              t1 * (float)(servos.servo1.us_max - servos.servo1.us_min) +
+                              0.5f);
+    uint16_t us2 = (uint16_t)((float)servos.servo2.us_min +
+                              t2 * (float)(servos.servo2.us_max - servos.servo2.us_min) +
+                              0.5f);
+
+    uint64_t ticks1 = ((uint64_t)us1 * (uint64_t)servos.servo1.pwm.timer_hz) / 1000000ULL;
+    uint64_t ticks2 = ((uint64_t)us2 * (uint64_t)servos.servo2.pwm.timer_hz) / 1000000ULL;
+
+    if (servos.servo1.pwm.period_ticks != 0U && ticks1 >= servos.servo1.pwm.period_ticks) {
+        ticks1 = servos.servo1.pwm.period_ticks - 1U;
+    }
+    if (servos.servo2.pwm.period_ticks != 0U && ticks2 >= servos.servo2.pwm.period_ticks) {
+        ticks2 = servos.servo2.pwm.period_ticks - 1U;
+    }
+
+    servos.servo1.compare_val = (uint32_t)ticks1;
+    servos.servo2.compare_val = (uint32_t)ticks2;
+}
+
+void apply_servo_positions() {
+    PDI6121_servo_pwm_device_set_ticks(&servos.servo1.pwm, servos.servo1.compare_val);
+    PDI6121_servo_pwm_device_set_ticks(&servos.servo2.pwm, servos.servo2.compare_val);
+}
+
+/* Hardware Functions */
+
+void PDI6121_servo_device_init(PDI6121_servo_pwm_t *pwm) {
+
+    if (!pwm || !pwm->htim) return;
+
+    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)pwm->htim;
+    (void)HAL_TIM_PWM_Start(htim, pwm->channel);
+
+}
+
+void PDI6121_servo_pwm_device_enable(PDI6121_servo_pwm_t *pwm, bool enable) {
+    if (pwm == NULL) return;
+
+    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)pwm->htim;
+
+    if (enable) {
+        (void)HAL_TIM_PWM_Start(htim, pwm->channel);
+    }
+    else {
+        (void)HAL_TIM_PWM_Stop(htim, pwm->channel);
+    }
+}
+
+void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks) {
+    if (pwm == NULL) return;
+
+    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)pwm->htim;
+
+    /* Clamp to ARR (safety) */
+    uint32_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
+    if (pulse_ticks > arr) pulse_ticks = arr;
+
+    __HAL_TIM_SET_COMPARE(htim, pwm->channel, pulse_ticks);
+}
+
 
 /* Local helper clamp functions */
 static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
@@ -49,13 +136,9 @@ static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t p
 
 /* Default calibration for a typical hobby servo signal. */
 static void set_default_cal(PDI6121_servo_t *servo) {
-
-    // Bottom Servo Offset: 750 (To be at one end) 975 (To be at middle)
-	// Top Servo Offset: 500 (To be at one end) 750 (To be at middle)
-
-    servo->us_min = US_MIN + servo->offset;
-    servo->us_mid = US_MID + servo->offset;
-    servo->us_max = US_MAX + servo->offset;
+    servo->us_min = US_MIN;
+    servo->us_mid = US_MID;
+    servo->us_max = US_MAX;
 }
 
 /* Public API implementations */
@@ -230,6 +313,6 @@ void PDI6121_servo_set_position_deg(PDI6121_servo_t *servoX, PDI6121_servo_t *se
     // float originY = servoY->mid_pt;
 
     PDI6121_servo_set_deg(servoX, originX + x);
-    PDI6121_servo_set_deg(servoY, originY + y);
+    // PDI6121_servo_set_deg(servoY, originY + y);
 
 }

@@ -74,7 +74,6 @@ void SPI2_IRQHandler(void);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
 void UART4_IRQHandler(void);
-void OCTOSPI1_IRQHandler(void);
 void SDMMC1_IRQHandler(void);
 void SPI4_IRQHandler(void);
 void GPDMA2_Channel0_IRQHandler(void);

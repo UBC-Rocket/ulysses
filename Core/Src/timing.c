@@ -2,6 +2,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "app_freertos.h"
+#include "PDI6121_servo.h"
 
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM3) {
@@ -15,6 +16,9 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
             // Fixed-phase output — write command to actuator
             // Your SPI bus arbitration / command latch goes here
             // dummy for now latch_actuator_command();
+
+            PDI6121_servo_pwm_device_set_ticks(servo_G, current_pulse_ticks);
+
         }
     }
 }

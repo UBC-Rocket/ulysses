@@ -21,11 +21,10 @@ typedef struct {
     float deg_range;
     float mid_pt;
 
+    uint16_t compare_val;
 
     uint16_t us_last;
     bool enabled;
-
-    int offset; 
 
 } PDI6121_servo_t;
 
@@ -34,6 +33,11 @@ typedef enum {
     US_MID = 1500,
     US_MAX = 2500
 } PDI6121_servo_cal_t;
+
+typedef struct {
+    PDI6121_servo_t servo1; 
+    PDI6121_servo_t servo2;
+} servo_pair_t;
 
 void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm);
 
@@ -59,5 +63,7 @@ void PDI6121_servo_set_position_deg(PDI6121_servo_t *servoX, PDI6121_servo_t *se
 
 /* Device layer hooks */
 void PDI6121_servo_device_init(PDI6121_servo_pwm_t *pwm);
+
 void PDI6121_servo_pwm_device_enable(PDI6121_servo_pwm_t *pwm, bool enable);
+
 void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks);
