@@ -58,6 +58,10 @@ set(SERVO_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/motor_drivers/servo_driver.c
 )
 
+set(ESC_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/motor_drivers/esc_driver.c
+)
+
 set(DEBUG_MODULE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/debug/log.c
 )
@@ -137,6 +141,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${ALGO_SRC}
 
     ${SERVO_SRC}
+    ${ESC_SRC}
 )
 
 # Add include paths
