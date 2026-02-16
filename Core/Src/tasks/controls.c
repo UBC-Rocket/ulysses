@@ -115,13 +115,6 @@ void controls_task_start(void *argument)
         }
         state_exchange_publish_control_output(&control_output);
 
-        /* TODO: actuator drivers esc, servos */
 
-        TickType_t elapsed = xTaskGetTickCount() - cycle_start;
-        if (elapsed < period_ticks) {
-            vTaskDelay(period_ticks - elapsed);
-        } else {
-            taskYIELD();
-        }
     }
 }

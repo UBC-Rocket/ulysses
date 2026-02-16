@@ -4,11 +4,9 @@
  *
  * Implements two-phase push mode reading from the GNSS Radio slave board:
  * - Phase 1: Read TYPE byte (1 byte) to determine message type
- * - Phase 2: Read PAYLOAD based on type (GPS: 87 bytes NMEA, Radio: 256 bytes)
+ * - Phase 2: Read PAYLOAD based on type (GPS: 48 bytes, Radio: 256 bytes)
  *
- * Priority assignment:
- * - GPS messages: SPI1_PRIO_HIGH (small, time-sensitive)
- * - Radio messages: SPI1_PRIO_NORMAL (large, less urgent)
+ * Also supports master-to-slave radio TX via raw 256-byte payloads.
  *
  * UBC Rocket, Feb 2026
  */
@@ -34,8 +32,7 @@ gnss_radio_context_t gnss_radio_ctx;
 
 static void submit_type_read(void);
 static void submit_payload_read(uint8_t type);
-static void submit_full_read(void);
-static bool enqueue_gps_nmea(const uint8_t *nmea);
+static bool enqueue_gps_fix(const uint8_t *rx_data);
 static bool enqueue_radio_msg(const uint8_t *msg);
 
 /* -------------------------------------------------------------------------- */
@@ -66,15 +63,7 @@ void gnss_radio_init(void)
     /* Initialize TX dummy buffer (zeros for read operations) */
     memset(gnss_radio_ctx.tx_dummy, 0x00, sizeof(gnss_radio_ctx.tx_dummy));
 
-    /* Enable split transactions by default */
-    gnss_radio_ctx.split_transactions = true;
-
     gnss_radio_ctx.initialized = true;
-}
-
-void gnss_radio_set_split_mode(bool enable)
-{
-    gnss_radio_ctx.split_transactions = enable;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -96,14 +85,8 @@ void gnss_radio_irq_handler(void)
         return;
     }
 
-    /* Start push mode read sequence */
-    if (gnss_radio_ctx.split_transactions) {
-        /* Two-phase mode: read TYPE first */
-        submit_type_read();
-    } else {
-        /* Single-phase mode: read full message (TYPE + max payload) */
-        submit_full_read();
-    }
+    /* Two-phase mode: read TYPE first */
+    submit_type_read();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -120,11 +103,6 @@ static void submit_type_read(void)
     job.cs_port = gnss_radio_ctx.cs_port;
     job.cs_pin = gnss_radio_ctx.cs_pin;
     job.len = GNSS_PHASE1_TYPE_READ_SIZE;
-    job.t_submit = timestamp_us();
-    job.max_duration_us = GNSS_PHASE1_DURATION_US;
-    job.priority = SPI1_PRIO_HIGH;  /* TYPE read is always high priority */
-    job.device = SPI1_DEVICE_GNSS_RADIO;
-    job.preemptible = true;         /* Can be deferred for motor control */
     job.type = SPI_XFER_TXRX;
     job.done = gnss_radio_phase1_done;
     job.done_arg = NULL;
@@ -135,9 +113,7 @@ static void submit_type_read(void)
 
     gnss_radio_ctx.state = GNSS_STATE_TYPE_PENDING;
 
-    if (!spi1_submit_job(&job)) {
-        /* Job queued (not started immediately) */
-    }
+    spi1_submit_job(&job);
 
     gnss_radio_ctx.state = GNSS_STATE_TYPE_READING;
 }
@@ -146,7 +122,7 @@ static void submit_type_read(void)
  * @brief Phase 1 completion callback
  *
  * Called when TYPE byte has been read. Examines the type and submits
- * phase 2 job with appropriate priority.
+ * phase 2 job.
  */
 void gnss_radio_phase1_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg)
 {
@@ -188,28 +164,19 @@ static void submit_payload_read(uint8_t type)
 
     job.cs_port = gnss_radio_ctx.cs_port;
     job.cs_pin = gnss_radio_ctx.cs_pin;
-    job.t_submit = timestamp_us();
-    job.device = SPI1_DEVICE_GNSS_RADIO;
     job.type = SPI_XFER_TXRX;
     job.done = gnss_radio_phase2_done;
     job.done_arg = (void *)(uintptr_t)type;
+    job.task_notification_flag = 0;
 
-    /* Set length and priority based on type */
+    /* Set length based on type */
     switch (type) {
     case GNSS_PUSH_TYPE_GPS:
         job.len = GNSS_PUSH_GPS_PAYLOAD;
-        job.max_duration_us = GNSS_GPS_PAYLOAD_DURATION_US;
-        job.priority = SPI1_PRIO_HIGH;
-        job.preemptible = false;  /* GPS is short, let it complete */
-        job.task_notification_flag = GNSS_GPS_FIX_READY_FLAG;
         break;
 
     case GNSS_PUSH_TYPE_RADIO:
         job.len = GNSS_PUSH_RADIO_PAYLOAD;
-        job.max_duration_us = GNSS_RADIO_PAYLOAD_DURATION_US;
-        job.priority = SPI1_PRIO_NORMAL;
-        job.preemptible = true;   /* Radio is long, can be deferred */
-        job.task_notification_flag = GNSS_RADIO_MSG_READY_FLAG;
         break;
 
     default:
@@ -223,9 +190,7 @@ static void submit_payload_read(uint8_t type)
 
     gnss_radio_ctx.state = GNSS_STATE_PAYLOAD_PENDING;
 
-    if (!spi1_submit_job(&job)) {
-        /* Job queued */
-    }
+    spi1_submit_job(&job);
 
     gnss_radio_ctx.state = GNSS_STATE_PAYLOAD_READING;
 }
@@ -241,11 +206,16 @@ void gnss_radio_phase2_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg)
     (void)job;
     uint8_t type = (uint8_t)(uintptr_t)arg;
 
+    BaseType_t xWoken = pdFALSE;
+
     switch (type) {
     case GNSS_PUSH_TYPE_GPS:
-        /* Raw NMEA sentence from rx_buf */
-        if (enqueue_gps_nmea(rx_buf)) {
+        /* Parsed GPS fix from rx_buf */
+        if (enqueue_gps_fix(rx_buf)) {
             gnss_radio_ctx.gps_fixes_received++;
+            xTaskNotifyFromISR(StateEstimationHandle,
+                               GNSS_GPS_FIX_READY_FLAG,
+                               eSetBits, &xWoken);
         } else {
             gnss_radio_ctx.queue_overflows++;
         }
@@ -254,6 +224,9 @@ void gnss_radio_phase2_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg)
     case GNSS_PUSH_TYPE_RADIO:
         if (enqueue_radio_msg(rx_buf)) {
             gnss_radio_ctx.radio_msgs_received++;
+            xTaskNotifyFromISR(MissionManagerHandle,
+                               GNSS_RADIO_MSG_READY_FLAG,
+                               eSetBits, &xWoken);
         } else {
             gnss_radio_ctx.queue_overflows++;
         }
@@ -273,84 +246,8 @@ void gnss_radio_phase2_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg)
         /* Re-trigger IRQ handler to process next message */
         gnss_radio_irq_handler();
     }
-}
 
-/* -------------------------------------------------------------------------- */
-/* Single-Phase Mode (Non-Split)                                              */
-/* -------------------------------------------------------------------------- */
-
-/**
- * @brief Submit a full read (TYPE + max PAYLOAD) in one transaction
- */
-static void submit_full_read(void)
-{
-    spi1_job_t job = {0};
-
-    job.cs_port = gnss_radio_ctx.cs_port;
-    job.cs_pin = gnss_radio_ctx.cs_pin;
-    /* Read TYPE + max payload size (Radio is larger) */
-    job.len = GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_RADIO_PAYLOAD;
-    job.t_submit = timestamp_us();
-    job.max_duration_us = GNSS_RADIO_PAYLOAD_DURATION_US + GNSS_PHASE1_DURATION_US;
-    job.priority = SPI1_PRIO_NORMAL;  /* Use normal since we don't know type yet */
-    job.device = SPI1_DEVICE_GNSS_RADIO;
-    job.preemptible = true;
-    job.type = SPI_XFER_TXRX;
-    job.done = gnss_radio_single_phase_done;
-    job.done_arg = NULL;
-    job.task_notification_flag = 0;
-
-    /* TX buffer: dummy bytes */
-    memset(job.tx, 0x00, job.len);
-
-    gnss_radio_ctx.state = GNSS_STATE_TYPE_READING;
-
-    spi1_submit_job(&job);
-}
-
-/**
- * @brief Single-phase completion callback
- */
-void gnss_radio_single_phase_done(spi1_job_t *job, const uint8_t *rx_buf, void *arg)
-{
-    (void)job;
-    (void)arg;
-
-    /* First byte is TYPE */
-    uint8_t type = rx_buf[0];
-    const uint8_t *payload = &rx_buf[GNSS_PUSH_TYPE_BYTES];
-
-    switch (type) {
-    case GNSS_PUSH_TYPE_GPS:
-        /* Raw NMEA sentence */
-        if (enqueue_gps_nmea(payload)) {
-            gnss_radio_ctx.gps_fixes_received++;
-        } else {
-            gnss_radio_ctx.queue_overflows++;
-        }
-        break;
-
-    case GNSS_PUSH_TYPE_RADIO:
-        if (enqueue_radio_msg(payload)) {
-            gnss_radio_ctx.radio_msgs_received++;
-        } else {
-            gnss_radio_ctx.queue_overflows++;
-        }
-        break;
-
-    default:
-        gnss_radio_ctx.transaction_errors++;
-        break;
-    }
-
-    /* Return to idle state */
-    gnss_radio_ctx.state = GNSS_STATE_IDLE;
-
-    /* Check for pending IRQ */
-    if (gnss_radio_ctx.irq_pending) {
-        gnss_radio_ctx.irq_pending = false;
-        gnss_radio_irq_handler();
-    }
+    portYIELD_FROM_ISR(xWoken);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -358,19 +255,19 @@ void gnss_radio_single_phase_done(spi1_job_t *job, const uint8_t *rx_buf, void *
 /* -------------------------------------------------------------------------- */
 
 /**
- * @brief Enqueue a GPS NMEA sentence (called from ISR context)
+ * @brief Enqueue a parsed GPS fix (called from ISR context)
  */
-static bool enqueue_gps_nmea(const uint8_t *nmea)
+static bool enqueue_gps_fix(const uint8_t *rx_data)
 {
-    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_full()) {
         return false;
     }
 
-    memcpy(q->sentences[q->head], nmea, GNSS_NMEA_MAX_LEN);
+    memcpy(&q->fixes[q->head], rx_data, sizeof(gnss_gps_fix_t));
     SYNC_DMB();
-    q->head = (q->head + 1) % GNSS_GPS_NMEA_QUEUE_LEN;
+    q->head = (q->head + 1) % GNSS_GPS_FIX_QUEUE_LEN;
     return true;
 }
 
@@ -391,45 +288,32 @@ static bool enqueue_radio_msg(const uint8_t *msg)
     return true;
 }
 
-bool gnss_gps_dequeue(uint8_t *nmea)
+bool gnss_gps_dequeue(gnss_gps_fix_t *fix)
 {
-    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_empty()) {
         return false;
     }
 
     SYNC_DMB();
-    memcpy(nmea, q->sentences[q->tail], GNSS_NMEA_MAX_LEN);
+    *fix = q->fixes[q->tail];
     SYNC_DMB();
-    q->tail = (q->tail + 1) % GNSS_GPS_NMEA_QUEUE_LEN;
+    q->tail = (q->tail + 1) % GNSS_GPS_FIX_QUEUE_LEN;
     return true;
 }
 
-bool gnss_gps_peek(uint8_t *nmea)
+bool gnss_gps_peek(gnss_gps_fix_t *fix)
 {
-    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
+    gnss_gps_fix_queue_t *q = &gnss_radio_ctx.gps_queue;
 
     if (gnss_gps_queue_empty()) {
         return false;
     }
 
     SYNC_DMB();
-    memcpy(nmea, q->sentences[q->tail], GNSS_NMEA_MAX_LEN);
+    *fix = q->fixes[q->tail];
     return true;
-}
-
-const uint8_t* gnss_gps_get_latest(void)
-{
-    gnss_gps_nmea_queue_t *q = &gnss_radio_ctx.gps_queue;
-
-    if (gnss_gps_queue_empty()) {
-        return NULL;
-    }
-
-    /* Get most recent (head - 1) */
-    uint8_t latest_idx = (q->head == 0) ? (GNSS_GPS_NMEA_QUEUE_LEN - 1) : (q->head - 1);
-    return q->sentences[latest_idx];
 }
 
 bool gnss_radio_dequeue(uint8_t *msg)
@@ -461,7 +345,7 @@ bool gnss_radio_peek(uint8_t *msg)
 }
 
 /* -------------------------------------------------------------------------- */
-/* Radio TX (Pull Mode)                                                       */
+/* Radio TX (Master to Slave)                                                 */
 /* -------------------------------------------------------------------------- */
 
 bool gnss_radio_send(const uint8_t *msg, uint16_t len)
@@ -478,22 +362,15 @@ bool gnss_radio_send(const uint8_t *msg, uint16_t len)
 
     job.cs_port = gnss_radio_ctx.cs_port;
     job.cs_pin = gnss_radio_ctx.cs_pin;
-    /* Pull mode: CMD + DUMMY + PAYLOAD */
-    job.len = GNSS_CMD_OVERHEAD + len;
-    job.t_submit = timestamp_us();
-    job.max_duration_us = job.len * GNSS_SPI_US_PER_BYTE + 20;
-    job.priority = SPI1_PRIO_NORMAL;
-    job.device = SPI1_DEVICE_GNSS_RADIO;
-    job.preemptible = true;
+    job.len = GNSS_RADIO_MESSAGE_MAX_LEN;  /* Always 256 bytes raw */
     job.type = SPI_XFER_TXRX;
-    job.done = NULL;  /* No callback needed for TX */
+    job.done = NULL;
     job.done_arg = NULL;
     job.task_notification_flag = 0;
 
-    /* Build TX buffer: [CMD][DUMMY x4][PAYLOAD] */
-    job.tx[0] = GNSS_CMD_RADIO_TX;
-    memset(&job.tx[1], 0x00, GNSS_PULL_DUMMY_BYTES);
-    memcpy(&job.tx[GNSS_CMD_OVERHEAD], msg, len);
+    /* Raw payload — slave detects via spi_slave_rx_has_valid_data() */
+    memcpy(job.tx, msg, len);
+    /* Remaining bytes already zero from {0} initializer */
 
     return spi1_submit_job(&job);
 }

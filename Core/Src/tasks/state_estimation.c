@@ -210,19 +210,11 @@ void state_estimation_task_start(void *argument)
             gps_data_t current_gps;
             float pos_meters[3];
             bool have_pos_meters_this_cycle = false;
-            const uint8_t *nmea_sentence = gnss_gps_get_latest();
 
-            if (nmea_sentence != NULL && parse_gpgga((const char *)nmea_sentence, &current_gps)
-                && current_gps.fix_quality > 0) {
-                if (!have_gps_reference_point) {
-                    gps_reference_point[0] = current_gps.lat;
-                    gps_reference_point[1] = current_gps.lon;
-                    gps_reference_point[2] = current_gps.alt;
-                    have_gps_reference_point = true;
-                } else {
-                    float gps_vec[3] = { current_gps.lat, current_gps.lon, current_gps.alt };
-                    longlat_to_meters(gps_reference_point, gps_vec, pos_meters);
-                    have_pos_meters_this_cycle = true;
+            if (ISR_flags & GNSS_GPS_FIX_READY_FLAG) {
+                gnss_gps_fix_t gps_fix;
+                while (gnss_gps_dequeue(&gps_fix)) {
+                    //TODO: integrate into kalman properly the gnss board always parses the nema and only presents us with the struct
                 }
             }
 
