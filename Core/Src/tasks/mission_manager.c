@@ -1,3 +1,9 @@
+#include <stdbool.h>
+#include <string.h>
+#include "printf/printf.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "state_exchange.h"
 #include "mission_manager/mission_manager.h"
 #include "SD_logging/log_service.h"
 #include "cmsis_os2.h"

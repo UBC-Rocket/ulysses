@@ -24,7 +24,8 @@
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
 #include "SD_logging/log_service.h"
-#include  "spi_drivers/gnss_radio_master.h"
+#include "spi_drivers/gnss_radio_master.h"
+#include "debug/log.h"
 
 #define GRAV 9.807f
 #define FUSION_VECTOR_SAMPLE_SIZE 32
