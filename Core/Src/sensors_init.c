@@ -24,6 +24,9 @@ static ms5607_poller_t g_baro2_poller;
 /* Active configuration - stored after initialization */
 static sensor_system_config_t g_active_config;
 
+/* Initialization status - read-only after sensors_init() returns */
+static sensors_init_status_t g_init_status = {0};
+
 /* -------------------------------------------------------------------------- */
 /* Public API                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -169,12 +172,18 @@ sensors_init_status_t sensors_init_with_config(const sensor_system_config_t *con
         status.baro2_err = 1;  /* PROM read failed */
     }
 
+    g_init_status = status;
     return status;
 }
 
 sensors_init_status_t sensors_init(void)
 {
     return sensors_init_with_config(NULL);
+}
+
+const sensors_init_status_t *sensors_get_init_status(void)
+{
+    return &g_init_status;
 }
 
 const sensor_system_config_t *sensors_get_config(void)

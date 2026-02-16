@@ -84,6 +84,25 @@ set(STATE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
 )
 
+# Protobuf generated sources (from rocket-protocol-lib)
+set(PROTOBUF_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/common.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/telemetry.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/command.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/status.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/downlink.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_encode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_decode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_common.c
+)
+
+# rocket-protocol-lib sources
+set(ROCKET_PROTOCOL_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/codec.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/cobs/cobs.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/crc/crc16.c
+)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -94,6 +113,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
+    ${PROTOBUF_SRC}
+    ${ROCKET_PROTOCOL_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/sensors_init.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timestamp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
@@ -118,6 +139,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/state_estimation
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr
 )
 
 # Add project symbols (macros)
