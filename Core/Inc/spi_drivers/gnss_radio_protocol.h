@@ -72,10 +72,10 @@ typedef enum {
 /** Push mode transaction sizes (TYPE + PAYLOAD) */
 #define GNSS_PUSH_TYPE_BYTES          1
 #define GNSS_PUSH_RADIO_PAYLOAD       256
-#define GNSS_PUSH_GPS_PAYLOAD         87   /**< Raw NMEA sentence (82 chars + margin) */
+#define GNSS_PUSH_GPS_PAYLOAD         48   /**< Parsed GPS fix (sizeof gnss_gps_fix_t) */
 
 #define GNSS_PUSH_RADIO_TOTAL         (GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_RADIO_PAYLOAD)  /* 257 */
-#define GNSS_PUSH_GPS_TOTAL           (GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_GPS_PAYLOAD)    /* 88 */
+#define GNSS_PUSH_GPS_TOTAL           (GNSS_PUSH_TYPE_BYTES + GNSS_PUSH_GPS_PAYLOAD)    /* 49 */
 
 /** Maximum transaction size (for buffer allocation) */
 #define GNSS_MAX_TRANSACTION_SIZE     GNSS_PULL_RADIO_TOTAL  /* 261 bytes */
@@ -92,22 +92,6 @@ typedef enum {
  * If CS falls within this time after IRQ assertion, it's a collision.
  */
 #define GNSS_T_RACE_US                15
-
-/**
- * Estimated SPI transfer duration per byte at typical clock speeds.
- * Used for window guard calculations.
- * At 10 MHz SPI clock: 8 bits / 10 MHz = 0.8 us/byte, round up to 1 us
- */
-#define GNSS_SPI_US_PER_BYTE          1
-
-/** Estimated phase 1 duration (TYPE read) including overhead */
-#define GNSS_PHASE1_DURATION_US       (GNSS_PHASE1_TYPE_READ_SIZE * GNSS_SPI_US_PER_BYTE + 10)
-
-/** Estimated GPS payload read duration */
-#define GNSS_GPS_PAYLOAD_DURATION_US  (GNSS_PUSH_GPS_PAYLOAD * GNSS_SPI_US_PER_BYTE + 10)
-
-/** Estimated Radio payload read duration */
-#define GNSS_RADIO_PAYLOAD_DURATION_US (GNSS_PUSH_RADIO_PAYLOAD * GNSS_SPI_US_PER_BYTE + 20)
 
 /* -------------------------------------------------------------------------- */
 /* GPS Data Structures                                                        */
