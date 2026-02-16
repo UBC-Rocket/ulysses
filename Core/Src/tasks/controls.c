@@ -74,15 +74,23 @@ static void init_default_ref(flight_controller_ref_t *ref)
 void controls_task_start(void *argument)
 {
     (void)argument;
-
     state_t current_state = {0};
     flight_state_t flight_state = IDLE;
+    flight_controller_config_t config = {0};
+    flight_controller_ref_t ref = {0};
+    control_output_t control_output = {0};
+    uint8_t config_done = 0;
+    const TickType_t period_ticks = pdMS_TO_TICKS(1);
+    uint32_t last_state_seq = 0;
+    uint32_t stale_tick_count = 0;
+
+    init_default_config(&config);
+    init_default_ref(&ref);
 
     for (;;) {
-        // Wait for timer notification from TIM3 OC interrupt
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        TickType_t cycle_start = xTaskGetTickCount();
 
-        state_exchange_get_state(&current_state);
+        uint32_t state_seq = state_exchange_get_state(&current_state);
         state_exchange_get_flight_state(&flight_state);
 
         if (!config_done) {
@@ -107,6 +115,6 @@ void controls_task_start(void *argument)
         }
         state_exchange_publish_control_output(&control_output);
 
-        // TODO: change the controls output in the other timer interrupt. 
+
     }
 }

@@ -1,18 +1,6 @@
 /**
  * @file state_estimation.c
- * @brief State estimation task - sensor fusion and state publishing.
- *
- * This task:
- *   - Receives sensor data via task notifications from DMA callbacks
- *   - Consumes samples from sensor ring buffers
- *   - Runs sensor fusion algorithm (TODO)
- *   - Publishes fused state via state_exchange
- *   - Drives the barometer polling state machine
- *
- * Note: Sensor initialization is now done in sensors_init() before the
- * scheduler starts. This task only processes sensor data.
- *
- * UBC Rocket, Jan 2026
+ * @brief State estimation task - Merged EKF logic with Event-Driven Architecture
  */
 
 #include <stdbool.h>
@@ -63,22 +51,112 @@ void longlat_to_meters(const float reference_point[3], const float gps[3], float
     relative_distance[2] = gps[2] - reference_point[2];  /* altitude in meters */
 }
 
+static float nmea_to_decimal(float nmea_coord, char quadrant) {
+    int degrees = (int)(nmea_coord / 100);
+    float minutes = nmea_coord - (degrees * 100);
+    float decimal = degrees + (minutes / 60.0f);
+    if (quadrant == 'S' || quadrant == 'W') decimal = -decimal;
+    return decimal;
+}
+
+bool parse_gpgga(const char *nmea, gps_data_t *data) {
+    if (strncmp(nmea, "$GPGGA", 6) != 0) return false;
+
+    char lat_dir, lon_dir;
+    float raw_lat, raw_lon;
+
+    // Scan the string
+    // Format: $GPGGA,time,lat,N,lon,E,fix,sats,hdop,alt,M,...
+    int count = sscanf(nmea, "$GPGGA,%*f,%f,%c,%f,%c,%hhu,%hhu,%*f,%f", 
+                       &raw_lat, &lat_dir, &raw_lon, &lon_dir, 
+                       &data->fix_quality, &data->num_sats, &data->alt);
+
+    if (count < 7) return false;
+
+    data->lat = nmea_to_decimal(raw_lat, lat_dir);
+    data->lon = nmea_to_decimal(raw_lon, lon_dir);
+    
+    return true;
+}
+
+void quat_to_euler(float q[4], float e[3]) {
+    float w = q[0], x = q[1], y = q[2], z = q[3];
+    
+    // x-axis
+    float sinr = 2.0f * (w*x + y*z);
+    float cosr = 1.0f - 2.0f * (x*x + y*y);
+    e[0] = atan2f(sinr, cosr) * 180 / (float)M_PI;
+
+    // y-axis
+    float sinp = 2.0f * (w*y - z*x);
+    if (fabsf(sinp) >= 1.0f)
+        e[1] = copysignf((float)M_PI / 2.0f, sinp) * 180 / (float)M_PI;
+    else
+        e[1] = asinf(sinp) * 180 / (float)M_PI;
+
+    // z-axis
+    float siny = 2.0f * (w*z + x*y);
+    float cosy = 1.0f - 2.0f * (y*y + z*z);
+    e[2] = atan2f(siny, cosy) * 180.0f / (float)M_PI;
+}
+
+void update_bias(float g_bias[3], float g_data_raw[3], float a_bias[3], float a_data_raw[3], float expected_g[3], int64_t ticks)
+{
+    if (ticks == 0) {
+        for (int i = 0; i < 3; i++) g_bias[i] = g_data_raw[i];
+        for (int i = 0; i < 3; i++) a_bias[i] = a_data_raw[i] - expected_g[i];
+    }
+    for (int i = 0; i < 3; i++) {
+        g_bias[i] = (g_bias[i]) * (((float)ticks - 1) / (float)ticks) + (g_data_raw[i]) * (1.0f / (float)ticks);
+        a_bias[i] = (a_bias[i]) * (((float)ticks - 1) / (float)ticks) + (a_data_raw[i] - expected_g[i]) * (1.0f / (float)ticks);
+    }
+}
+
+float pressure_to_height(uint32_t pressure_centi) {
+    return (44307.69)*(1 - pow(((float)pressure_centi /  (float)101325),0.190284));
+}
+
 void state_estimation_task_start(void *argument)
 {
     (void)argument;
 
-    /*
-     * Get pointers to barometer pollers - initialized in sensors_init().
-     * All other sensor state (sample ring buffers, device configs) is
-     * accessed via the globals declared in SPI_device_interactions.h.
-     */
     ms5611_poller_t *baro_poller = sensors_get_baro_poller();
     ms5607_poller_t *baro2_poller = sensors_get_baro2_poller();
+
+    static bmi088_accel_sample_t accel_samples[FUSION_VECTOR_SAMPLE_SIZE];
+    static bmi088_gyro_sample_t gyro_samples[FUSION_VECTOR_SAMPLE_SIZE];
+    static float baro1_heights[FUSION_VECTOR_SAMPLE_SIZE];
+    static float baro2_heights[FUSION_VECTOR_SAMPLE_SIZE];
+    // static ms5611_sample_t baro_samples[FUSION_VECTOR_SAMPLE_SIZE]; 
+
+    float process_noise_quaternion[4][4] = {{0.01, 0, 0, 0}, {0, 0.01, 0, 0}, {0, 0, 0.01, 0}, {0, 0, 0, 0.01}};
+    float measurement_noise_quaternion[3][3] = {{0.001, 0, 0}, {0, 0.001, 0}, {0, 0, 0.001}};
+    float process_noise_body[6][6] = {
+        {0.01, 0, 0, 0, 0, 0}, {0, 0.01, 0, 0, 0, 0}, {0, 0, 0.01, 0, 0, 0},
+        {0, 0, 0, 0.001, 0, 0}, {0, 0, 0, 0, 0.001, 0}, {0, 0, 0, 0, 0, 0.001}
+    };
+    float measurement_noise_body[3][3] = {{15, 0, 0}, {0, 15, 0}, {0, 0, 15}};
+
+    init_ekf(process_noise_quaternion, measurement_noise_quaternion, process_noise_body, measurement_noise_body, EXPECTED_GRAVITY);
+
+    float delta_time = 0;
+    float last_tick = 0;
+    uint64_t CALIBRATION = 2000;
+    uint64_t ticks = 0;
+
+    float accel_bias[3] = {0, 0, 0};
+    float gyro_bias[3] = {0, 0, 0};
+    float gps_bias[3] = {0, 0, 0}; 
+    // uint64_t gps_ticks = 0;
+    float gps_reference_point[3];
+    bool have_gps_reference_point = 0;
 
     const TickType_t period_ticks = pdMS_TO_TICKS(1);
     uint32_t ISR_flags = 0;
 
     while (true) {
+        DLOG_PRINT("BEGIN\n");
+        // Event-driven wait (New Branch)
         xTaskNotifyWaitIndexed(0, 0, UINT32_MAX, &ISR_flags, period_ticks);
 
         // Counters for the current batch
@@ -137,7 +215,7 @@ void state_estimation_task_start(void *argument)
             if (ISR_flags & GNSS_GPS_FIX_READY_FLAG) {
                 gnss_gps_fix_t gps_fix;
                 while (gnss_gps_dequeue(&gps_fix)) {
-                    //TODO: integrate into kalman properly
+                    //TODO: integrate into kalman properly the gnss board always parses the nema and only presents us with the struct
                 }
             }
 
