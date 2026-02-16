@@ -1,10 +1,7 @@
 #pragma once
 
-#include "stdint.h"
-#include "stdbool.h"
-
-#define CLOCK_FREQUQNCY 
-#define AUTO_RELOAD_VALUE 
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
     void *htim;
