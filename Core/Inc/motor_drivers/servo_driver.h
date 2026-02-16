@@ -21,7 +21,7 @@ typedef struct {
     float deg_range;
     float mid_pt;
 
-    uint16_t compare_val;
+    uint32_t compare_val;
 
     uint16_t us_last;
     bool enabled;
@@ -52,7 +52,7 @@ void PDI6121_servo_set_deg(PDI6121_servo_t *servo, float degrees);
 
 // API Controls
 
-void PDI6121_servo_set_deg_range(PDI6121_servo_t *servo, float deg_range, float mid_point); // Calibrated for each servo
+void PDI6121_servo_set_deg_range(PDI6121_servo_t *servo, float deg_range, float mid_pt);
 
 
 /* Device layer hooks */
@@ -69,8 +69,5 @@ void set_servo_degree(PDI6121_servo_t *servo, float degree);
 void set_servo_pair_degrees(float s1, float s2);
 
 void apply_servo_pair_degrees(void);
-
-
-
 
 void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2);

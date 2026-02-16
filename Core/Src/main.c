@@ -27,6 +27,7 @@
 #include "timestamp.h"
 #include "spi1_bus.h"
 #include "gnss_radio_master.h"
+#include "motor_drivers/servo_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -163,6 +164,25 @@ int main(void)
   /* Start TIM3 output compare interrupts for controls task timing */
   HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
   HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_2);
+
+  /* Gimbal servo pair: TIM2 Ch2 (servo1 / theta_x), Ch4 (servo2 / theta_y). 800 kHz, 2500 ticks. */
+  {
+    PDI6121_servo_pwm_t pwm1 = {
+      .htim = &htim2,
+      .channel = TIM_CHANNEL_2,
+      .timer_hz = 800000U,
+      .period_ticks = 2500U,
+    };
+    PDI6121_servo_pwm_t pwm2 = {
+      .htim = &htim2,
+      .channel = TIM_CHANNEL_4,
+      .timer_hz = 800000U,
+      .period_ticks = 2500U,
+    };
+    servo_pair_init(&pwm1, &pwm2);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+  }
 
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
   debug_log_init(&huart1);
