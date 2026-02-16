@@ -87,6 +87,11 @@ void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm) {
     PDI6121_servo_pwm_device_enable(&servo->pwm, false);
 }
 
+void PDI6121_servo_init_with_deg_range(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm, float deg_range, float mid_pt) {
+    PDI6121_servo_set_deg_range(servo, deg_range, mid_pt);
+    PDI6121_servo_init(servo, pwm);
+}
+
 void PDI6121_servo_enable(PDI6121_servo_t *servo, bool enable) {
     if (servo == NULL) {
         return;
@@ -168,19 +173,26 @@ void PDI6121_servo_set_deg(PDI6121_servo_t *servo, float degrees) {
      * - change this function signature to accept deg_min/deg_max, OR
      * - don’t use degrees and use norm/deflection instead.
      */
-    float d = clamp_f(degrees, 0.0f, 180.0f);
+
+    float mid = servo->mid_pt;
+    float range_half = (servo->deg_range)/2;
+    float min_deg = mid - range_half;
+    float max_deg = mid + range_half;
+
+    float d = clamp_f(degrees, min_deg, max_deg);
 
     if (d <= 90.0f) {
-        float t = d / 90.0f; 
+        float t = d / 90.0f;
         float us_f = (float)servo->us_min + t * (float)(servo->us_mid - servo->us_min);
         uint16_t us = (uint16_t)(us_f + 0.5f);
         PDI6121_servo_set_us(servo, us);
     } else {
-        float t = (d - 90.0f) / 90.0f; 
+        float t = (d - 90.0f) / 90.0f;
         float us_f = (float)servo->us_mid + t * (float)(servo->us_max - servo->us_mid);
         uint16_t us = (uint16_t)(us_f + 0.5f);
         PDI6121_servo_set_us(servo, us);
     }
+
 }
 
 void PDI6121_servo_set_cal(PDI6121_servo_t *servo) {
@@ -195,4 +207,29 @@ void PDI6121_servo_set_cal(PDI6121_servo_t *servo) {
     if (servo->enabled) {
         PDI6121_servo_set_us(servo, servo->us_last);
     }
+}
+
+
+
+void PDI6121_servo_set_deg_range(PDI6121_servo_t *servo, float deg_range, float mid_pt) {
+    if (servo == NULL) {
+        return;
+    }
+    servo->deg_range = deg_range;
+    servo->mid_pt = mid_pt;
+}
+
+
+
+void PDI6121_servo_set_position_deg(PDI6121_servo_t *servoX, PDI6121_servo_t *servoY, float x, float y) {
+    // if (servoX == NULL || servoY == NULL) {
+    //     return;
+    // }
+
+    float originX = servoX->mid_pt;
+    // float originY = servoY->mid_pt;
+
+    PDI6121_servo_set_deg(servoX, originX + x);
+    PDI6121_servo_set_deg(servoY, originY + y);
+
 }
