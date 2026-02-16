@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "sync.h"
 
 /* -------------------------------------------------------------------------- */
 /* SPI Commands (see datasheet Table “Command Set”)                           */
@@ -151,32 +152,63 @@ typedef struct {
     uint32_t seq;             ///< monotonically increasing sequence
 } ms5611_sample_t;
 
+/**
+ * @brief SPSC ring buffer for barometer samples.
+ *
+ * Thread Safety:
+ * - Single Producer (ISR/DMA callback) writes samples via ms5611_sample_queue()
+ * - Single Consumer (state estimation task) reads via ms5611_sample_dequeue()
+ * - Memory barriers ensure proper ordering between producer and consumer.
+ */
 typedef struct {
     ms5611_sample_t samples[MS5611_SAMPLE_Q_SIZE];
-    volatile uint8_t head;
-    volatile uint8_t tail;
+    volatile uint8_t head;  /**< Written by producer only */
+    volatile uint8_t tail;  /**< Written by consumer only */
 } ms5611_sample_queue_t;
 
+/**
+ * @brief Check if sample queue is empty.
+ */
 static inline bool ms5611_sample_queue_empty(ms5611_sample_queue_t *q) {
     return q->head == q->tail;
 }
 
+/**
+ * @brief Check if sample queue is full.
+ */
 static inline bool ms5611_sample_queue_full(ms5611_sample_queue_t *q) {
     return ((q->head + 1U) % MS5611_SAMPLE_Q_SIZE) == q->tail;
 }
 
+/**
+ * @brief Enqueue a new barometer sample (producer side - ISR/callback context).
+ * @param q Pointer to the sample queue.
+ * @param sample Pointer to sample to enqueue.
+ * @return True if successful, false if queue full.
+ * @note Memory barrier ensures sample data is visible before head update.
+ */
 static inline bool ms5611_sample_queue(ms5611_sample_queue_t *q,
                                        const ms5611_sample_t *sample) {
     if (ms5611_sample_queue_full(q)) return false;
     q->samples[q->head] = *sample;
+    SYNC_DMB();  /* Ensure sample data written before head update is visible */
     q->head = (uint8_t)((q->head + 1U) % MS5611_SAMPLE_Q_SIZE);
     return true;
 }
 
+/**
+ * @brief Dequeue the next barometer sample (consumer side - task context).
+ * @param q Pointer to the sample queue.
+ * @param sample Pointer to receive dequeued sample.
+ * @return True if successful, false if queue empty.
+ * @note Memory barriers ensure proper ordering with producer.
+ */
 static inline bool ms5611_sample_dequeue(ms5611_sample_queue_t *q,
                                          ms5611_sample_t *sample) {
     if (ms5611_sample_queue_empty(q)) return false;
+    SYNC_DMB();  /* Ensure we see sample data written before head was updated */
     *sample = q->samples[q->tail];
+    SYNC_DMB();  /* Ensure sample read completes before tail update */
     q->tail = (uint8_t)((q->tail + 1U) % MS5611_SAMPLE_Q_SIZE);
     return true;
 }
