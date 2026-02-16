@@ -118,6 +118,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/state_estimation
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/include/rp
 )
 
 # Add project symbols (macros)
