@@ -162,6 +162,8 @@ header file. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+#define configUSE_TICKLESS_IDLE                  1
+#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP    2
 /* USER CODE END Defines */
 
 #endif /* __FREERTOS_CONFIG_H */

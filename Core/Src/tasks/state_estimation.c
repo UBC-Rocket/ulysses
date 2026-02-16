@@ -33,6 +33,8 @@
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
 #include "SD_logging/log_service.h"
+#include "spi_drivers/gnss_radio_master.h"
+#include "debug/log.h"
 
 #define FUSION_VECTOR_SAMPLE_SIZE 32
 
@@ -95,7 +97,15 @@ void state_estimation_task_start(void *argument)
                 }
             }
 
-            // TODO: other sensor intakes
+            if (ISR_flags & GNSS_GPS_FIX_READY_FLAG) {
+                gnss_gps_fix_t gps_fix;
+                while (gnss_gps_dequeue(&gps_fix)) {
+                    DLOG_PRINT("[GPS] fix q=%u sat=%u\r\n",
+                               gps_fix.fix_quality,
+                               gps_fix.num_satellites);
+                    // TODO: feed into Kalman filter
+                }
+            }
 
             state_t fused_state = {0};
             state_exchange_publish_state(&fused_state);
