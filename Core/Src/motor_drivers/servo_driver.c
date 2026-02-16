@@ -12,7 +12,7 @@ static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t p
 static void set_default_cal(PDI6121_servo_t *servo);
 static uint16_t degree_to_us(const PDI6121_servo_t *servo, float degree);
 
-/* Global Variables for the Interrupt to access */
+/* Written by task (set_servo_pair_degrees); read by ISR (apply_servo_pair_degrees). */
 static servo_pair_t servos;
 static volatile bool g_servo_pair_ready = false;
 
@@ -23,16 +23,21 @@ void set_servo_degree(PDI6121_servo_t *servo, float degree) {
     }
 
     uint16_t us = degree_to_us(servo, degree);
-    servo->compare_val = us_to_ticks(&servo->pwm, us);
+    servo->us_last = us;
+    uint32_t ticks = us_to_ticks(&servo->pwm, us);
+    servo->compare_val = clamp_ticks_to_period(&servo->pwm, ticks);
 }
 
 void set_servo_pair_degrees(float degree1, float degree2) {
+    if (!g_servo_pair_ready) {
+        return;
+    }
     set_servo_degree(&servos.servo1, degree1);
     set_servo_degree(&servos.servo2, degree2);
 }
 
-/* Hardware Functions */
-void apply_servo_pair_degrees() {
+/* Hardware Functions (call from ISR only). */
+void apply_servo_pair_degrees(void) {
     if (!g_servo_pair_ready) {
         return;
     }
@@ -81,6 +86,9 @@ void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse
 }
 
 void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2) {
+    if (pwm1 == NULL || pwm2 == NULL) {
+        return;
+    }
     PDI6121_servo_init(&servos.servo1, pwm1);
     PDI6121_servo_init(&servos.servo2, pwm2);
     g_servo_pair_ready = true;
@@ -176,6 +184,7 @@ void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm) {
     {
         uint32_t ticks = us_to_ticks(&servo->pwm, servo->us_mid);
         ticks = clamp_ticks_to_period(&servo->pwm, ticks);
+        servo->compare_val = ticks;
         PDI6121_servo_pwm_device_set_ticks(&servo->pwm, ticks);
     }
     PDI6121_servo_pwm_device_enable(&servo->pwm, false);
@@ -194,10 +203,8 @@ void PDI6121_servo_enable(PDI6121_servo_t *servo, bool enable) {
     servo->enabled = enable;
 
     if (enable) {
-        uint16_t us = clamp_u16(servo->us_last, servo->us_min, servo->us_max);
-        servo->us_last = us;
-
-        uint32_t ticks = us_to_ticks(&servo->pwm, us);
+        servo->us_last = clamp_u16(servo->us_last, servo->us_min, servo->us_max);
+        uint32_t ticks = us_to_ticks(&servo->pwm, servo->us_last);
         ticks = clamp_ticks_to_period(&servo->pwm, ticks);
         PDI6121_servo_pwm_device_set_ticks(&servo->pwm, ticks);
 

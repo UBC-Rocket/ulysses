@@ -3,8 +3,8 @@
  * @brief   Controls task: runs flight controller at 1 kHz, publishes control output.
  *
  * Reads state and flight_state from state_exchange; fills ref (e.g. hover);
- * calls flight_controller_run and state_exchange_publish_control_output.
- * Actuator drivers (ESC, gimbal servos) are not implemented here.
+ * calls flight_controller_run, state_exchange_publish_control_output, and
+ * set_servo_pair_degrees for gimbal (theta_x_cmd, theta_y_cmd [rad] -> degrees).
  */
 #include <stdbool.h>
 #include <string.h>
@@ -17,6 +17,9 @@
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
 #include "controls/flight_controller.h"
+#include "motor_drivers/servo_driver.h"
+
+#define RAD_TO_DEG (180.0f / 3.14159265f)
 
 #define CONTROLS_DT_S 0.001f  /**< Control period [s] (1 kHz). */
 #define STALE_STATE_THRESHOLD_TICKS 100  /**< If state_seq unchanged for this many ticks, treat as stale and output safe (zero). */
@@ -115,6 +118,9 @@ void controls_task_start(void *argument)
         }
         state_exchange_publish_control_output(&control_output);
 
-
+        /* Gimbal: apply theta_x_cmd, theta_y_cmd [rad] to servo pair (converted to degrees). */
+        set_servo_pair_degrees(
+            control_output.theta_x_cmd * RAD_TO_DEG,
+            control_output.theta_y_cmd * RAD_TO_DEG);
     }
 }
