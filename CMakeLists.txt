@@ -84,12 +84,16 @@ set(STATE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
 )
 
-# Protobuf generated sources
+# Protobuf generated sources (from rocket-protocol-lib)
 set(PROTOBUF_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/flight_command.pb.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/pb_encode.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/pb_decode.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/pb_common.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/common.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/telemetry.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/command.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/status.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/downlink.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_encode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_decode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_common.c
 )
 
 # rocket-protocol-lib sources
@@ -136,7 +140,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/state_estimation
     ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanopb
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb
+    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr
 )
 
 # Add project symbols (macros)

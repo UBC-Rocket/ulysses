@@ -96,6 +96,16 @@ sensors_init_status_t sensors_init(void);
 const sensor_system_config_t *sensors_get_config(void);
 
 /**
+ * @brief Get the sensor initialization status.
+ *
+ * Returns a pointer to the status structure populated during sensors_init().
+ * Read-only after boot (no mutex needed).
+ *
+ * @return Pointer to the init status (read-only).
+ */
+const sensors_init_status_t *sensors_get_init_status(void);
+
+/**
  * @brief Check if all critical sensors initialized successfully.
  *
  * @param status Status returned by sensors_init().
