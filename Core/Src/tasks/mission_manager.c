@@ -1,30 +1,24 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
-#include "printf/printf.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "state_exchange.h"
+#include "cmsis_os2.h"
+#include "main.h"
+#include "printf/printf.h"
+#include "debug/log.h"
 #include "mission_manager/mission_manager.h"
 #include "SD_logging/log_service.h"
-#include "cmsis_os2.h"
-#include "spi_drivers/gnss_radio_master.h"
-#include "debug/log.h"
-#include "main.h"
 #include "state_estimation/state.h"
 #include "state_exchange.h"
-#include <stdbool.h>
-
-#include "FreeRTOS.h"
+#include "spi_drivers/gnss_radio_master.h"
+#include "sensors_init.h"
 #include "command.pb.h"
 #include "telemetry.pb.h"
 #include "downlink.pb.h"
 #include "status.pb.h"
 #include "common.pb.h"
-#include "gnss_radio_master.h"
-#include "sensors_init.h"
 #include "rp/codec.h"
-#include "task.h"
-#include <stdint.h>
 
 static flight_state_t last_logged_flight_state = IDLE;
 static bool flight_header_logged = false;
@@ -33,6 +27,7 @@ static uint32_t flight_counter = 0U;
 
 #define TELEMETRY_INTERVAL_MS 100   /* 10 Hz */
 #define STATUS_INTERVAL_MS    1000  /* 1 Hz */
+#define GNSS_STATS_INTERVAL_MS 5000 /* 5 s */
 
 static uint32_t radio_tx_count = 0;
 static uint32_t radio_rx_count = 0;
@@ -47,19 +42,12 @@ static void send_telemetry(const state_t *st, const control_output_t *ctrl,
                            flight_state_t flight_state);
 static void send_status(flight_state_t flight_state);
 
-uint32_t flags = 0;
-
 void mission_manager_task_start(void *argument) {
     flight_state_t flight_state = IDLE;
     state_exchange_publish_flight_state(flight_state);
 
     const TickType_t timeout = pdMS_TO_TICKS(100);
 
-    /* 1Hz dummy radio TX sender */
-    uint32_t dummy_seq = 0;
-    TickType_t last_dummy_tick = xTaskGetTickCount();
-
-    /* Periodic GNSS stats */
     TickType_t last_stats_tick = xTaskGetTickCount();
 
     DLOG_PRINT("[MM] Task started\r\n");
@@ -70,56 +58,12 @@ void mission_manager_task_start(void *argument) {
 
         log_service_try_init();
 
-        if (flags & GNSS_RADIO_MSG_READY_FLAG) {
-            uint8_t radio_msg[GNSS_RADIO_MESSAGE_MAX_LEN];
-            while (gnss_radio_dequeue(radio_msg)) {
-                /* Log first 16 bytes as hex */
-                DLOG_PRINT("[RADIO RX] %02X%02X%02X%02X...\r\n",
-                           radio_msg[0], radio_msg[1],
-                           radio_msg[2], radio_msg[3]);
-                // TODO: decode radio message
-                // TODO: flight state transitions from radio message
-            }
-        }
-
-        /* ── 1Hz Dummy Radio TX ── */
-        TickType_t now = xTaskGetTickCount();
-        if ((now - last_dummy_tick) >= pdMS_TO_TICKS(1000)) {
-            last_dummy_tick = now;
-
-            char dummy_buf[48];
-            int len = snprintf_(dummy_buf, sizeof(dummy_buf),
-                               "ULYSSES TX #%lu t=%lu",
-                               (unsigned long)dummy_seq,
-                               (unsigned long)HAL_GetTick());
-            if (len < 0) len = 0;
-            dummy_seq++;
-
-            bool sent = gnss_radio_send((const uint8_t *)dummy_buf,
-                                        (uint16_t)len);
-            DLOG_PRINT("[RADIO TX] #%lu %s\r\n",
-                       (unsigned long)(dummy_seq - 1),
-                       sent ? "OK" : "FAIL");
-        }
-
-        /* ── Periodic GNSS Stats (every 5s) ── */
-        if ((now - last_stats_tick) >= pdMS_TO_TICKS(5000)) {
-            last_stats_tick = now;
-            uint32_t gps_cnt, radio_cnt, err_cnt;
-            gnss_radio_get_stats(&gps_cnt, &radio_cnt, &err_cnt);
-            DLOG_PRINT("[GNSS] g=%lu r=%lu e=%lu\r\n",
-                       (unsigned long)gps_cnt,
-                       (unsigned long)radio_cnt,
-                       (unsigned long)err_cnt);
-        }
-
         state_t current_state = {0};
         state_exchange_get_state(&current_state);
 
         log_flight_header_if_ready(current_state.u_s);
 
-        xTaskNotifyWait(0, UINT32_MAX, &flags, 0);
-        
+        /* ── Radio RX: decode FlightCommand ── */
         if (flags & GNSS_RADIO_MSG_READY_FLAG) {
             uint8_t spi_msg[GNSS_RADIO_MESSAGE_MAX_LEN];
 
@@ -178,9 +122,11 @@ void mission_manager_task_start(void *argument) {
             }
         }
 
-        /* 10 Hz telemetry downlink */
-        static TickType_t last_telem_tick = 0;
+        /* ── Periodic downlink ── */
         TickType_t now = xTaskGetTickCount();
+
+        /* 10 Hz telemetry */
+        static TickType_t last_telem_tick = 0;
         if ((now - last_telem_tick) >= pdMS_TO_TICKS(TELEMETRY_INTERVAL_MS)) {
             last_telem_tick = now;
             control_output_t ctrl = {0};
@@ -195,11 +141,20 @@ void mission_manager_task_start(void *argument) {
             send_status(flight_state);
         }
 
+        /* ── Periodic GNSS stats (debug) ── */
+        if ((now - last_stats_tick) >= pdMS_TO_TICKS(GNSS_STATS_INTERVAL_MS)) {
+            last_stats_tick = now;
+            uint32_t gps_cnt, radio_cnt, err_cnt;
+            gnss_radio_get_stats(&gps_cnt, &radio_cnt, &err_cnt);
+            DLOG_PRINT("[GNSS] g=%lu r=%lu e=%lu\r\n",
+                       (unsigned long)gps_cnt,
+                       (unsigned long)radio_cnt,
+                       (unsigned long)err_cnt);
+        }
+
         log_service_periodic_flush();
         log_flight_state_if_changed(flight_state, current_state.u_s);
         state_exchange_publish_flight_state(flight_state);
-
-        osDelay(2);
     }
 }
 
