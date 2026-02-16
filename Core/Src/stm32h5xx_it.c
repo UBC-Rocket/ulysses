@@ -61,7 +61,6 @@ volatile uint32_t g_hardfault_sp;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern XSPI_HandleTypeDef hospi1;
 extern SD_HandleTypeDef hsd1;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel5;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel4;
@@ -72,7 +71,7 @@ extern DMA_HandleTypeDef handle_GPDMA1_Channel2;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
-extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern DMA_HandleTypeDef handle_GPDMA2_Channel5;
 extern DMA_HandleTypeDef handle_GPDMA2_Channel4;
 extern DMA_HandleTypeDef handle_GPDMA2_Channel0;
@@ -402,17 +401,17 @@ void GPDMA1_Channel5_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles TIM3 global interrupt.
+  * @brief This function handles TIM4 global interrupt.
   */
-void TIM3_IRQHandler(void)
+void TIM4_IRQHandler(void)
 {
-  /* USER CODE BEGIN TIM3_IRQn 0 */
+  /* USER CODE BEGIN TIM4_IRQn 0 */
 
-  /* USER CODE END TIM3_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim3);
-  /* USER CODE BEGIN TIM3_IRQn 1 */
+  /* USER CODE END TIM4_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim4);
+  /* USER CODE BEGIN TIM4_IRQn 1 */
 
-  /* USER CODE END TIM3_IRQn 1 */
+  /* USER CODE END TIM4_IRQn 1 */
 }
 
 /**
@@ -497,20 +496,6 @@ void UART4_IRQHandler(void)
   /* USER CODE BEGIN UART4_IRQn 1 */
 
   /* USER CODE END UART4_IRQn 1 */
-}
-
-/**
-  * @brief This function handles OCTOSPI1 global interrupt.
-  */
-void OCTOSPI1_IRQHandler(void)
-{
-  /* USER CODE BEGIN OCTOSPI1_IRQn 0 */
-
-  /* USER CODE END OCTOSPI1_IRQn 0 */
-  HAL_XSPI_IRQHandler(&hospi1);
-  /* USER CODE BEGIN OCTOSPI1_IRQn 1 */
-
-  /* USER CODE END OCTOSPI1_IRQn 1 */
 }
 
 /**
