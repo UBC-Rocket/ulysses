@@ -1,0 +1,3 @@
+[submodule "rocket-protocol-lib"]
+	path = rocket-protocol-lib
+	url = https://github.com/UBC-Rocket/rocket-protocol-lib.git
