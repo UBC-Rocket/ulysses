@@ -1,31 +1,27 @@
 #include "motor_drivers/servo_driver.h"
 
-#include "main.h"
-
 #include <stddef.h>
-#include <stdint.h>
 
-static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi);
 static float clamp_f(float x, float lo, float hi);
-static uint32_t us_to_ticks(PDI6121_servo_pwm_t *pwm, uint16_t us);
-static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks);
-static void set_default_cal(PDI6121_servo_t *servo);
-static uint16_t degree_to_us(const PDI6121_servo_t *servo, float degree);
+static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi);
+static void set_default_cal(servo_t *servo);
+static uint16_t degree_to_us(const servo_t *servo, float degree);
 
 /* Written by task (set_servo_pair_degrees); read by ISR (apply_servo_pair_degrees). */
 static servo_pair_t servos;
 static volatile bool g_servo_pair_ready = false;
 
-/* Controls Methods */
-void set_servo_degree(PDI6121_servo_t *servo, float degree) {
+/* ---- Task-level API ---------------------------------------------------- */
+
+void set_servo_degree(servo_t *servo, float degree) {
     if (servo == NULL) {
         return;
     }
 
     uint16_t us = degree_to_us(servo, degree);
     servo->us_last = us;
-    uint32_t ticks = us_to_ticks(&servo->pwm, us);
-    servo->compare_val = clamp_ticks_to_period(&servo->pwm, ticks);
+    uint32_t ticks = pwm_us_to_ticks(&servo->pwm, us);
+    servo->compare_val = pwm_clamp_ticks(&servo->pwm, ticks);
 }
 
 void set_servo_pair_degrees(float degree1, float degree2) {
@@ -36,61 +32,81 @@ void set_servo_pair_degrees(float degree1, float degree2) {
     set_servo_degree(&servos.servo2, degree2);
 }
 
-/* Hardware Functions (call from ISR only). */
+/* ---- ISR-level API ----------------------------------------------------- */
+
 void apply_servo_pair_degrees(void) {
     if (!g_servo_pair_ready) {
         return;
     }
-
-    PDI6121_servo_pwm_device_set_ticks(&servos.servo1.pwm, servos.servo1.compare_val);
-    PDI6121_servo_pwm_device_set_ticks(&servos.servo2.pwm, servos.servo2.compare_val);
+    pwm_set_compare(&servos.servo1.pwm, servos.servo1.compare_val);
+    pwm_set_compare(&servos.servo2.pwm, servos.servo2.compare_val);
 }
 
-void PDI6121_servo_device_init(PDI6121_servo_pwm_t *pwm) {
-    if (pwm == NULL || pwm->htim == NULL) {
+/* ---- Init / enable ----------------------------------------------------- */
+
+void servo_init(servo_t *servo, const pwm_output_t *pwm) {
+    if (servo == NULL || pwm == NULL || pwm->htim == NULL) {
         return;
     }
 
-    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)pwm->htim;
-    (void)HAL_TIM_PWM_Start(htim, pwm->channel);
+    servo->pwm = *pwm;
+    set_default_cal(servo);
+    servo->deg_range = 180.0f;
+    servo->mid_pt = 90.0f;
+    servo->enabled = false;
+    servo->us_last = servo->us_mid;
+
+    /* Start PWM output, set to mid position, then stop until enabled. */
+    (void)HAL_TIM_PWM_Start(pwm->htim, pwm->channel);
+    {
+        uint32_t ticks = pwm_us_to_ticks(&servo->pwm, servo->us_mid);
+        ticks = pwm_clamp_ticks(&servo->pwm, ticks);
+        servo->compare_val = ticks;
+        pwm_set_compare(&servo->pwm, ticks);
+    }
+    (void)HAL_TIM_PWM_Stop(pwm->htim, pwm->channel);
 }
 
-void PDI6121_servo_pwm_device_enable(PDI6121_servo_pwm_t *pwm, bool enable) {
-    if (pwm == NULL || pwm->htim == NULL) {
+void servo_init_with_deg_range(servo_t *servo, const pwm_output_t *pwm, float deg_range, float mid_pt) {
+    servo_init(servo, pwm);
+    servo_set_deg_range(servo, deg_range, mid_pt);
+}
+
+void servo_enable(servo_t *servo, bool enable) {
+    if (servo == NULL) {
         return;
     }
 
-    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)pwm->htim;
+    servo->enabled = enable;
 
     if (enable) {
-        (void)HAL_TIM_PWM_Start(htim, pwm->channel);
+        servo->us_last = clamp_u16(servo->us_last, servo->us_min, servo->us_max);
+        uint32_t ticks = pwm_us_to_ticks(&servo->pwm, servo->us_last);
+        ticks = pwm_clamp_ticks(&servo->pwm, ticks);
+        pwm_set_compare(&servo->pwm, ticks);
+        (void)HAL_TIM_PWM_Start(servo->pwm.htim, servo->pwm.channel);
     } else {
-        (void)HAL_TIM_PWM_Stop(htim, pwm->channel);
+        uint32_t ticks = pwm_us_to_ticks(&servo->pwm, servo->us_mid);
+        ticks = pwm_clamp_ticks(&servo->pwm, ticks);
+        pwm_set_compare(&servo->pwm, ticks);
+        (void)HAL_TIM_PWM_Stop(servo->pwm.htim, servo->pwm.channel);
     }
 }
 
-void PDI6121_servo_pwm_device_set_ticks(PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks) {
-    if (pwm == NULL || pwm->htim == NULL) {
+void servo_set_deg_range(servo_t *servo, float deg_range, float mid_pt) {
+    if (servo == NULL) {
         return;
     }
-
-    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)pwm->htim;
-
-    /* Clamp to ARR (safety) */
-    uint32_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
-    if (pulse_ticks > arr) {
-        pulse_ticks = arr;
-    }
-
-    __HAL_TIM_SET_COMPARE(htim, pwm->channel, pulse_ticks);
+    servo->deg_range = deg_range;
+    servo->mid_pt = mid_pt;
 }
 
-void servo_pair_init(PDI6121_servo_pwm_t *pwm1, PDI6121_servo_pwm_t *pwm2) {
+void servo_pair_init(const pwm_output_t *pwm1, const pwm_output_t *pwm2) {
     if (pwm1 == NULL || pwm2 == NULL) {
         return;
     }
-    PDI6121_servo_init(&servos.servo1, pwm1);
-    PDI6121_servo_init(&servos.servo2, pwm2);
+    servo_init(&servos.servo1, pwm1);
+    servo_init(&servos.servo2, pwm2);
     g_servo_pair_ready = true;
 }
 
@@ -98,65 +114,31 @@ void servo_pair_enable(bool enable) {
     if (!g_servo_pair_ready) {
         return;
     }
-    PDI6121_servo_enable(&servos.servo1, enable);
-    PDI6121_servo_enable(&servos.servo2, enable);
+    servo_enable(&servos.servo1, enable);
+    servo_enable(&servos.servo2, enable);
 }
 
-/* Local helper clamp functions */
-static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
-    if (x < lo) {
-        return lo;
-    }
-    if (x > hi) {
-        return hi;
-    }
-    return x;
-}
+/* ---- Static helpers ---------------------------------------------------- */
 
 static float clamp_f(float x, float lo, float hi) {
-    if (x < lo) {
-        return lo;
-    }
-    if (x > hi) {
-        return hi;
-    }
+    if (x < lo) return lo;
+    if (x > hi) return hi;
     return x;
 }
 
-/* Convert microseconds to timer ticks */
-static uint32_t us_to_ticks(PDI6121_servo_pwm_t *pwm, uint16_t us) {
-    if (pwm == NULL || pwm->timer_hz == 0U) {
-        return 0U;
-    }
-
-    uint64_t ticks = (uint64_t)us * (uint64_t)pwm->timer_hz;
-    ticks /= 1000000ULL;
-    if (ticks > 0xFFFFFFFFULL) {
-        ticks = 0xFFFFFFFFULL;
-    }
-    return (uint32_t)ticks;
+static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi) {
+    if (x < lo) return lo;
+    if (x > hi) return hi;
+    return x;
 }
 
-/* Clamp pulse ticks so it cannot exceed the PWM period. */
-static uint32_t clamp_ticks_to_period(const PDI6121_servo_pwm_t *pwm, uint32_t pulse_ticks) {
-    if (pwm == NULL || pwm->period_ticks == 0U) {
-        return pulse_ticks;
-    }
-
-    if (pulse_ticks >= pwm->period_ticks) {
-        return pwm->period_ticks - 1U;
-    }
-    return pulse_ticks;
+static void set_default_cal(servo_t *servo) {
+    servo->us_min = SERVO_US_MIN;
+    servo->us_mid = SERVO_US_MID;
+    servo->us_max = SERVO_US_MAX;
 }
 
-/* Default calibration for a typical hobby servo signal. */
-static void set_default_cal(PDI6121_servo_t *servo) {
-    servo->us_min = US_MIN;
-    servo->us_mid = US_MID;
-    servo->us_max = US_MAX;
-}
-
-static uint16_t degree_to_us(const PDI6121_servo_t *servo, float degree) {
+static uint16_t degree_to_us(const servo_t *servo, float degree) {
     float range_half = servo->deg_range * 0.5f;
     float min_deg = servo->mid_pt - range_half;
     float max_deg = servo->mid_pt + range_half;
@@ -170,92 +152,4 @@ static uint16_t degree_to_us(const PDI6121_servo_t *servo, float degree) {
 
     float us_f = (float)servo->us_min + t * (float)(servo->us_max - servo->us_min);
     return (uint16_t)(us_f + 0.5f);
-}
-
-/* Public API implementations */
-void PDI6121_servo_init(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm) {
-    if (servo == NULL || pwm == NULL) {
-        return;
-    }
-
-    servo->pwm = *pwm;
-
-    set_default_cal(servo);
-    servo->deg_range = 180.0f;
-    servo->mid_pt = 90.0f;
-
-    servo->enabled = false;
-    servo->us_last = servo->us_mid;
-
-    PDI6121_servo_device_init(&servo->pwm);
-
-    {
-        uint32_t ticks = us_to_ticks(&servo->pwm, servo->us_mid);
-        ticks = clamp_ticks_to_period(&servo->pwm, ticks);
-        servo->compare_val = ticks;
-        PDI6121_servo_pwm_device_set_ticks(&servo->pwm, ticks);
-    }
-    PDI6121_servo_pwm_device_enable(&servo->pwm, false);
-}
-
-void PDI6121_servo_init_with_deg_range(PDI6121_servo_t *servo, PDI6121_servo_pwm_t *pwm, float deg_range, float mid_pt) {
-    PDI6121_servo_init(servo, pwm);
-    PDI6121_servo_set_deg_range(servo, deg_range, mid_pt);
-}
-
-void PDI6121_servo_enable(PDI6121_servo_t *servo, bool enable) {
-    if (servo == NULL) {
-        return;
-    }
-
-    servo->enabled = enable;
-
-    if (enable) {
-        servo->us_last = clamp_u16(servo->us_last, servo->us_min, servo->us_max);
-        uint32_t ticks = us_to_ticks(&servo->pwm, servo->us_last);
-        ticks = clamp_ticks_to_period(&servo->pwm, ticks);
-        PDI6121_servo_pwm_device_set_ticks(&servo->pwm, ticks);
-
-        PDI6121_servo_pwm_device_enable(&servo->pwm, true);
-    } else {
-        uint32_t ticks = us_to_ticks(&servo->pwm, servo->us_mid);
-        ticks = clamp_ticks_to_period(&servo->pwm, ticks);
-        PDI6121_servo_pwm_device_set_ticks(&servo->pwm, ticks);
-
-        PDI6121_servo_pwm_device_enable(&servo->pwm, false);
-    }
-}
-
-void PDI6121_servo_set_us(PDI6121_servo_t *servo, uint16_t us) {
-    if (servo == NULL) {
-        return;
-    }
-
-    uint16_t clamped = clamp_u16(us, servo->us_min, servo->us_max);
-    servo->us_last = clamped;
-
-    if (!servo->enabled) {
-        return;
-    }
-
-    uint32_t ticks = us_to_ticks(&servo->pwm, clamped);
-    ticks = clamp_ticks_to_period(&servo->pwm, ticks);
-    PDI6121_servo_pwm_device_set_ticks(&servo->pwm, ticks);
-}
-
-void PDI6121_servo_set_deg(PDI6121_servo_t *servo, float degrees) {
-    if (servo == NULL) {
-        return;
-    }
-
-    uint16_t us = degree_to_us(servo, degrees);
-    PDI6121_servo_set_us(servo, us);
-}
-
-void PDI6121_servo_set_deg_range(PDI6121_servo_t *servo, float deg_range, float mid_pt) {
-    if (servo == NULL) {
-        return;
-    }
-    servo->deg_range = deg_range;
-    servo->mid_pt = mid_pt;
 }

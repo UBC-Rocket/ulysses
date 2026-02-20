@@ -1,6 +1,6 @@
 /**
  * @file    controls.c
- * @brief   Controls task: runs flight controller at 1 kHz, publishes control output.
+ * @brief   Controls task: runs flight controller at 800 Hz, publishes control output.
  *
  * Reads state and flight_state from state_exchange; fills ref (e.g. hover);
  * calls flight_controller_run, state_exchange_publish_control_output, and
@@ -18,10 +18,11 @@
 #include "mission_manager/mission_manager.h"
 #include "controls/flight_controller.h"
 #include "motor_drivers/servo_driver.h"
+#include "motor_drivers/esc_driver.h"
 
 #define RAD_TO_DEG (180.0f / 3.14159265f)
 
-#define CONTROLS_DT_S 0.001f  /**< Control period [s] (1 kHz). */
+#define CONTROLS_DT_S 0.00125f  /**< Control period [s] (800 Hz via TIM4 CH2). */
 #define STALE_STATE_THRESHOLD_TICKS 100  /**< If state_seq unchanged for this many ticks, treat as stale and output safe (zero). */
 
 /** Fill config with default gains and limits (tune in use). */
@@ -71,7 +72,7 @@ static void init_default_ref(flight_controller_ref_t *ref)
 }
 
 /**
- * @brief FreeRTOS entry: 1 ms period, get state -> flight_controller_run -> publish control output.
+ * @brief FreeRTOS entry: 1.25 ms period (800 Hz via TIM4 CH2), get state -> flight_controller_run -> publish control output.
  * @param argument Unused.
  */
 void controls_task_start(void *argument)
@@ -83,7 +84,6 @@ void controls_task_start(void *argument)
     flight_controller_ref_t ref = {0};
     control_output_t control_output = {0};
     uint8_t config_done = 0;
-    const TickType_t period_ticks = pdMS_TO_TICKS(1);
     uint32_t last_state_seq = 0;
     uint32_t stale_tick_count = 0;
 
@@ -91,7 +91,7 @@ void controls_task_start(void *argument)
     init_default_ref(&ref);
 
     for (;;) {
-        TickType_t cycle_start = xTaskGetTickCount();
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         uint32_t state_seq = state_exchange_get_state(&current_state);
         state_exchange_get_flight_state(&flight_state);
@@ -122,5 +122,10 @@ void controls_task_start(void *argument)
         set_servo_pair_degrees(
             control_output.theta_x_cmd * RAD_TO_DEG,
             control_output.theta_y_cmd * RAD_TO_DEG);
+
+        /* ESC: 0-100% command mapped to duty cycle range (1000-2000us).
+         * TODO: proper counter-rotating prop allocation using T_cmd + tau_thrust. */
+        float esc_pct = 0.0f;
+        ESC_set_pair_thrust(esc_pct / 100.0f, esc_pct / 100.0f);
     }
 }
