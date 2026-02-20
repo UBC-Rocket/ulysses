@@ -28,6 +28,7 @@
 #include "spi1_bus.h"
 #include "gnss_radio_master.h"
 #include "motor_drivers/servo_driver.h"
+#include "motor_drivers/esc_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -161,28 +162,42 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Start TIM3 output compare interrupts for controls task timing */
-  HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
-  HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_2);
+  /* --- TIM4 interrupt channels ------------------------------------ */
+  HAL_TIM_OC_Start_IT(&htim4, TIM_CHANNEL_2);   /* 800Hz -> controls notify */
+  HAL_TIM_OC_Start_IT(&htim4, TIM_CHANNEL_4);   /* 800Hz -> servo/ESC apply */
 
-  /* Gimbal servo pair: TIM2 Ch2 (servo1 / theta_x), Ch4 (servo2 / theta_y). 800 kHz, 2500 ticks. */
+  /* --- Servo pair: TIM1 CH2 (servo1), TIM3 CH3 (servo2) - 200Hz -- */
   {
-    PDI6121_servo_pwm_t pwm1 = {
-      .htim = &htim2,
-      .channel = TIM_CHANNEL_2,
-      .timer_hz = 800000U,
-      .period_ticks = 2500U,
+    pwm_output_t pwm1 = {
+      .htim        = &htim1,
+      .channel     = TIM_CHANNEL_2,
+      .timer_hz    = 1000000U,
+      .period_ticks = 5000U,
     };
-    PDI6121_servo_pwm_t pwm2 = {
-      .htim = &htim2,
-      .channel = TIM_CHANNEL_4,
-      .timer_hz = 800000U,
-      .period_ticks = 2500U,
+    pwm_output_t pwm2 = {
+      .htim        = &htim3,
+      .channel     = TIM_CHANNEL_3,
+      .timer_hz    = 1000000U,
+      .period_ticks = 5000U,
     };
     servo_pair_init(&pwm1, &pwm2);
-    servo_pair_enable(true); /* for test: enable at beginning */
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+  }
+
+  /* --- ESC pair: TIM2 CH2 (esc1), TIM2 CH4 (esc2) - 400Hz ------- */
+  {
+    pwm_output_t pwm1 = {
+      .htim        = &htim2,
+      .channel     = TIM_CHANNEL_2,
+      .timer_hz    = 1000000U,
+      .period_ticks = 2500U,
+    };
+    pwm_output_t pwm2 = {
+      .htim        = &htim2,
+      .channel     = TIM_CHANNEL_4,
+      .timer_hz    = 1000000U,
+      .period_ticks = 2500U,
+    };
+    ESC_pair_init(&pwm1, &pwm2);
   }
 
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING

@@ -1,14 +1,10 @@
 #include "motor_drivers/esc_driver.h"
 
-#include "main.h"
-
 #include <stddef.h>
 
 #define ESC_LUT_POINTS 11U
 
 static float clamp_f32(float x, float lo, float hi);
-static uint32_t us_to_ticks(const esc_pwm_t *pwm, uint16_t us);
-static uint32_t clamp_ticks_to_period(const esc_pwm_t *pwm, uint32_t pulse_ticks);
 static uint16_t thrust_to_us_lut(float thrust);
 
 static esc_pair_t g_esc_pair;
@@ -19,7 +15,9 @@ static const uint16_t g_esc_us_lut[ESC_LUT_POINTS] = {
     1000U, 1080U, 1160U, 1240U, 1320U, 1400U, 1520U, 1640U, 1760U, 1880U, 2000U
 };
 
-void ESC_init(esc_t *esc, const esc_pwm_t *pwm) {
+/* ---- Init / arm / disarm ----------------------------------------------- */
+
+void ESC_init(esc_t *esc, const pwm_output_t *pwm) {
     if (esc == NULL || pwm == NULL || pwm->htim == NULL) {
         return;
     }
@@ -27,34 +25,55 @@ void ESC_init(esc_t *esc, const esc_pwm_t *pwm) {
     esc->pwm = *pwm;
     esc->desired_thrust = 0.0f;
     esc->desired_pulse_us = ESC_PWM_MIN_US;
-    esc->desired_pulse_ticks = us_to_ticks(&esc->pwm, esc->desired_pulse_us);
-    esc->desired_pulse_ticks = clamp_ticks_to_period(&esc->pwm, esc->desired_pulse_ticks);
+    esc->desired_pulse_ticks = pwm_clamp_ticks(&esc->pwm, pwm_us_to_ticks(&esc->pwm, ESC_PWM_MIN_US));
     esc->update_divider_counter = 0U;
     esc->initialized = true;
+    esc->armed = false;
 
-    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)esc->pwm.htim;
-    __HAL_TIM_SET_COMPARE(htim, esc->pwm.channel, esc->desired_pulse_ticks);
-    (void)HAL_TIM_PWM_Start(htim, esc->pwm.channel);
+    /* Set compare to min but do NOT start PWM — wait for arm. */
+    pwm_set_compare(&esc->pwm, esc->desired_pulse_ticks);
 }
 
-void ESC_set_thrust(esc_t *esc, float thrust) {
+void ESC_arm(esc_t *esc) {
     if (esc == NULL || !esc->initialized) {
+        return;
+    }
+    (void)HAL_TIM_PWM_Start(esc->pwm.htim, esc->pwm.channel);
+    esc->armed = true;
+}
+
+void ESC_disarm(esc_t *esc) {
+    if (esc == NULL || !esc->initialized) {
+        return;
+    }
+    esc->armed = false;
+    esc->desired_thrust = 0.0f;
+    esc->desired_pulse_us = ESC_PWM_MIN_US;
+    esc->desired_pulse_ticks = pwm_clamp_ticks(&esc->pwm, pwm_us_to_ticks(&esc->pwm, ESC_PWM_MIN_US));
+    pwm_set_compare(&esc->pwm, esc->desired_pulse_ticks);
+    (void)HAL_TIM_PWM_Stop(esc->pwm.htim, esc->pwm.channel);
+}
+
+/* ---- Task-level API ---------------------------------------------------- */
+
+void ESC_set_thrust(esc_t *esc, float thrust) {
+    if (esc == NULL || !esc->initialized || !esc->armed) {
         return;
     }
 
     float clamped = clamp_f32(thrust, 0.0f, 1.0f);
     uint16_t pulse_us = thrust_to_us_lut(clamped);
-    uint32_t pulse_ticks = us_to_ticks(&esc->pwm, pulse_us);
-    pulse_ticks = clamp_ticks_to_period(&esc->pwm, pulse_ticks);
+    uint32_t pulse_ticks = pwm_clamp_ticks(&esc->pwm, pwm_us_to_ticks(&esc->pwm, pulse_us));
 
-    /* Control-stage only: update desired software state. */
     esc->desired_thrust = clamped;
     esc->desired_pulse_us = pulse_us;
     esc->desired_pulse_ticks = pulse_ticks;
 }
 
+/* ---- ISR-level API ----------------------------------------------------- */
+
 void ESC_apply(esc_t *esc) {
-    if (esc == NULL || !esc->initialized || esc->pwm.htim == NULL) {
+    if (esc == NULL || !esc->initialized || !esc->armed) {
         return;
     }
 
@@ -64,14 +83,31 @@ void ESC_apply(esc_t *esc) {
     }
     esc->update_divider_counter = 0U;
 
-    TIM_HandleTypeDef *htim = (TIM_HandleTypeDef *)esc->pwm.htim;
-    __HAL_TIM_SET_COMPARE(htim, esc->pwm.channel, esc->desired_pulse_ticks);
+    pwm_set_compare(&esc->pwm, esc->desired_pulse_ticks);
 }
 
-void ESC_pair_init(const esc_pwm_t *pwm1, const esc_pwm_t *pwm2) {
+/* ---- Pair wrappers ----------------------------------------------------- */
+
+void ESC_pair_init(const pwm_output_t *pwm1, const pwm_output_t *pwm2) {
     ESC_init(&g_esc_pair.esc1, pwm1);
     ESC_init(&g_esc_pair.esc2, pwm2);
     g_esc_pair_ready = true;
+}
+
+void ESC_pair_arm(void) {
+    if (!g_esc_pair_ready) {
+        return;
+    }
+    ESC_arm(&g_esc_pair.esc1);
+    ESC_arm(&g_esc_pair.esc2);
+}
+
+void ESC_pair_disarm(void) {
+    if (!g_esc_pair_ready) {
+        return;
+    }
+    ESC_disarm(&g_esc_pair.esc1);
+    ESC_disarm(&g_esc_pair.esc2);
 }
 
 void ESC_set_pair_thrust(float thrust1, float thrust2) {
@@ -90,37 +126,12 @@ void ESC_apply_pair(void) {
     ESC_apply(&g_esc_pair.esc2);
 }
 
+/* ---- Static helpers ---------------------------------------------------- */
+
 static float clamp_f32(float x, float lo, float hi) {
-    if (x < lo) {
-        return lo;
-    }
-    if (x > hi) {
-        return hi;
-    }
+    if (x < lo) return lo;
+    if (x > hi) return hi;
     return x;
-}
-
-static uint32_t us_to_ticks(const esc_pwm_t *pwm, uint16_t us) {
-    if (pwm == NULL || pwm->timer_hz == 0U) {
-        return 0U;
-    }
-
-    uint64_t ticks = (uint64_t)us * (uint64_t)pwm->timer_hz;
-    ticks /= 1000000ULL;
-    if (ticks > 0xFFFFFFFFULL) {
-        ticks = 0xFFFFFFFFULL;
-    }
-    return (uint32_t)ticks;
-}
-
-static uint32_t clamp_ticks_to_period(const esc_pwm_t *pwm, uint32_t pulse_ticks) {
-    if (pwm == NULL || pwm->period_ticks == 0U) {
-        return pulse_ticks;
-    }
-    if (pulse_ticks >= pwm->period_ticks) {
-        return pwm->period_ticks - 1U;
-    }
-    return pulse_ticks;
 }
 
 static uint16_t thrust_to_us_lut(float thrust) {
