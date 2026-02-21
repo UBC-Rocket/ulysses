@@ -114,6 +114,7 @@ set(ROCKET_PROTOCOL_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/cobs/cobs.c
     ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/crc/crc16.c
 )
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -138,8 +139,6 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/body.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timing.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/motor_drivers/esc_motor.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/motor_drivers/motor_driver.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
     ${DEBUG_MODULE_SRC}
@@ -159,7 +158,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/include
     ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb
     ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/motor_drivers
 )
 
 # Add project symbols (macros)
