@@ -54,7 +54,7 @@ void state_estimation_task_start(void *argument)
 
     float delta_time = 0;
     float last_tick = 0;
-    uint64_t CALIBRATION = 2000;
+    uint64_t CALIBRATION = 300;
     uint64_t ticks = 0;
 
     float accel_bias[3] = {0, 0, 0};
@@ -172,9 +172,6 @@ void state_estimation_task_start(void *argument)
                 get_state(q, pos, vel);
 
                 /* Publish State */
-                float e[3];
-                quat_to_euler(q, e);
-
                 state_t data = {
                     .pos = {pos[0], pos[1], pos[2]},
                     .vel = {vel[0], vel[1], vel[2]},
