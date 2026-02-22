@@ -80,6 +80,14 @@ void mission_manager_task_start(void *argument) {
                 if (dec.status == RP_CODEC_OK) {
                     radio_rx_count++;
 
+                    DLOG_PRINT("[RADIO] Decoded OK, which_payload=%d\r\n",
+                    (int)decoded.which_payload);
+
+                    if (decoded.which_payload == tvr_FlightCommand_state_cmd_tag) {
+                        DLOG_PRINT("[RADIO] StateCommand, type=%d\r\n",
+                        (int)decoded.payload.state_cmd.type);
+                    }
+
                     switch (decoded.which_payload) {
                         case tvr_FlightCommand_state_cmd_tag:
                             cmd_rx_count++;

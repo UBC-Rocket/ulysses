@@ -1,11 +1,9 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#define DIM_N 3
-
 void normalize(float q[4]);
 
-int inverse(float a[DIM_N][DIM_N], float inverse[DIM_N][DIM_N]);
+int inverse(float a[3][3], float inv[3][3]);
 
 void transpose3x4_to_4x3(const float A[3][4], float AT[4][3]);
 
