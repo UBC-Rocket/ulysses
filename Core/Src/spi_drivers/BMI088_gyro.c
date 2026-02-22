@@ -1,7 +1,6 @@
 #include "BMI088_gyro.h"
 #include <string.h>   // memset
 #include <math.h>     // (optional) for M_PI if you prefer
-#include "debug/log.h"
 
 /* Bosch SPI convention used here:
    - Write: first byte = (addr & 0x7F), then data bytes
@@ -197,9 +196,6 @@ bool bmi088_gyro_parse_data_xyz(const uint8_t *rx_buf,
     const float dps_x = ((float)x) / dev->scale_dps_lsb;
     const float dps_y = ((float)y) / dev->scale_dps_lsb;
     const float dps_z = ((float)z) / dev->scale_dps_lsb;
-
-    // DLOG_PRINT("Peener\n");
-    // DLOG_PRINT("%f %f %f\n", dps_x, dps_y, dps_z);
 
     const float kDeg2Rad = 0.017453292519943295769f; // pi/180
     sample->gx = dps_x * kDeg2Rad;

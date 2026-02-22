@@ -13,4 +13,7 @@ typedef enum{
     LOWER
 } flight_state_t;
 
+static void handle_orientation_estop(const state_t *state, flight_state_t *flight_state);
+static void log_flight_state_if_changed(flight_state_t flight_state, uint32_t timestamp);
+
 #endif

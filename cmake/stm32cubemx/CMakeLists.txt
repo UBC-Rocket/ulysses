@@ -4,7 +4,7 @@ enable_language(C ASM)
 # STM32CubeMX generated symbols (macros)
 set(MX_Defines_Syms 
 	USE_HAL_DRIVER 
-	STM32H563xx
+	STM32H533xx
     $<$<CONFIG:Debug>:DEBUG>
 )
 
@@ -92,7 +92,8 @@ set(MX_LINK_DIRS
 set(MX_LINK_LIBS 
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
-    RTOS2	
+    RTOS2
+	
 )
 # Interface library for includes and symbols
 add_library(stm32cubemx INTERFACE)

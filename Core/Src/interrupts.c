@@ -3,7 +3,7 @@
 #include "BMI088_accel.h"
 #include "main.h"
 #include "SPI_device_interactions.h"
-#include "gnss_radio_master.h"
+#include "spi_drivers/SEN0306_mmwave.h"
 
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
@@ -17,14 +17,18 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
             return;
         }
         bmi088_gyro_interrupt();
-    } else if (GPIO_Pin == EXT_INT_2_Pin) {
-        /* GNSS Radio slave asserts IRQ (active high) when it has data to push */
-        gnss_radio_irq_handler();
     }
-    
 }
 
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
     (void)GPIO_Pin;
 }
+
+/**
+ * @brief UART RX Event Callback — routes idle/DMA events to the correct driver.
+ *
+ * HAL_UARTEx_ReceiveToIdle_DMA on STM32H5/GPDMA fires once per IDLE event and
+ * then stops. sen0306_irq_handler() restarts the DMA internally at the end of
+ * each call, so do NOT call HAL_UARTEx_ReceiveToIdle_DMA again here.
+ */

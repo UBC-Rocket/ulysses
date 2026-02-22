@@ -366,8 +366,8 @@ void HAL_SD_ErrorCallback(SD_HandleTypeDef *hsd)
         return;
     }
 
-    (void)HAL_SD_GetError(hsd);
-    (void)HAL_SD_GetCardState(hsd);
+    uint32_t err = HAL_SD_GetError(hsd);
+    uint32_t state = HAL_SD_GetCardState(hsd);
 
     g_log_ctx.error = true;
     g_log_ctx.ready = false;

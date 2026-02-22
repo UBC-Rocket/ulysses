@@ -15,7 +15,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -71,36 +70,10 @@ set(SPI_DRIVER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_accel_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/bmi088_gyro_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5611_device.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/ms5607_device.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_accel.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/BMI088_gyro.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5611_baro.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/MS5607_baro.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/spi1_bus.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/gnss_radio_master.c
-)
-
-set(STATE_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
-)
-
-# Protobuf generated sources (from rocket-protocol-lib)
-set(PROTOBUF_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/common.pb.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/telemetry.pb.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/command.pb.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/status.pb.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr/downlink.pb.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_encode.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_decode.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb/pb_common.c
-)
-
-# rocket-protocol-lib sources
-set(ROCKET_PROTOCOL_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/codec.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/cobs/cobs.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/src/crc/crc16.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/spi_drivers/SEN0306_mmwave.c
 )
 
 # Link directories setup
@@ -113,24 +86,13 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${RTOS_TASKS_SRC}
     ${SPI_DRIVER_SRC}
-    ${PROTOBUF_SRC}
-    ${ROCKET_PROTOCOL_SRC}
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/sensors_init.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timestamp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_exchange.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/state_math.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/controls/pid.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/controls/flight_controller.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/matrix.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/quaternion.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/body.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_service.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/mmwave_test.c
     ${DEBUG_MODULE_SRC}
-    ${ALGO_SRC}
 )
 
 # Add include paths
@@ -138,10 +100,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/spi_drivers
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/state_estimation
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/nanopb
-    ${CMAKE_CURRENT_SOURCE_DIR}/rocket-protocol-lib/generated/tvr
 )
 
 # Add project symbols (macros)

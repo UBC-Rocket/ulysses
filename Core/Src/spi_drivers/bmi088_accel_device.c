@@ -1,15 +1,10 @@
 #include "SPI_device_interactions.h"
 #include "main.h"
 
-/* -------------------------------------------------------------------------- */
-/* Accelerometer Initialization                                               */
-/* -------------------------------------------------------------------------- */
-
-uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
-                                      GPIO_TypeDef *cs_port,
-                                      uint16_t cs_pin,
-                                      bmi088_accel_t *dev,
-                                      const bmi088_accel_config_t *config)
+uint8_t bmi088_accel_init(SPI_HandleTypeDef *hspi,
+                          GPIO_TypeDef *cs_port,
+                          uint16_t cs_pin,
+                          bmi088_accel_t *dev)
 {
     uint8_t tx[16], rx[16];
 
@@ -72,8 +67,8 @@ uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
     if(rx[2] != 4)
         return 3;
 
-    /* --- 4. Set measurement range from config --- */
-    n = bmi088_accel_build_range(config->range, tx, dev);
+    /* --- 4. Set measurement range (±24 g) --- */
+    n = bmi088_accel_build_range(BMI088_ACC_RANGE_3G, tx, dev);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
     delay_us(1000);
     HAL_SPI_Transmit(hspi, tx, n, HAL_MAX_DELAY);
@@ -81,8 +76,10 @@ uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
     delay_us(50000);
 
-    /* --- 5. Configure ODR and bandwidth from config --- */
-    n = bmi088_accel_build_odr_bw(config->odr, config->bandwidth, tx, dev);
+    /* --- 5. Configure ODR = 800 Hz, normal bandwidth --- */
+    n = bmi088_accel_build_odr_bw(BMI088_ACC_ODR_800_HZ,
+                                  BMI088_ACC_BWP_NORMAL,
+                                  tx, dev);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
     delay_us(1000);
     HAL_SPI_Transmit(hspi, tx, n, HAL_MAX_DELAY);
@@ -106,11 +103,11 @@ uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
     delay_us(50000);
 
-    /* --- 6. Configure interrupt pin from config --- */
-    n = bmi088_accel_build_int_pin_conf(config->int_pin,
-                                        config->int_drive,
-                                        config->int_polarity,
-                                        config->int_latched,
+    /* --- 6. Configure INT1 electrical behaviour --- */
+    n = bmi088_accel_build_int_pin_conf(BMI088_ACC_INT1,
+                                        BMI088_ACC_INT_PUSH_PULL,
+                                        BMI088_ACC_INT_ACTIVE_HIGH,
+                                        false, // pulse (not latched)
                                         tx);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
     delay_us(1000);
@@ -118,15 +115,18 @@ uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
     delay_us(1000);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 
-    /* --- 7. Map interrupt events from config --- */
-    n = bmi088_accel_build_int_event_map(config->int_pin, config->int_events, tx);
+    /* --- 7. Map data-ready event to INT1 --- */
+    n = bmi088_accel_build_int_event_map(BMI088_ACC_INT1,
+                                         BMI088_ACC_INT_EVENT_DATA_READY,
+                                         tx);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
     delay_us(1000);
     HAL_SPI_Transmit(hspi, tx, n, HAL_MAX_DELAY);
     delay_us(1000);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 
-    /* --- 8. Verify data ready --- */
+    /* --- 8. (Optional) small startup delay --- */
+
     n = bmi088_accel_build_read_reg(BMI088_ACC_STATUS_REG, tx);
     HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
     delay_us(1000);
@@ -150,15 +150,6 @@ uint8_t bmi088_accel_init_with_config(SPI_HandleTypeDef *hspi,
     bmi088_accel_parse_data_xyz(&rx[2], &sample, dev);
 
     return 0;
-}
-
-uint8_t bmi088_accel_init(SPI_HandleTypeDef *hspi,
-                          GPIO_TypeDef *cs_port,
-                          uint16_t cs_pin,
-                          bmi088_accel_t *dev)
-{
-    bmi088_accel_config_t default_config = BMI088_ACCEL_CONFIG_DEFAULT;
-    return bmi088_accel_init_with_config(hspi, cs_port, cs_pin, dev, &default_config);
 }
 
 static void bmi088_accel_done(spi_job_t *job,
@@ -190,7 +181,6 @@ void bmi088_accel_interrupt(void)
     job.done     = bmi088_accel_done;
     job.done_arg = NULL;
     job.sensor   = SENSOR_ID_ACCEL;
-    job.task_notification_flag = BMI088_ACCEL_SAMPLE_FLAG;
 
     spi_submit_job(job, &jobq_spi_2);
 }

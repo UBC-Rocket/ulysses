@@ -40,6 +40,7 @@ ENTRY(Reset_Handler)
 MEMORY
 {
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 640K
+  SRAM2  (xrw) : ORIGIN = 0x20040000, LENGTH = 64K
   FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 2048K
 }
 /* Highest address of the user mode stack */
@@ -51,6 +52,13 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Sections */
 SECTIONS
 {
+  .sram2 (NOLOAD) :
+  {
+    . = ALIGN(4);
+    *(.sram2)
+    *(.sram2*)
+    . = ALIGN(4);
+  } >SRAM2
   /* The startup code into "RAM" Ram type memory */
   .isr_vector :
   {

@@ -1,14 +1,9 @@
-/**
- * @file    state_exchange.h
- * @brief   Publish/get for state, flight_state, and control_output (sequence numbers).
- */
 #ifndef STATE_EXCHANGE_H
 #define STATE_EXCHANGE_H
 
 #include <stdint.h>
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
-#include "controls/flight_controller.h"
 
 /**
  * @brief Initialise synchronization primitives for state sharing.
@@ -44,18 +39,5 @@ uint32_t state_exchange_publish_flight_state(flight_state_t flight_state);
  */
 uint32_t state_exchange_get_flight_state(flight_state_t *flight_state_out);
 
-/**
- * @brief Publish control output (tau_gim, tau_thrust, T_cmd, theta_x/y).
- * @param out Pointer to control output from flight controller.
- * @return Monotonic sequence number after publish.
- */
-uint32_t state_exchange_publish_control_output(const control_output_t *out);
-
-/**
- * @brief Copy the latest control output.
- * @param out Destination pointer (optional).
- * @return Sequence number associated with the returned output.
- */
-uint32_t state_exchange_get_control_output(control_output_t *out);
 
 #endif /* STATE_EXCHANGE_H */
