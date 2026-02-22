@@ -181,6 +181,7 @@ int main(void)
       .period_ticks = 5000U,
     };
     servo_pair_init(&pwm1, &pwm2);
+    servo_pair_enable(true);
   }
 
   /* --- ESC pair: TIM2 CH2 (esc1), TIM2 CH4 (esc2) - 400Hz ------- */
