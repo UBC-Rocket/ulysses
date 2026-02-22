@@ -65,7 +65,7 @@ const osThreadAttr_t MissionManager_attributes = {
 osThreadId_t ControlsHandle;
 const osThreadAttr_t Controls_attributes = {
   .name = "Controls",
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 512 * 4
 };
 /* Definitions for StateEstimation */

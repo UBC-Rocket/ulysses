@@ -28,6 +28,7 @@ void set_servo_pair_degrees(float degree1, float degree2) {
     if (!g_servo_pair_ready) {
         return;
     }
+
     set_servo_degree(&servos.servo1, degree1);
     set_servo_degree(&servos.servo2, degree2);
 }
@@ -53,7 +54,7 @@ void servo_init(servo_t *servo, const pwm_output_t *pwm) {
     set_default_cal(servo);
     servo->deg_range = 180.0f;
     servo->mid_pt = 90.0f;
-    servo->enabled = false;
+    servo->enabled = true;
     servo->us_last = servo->us_mid;
 
     /* Start PWM output, set to mid position, then stop until enabled. */

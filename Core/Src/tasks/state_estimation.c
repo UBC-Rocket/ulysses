@@ -141,7 +141,7 @@ void state_estimation_task_start(void *argument)
 
     float delta_time = 0;
     float last_tick = 0;
-    uint64_t CALIBRATION = 2000;
+    uint64_t CALIBRATION = 10;
     uint64_t ticks = 0;
 
     float accel_bias[3] = {0, 0, 0};
