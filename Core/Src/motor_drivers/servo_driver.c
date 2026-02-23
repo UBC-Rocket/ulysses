@@ -28,9 +28,8 @@ void set_servo_pair_degrees(float degree1, float degree2) {
     if (!g_servo_pair_ready) {
         return;
     }
-
-    set_servo_degree(&servos.servo1, degree1);
-    set_servo_degree(&servos.servo2, degree2);
+    set_servo_degree(&servos.servo1, degree1 + GIMBAL_SERVO1_DEG_OFFSET);
+    set_servo_degree(&servos.servo2, degree2 + GIMBAL_SERVO2_DEG_OFFSET);
 }
 
 /* ---- ISR-level API ----------------------------------------------------- */
@@ -53,8 +52,8 @@ void servo_init(servo_t *servo, const pwm_output_t *pwm) {
     servo->pwm = *pwm;
     set_default_cal(servo);
     servo->deg_range = 180.0f;
-    servo->mid_pt = 90.0f;
-    servo->enabled = true;
+    servo->mid_pt = 0.0f;   /* 0° command = center PWM (straight down) */
+    servo->enabled = false;
     servo->us_last = servo->us_mid;
 
     /* Start PWM output, set to mid position, then stop until enabled. */

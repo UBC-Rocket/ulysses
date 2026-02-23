@@ -21,6 +21,10 @@ typedef struct {
     bool enabled;
 } servo_t;
 
+/** Calibration: add these [deg] to commanded angle so straight-down lines up. Tune per axis. */
+#define GIMBAL_SERVO1_DEG_OFFSET -73.0f
+#define GIMBAL_SERVO2_DEG_OFFSET -75.0f
+
 typedef enum {
     SERVO_US_MIN = 500,
     SERVO_US_MID = 1500,
