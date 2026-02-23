@@ -127,5 +127,6 @@ void controls_task_start(void *argument)
          * TODO: proper counter-rotating prop allocation using T_cmd + tau_thrust. */
         float esc_pct = 0.0f;
         ESC_set_pair_thrust(esc_pct / 100.0f, esc_pct / 100.0f);
+        osDelay(1);
     }
 }
