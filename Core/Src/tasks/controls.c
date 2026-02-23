@@ -44,9 +44,9 @@ static void init_default_config(flight_controller_config_t *cfg)
     cfg->allocation.t_hat[1] = 0.0f;
     cfg->allocation.t_hat[2] = -1.0f;
     /* Gimbal */
-    cfg->gimbal.L = 0.05f;
-    cfg->gimbal.theta_min = -0.5f;
-    cfg->gimbal.theta_max = 0.5f;
+    cfg->gimbal.L = 0.2f;
+    cfg->gimbal.theta_min = -0.05f;
+    cfg->gimbal.theta_max = 0.05f;
     /* Thrust */
     cfg->thrust.m = 1.0f;
     cfg->thrust.g = 9.8067f;
