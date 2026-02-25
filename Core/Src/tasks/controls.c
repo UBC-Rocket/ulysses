@@ -80,7 +80,6 @@ void controls_task_start(void *argument)
     flight_controller_ref_t ref = {0};
     control_output_t control_output = {0};
     uint8_t config_done = 0;
-    const TickType_t period_ticks = pdMS_TO_TICKS(1);
     uint32_t last_state_seq = 0;
     uint32_t stale_tick_count = 0;
 
@@ -88,7 +87,8 @@ void controls_task_start(void *argument)
     init_default_ref(&ref);
 
     for (;;) {
-        TickType_t cycle_start = xTaskGetTickCount();
+        /* Block until TIM3 CH1 output-compare ISR fires (see timing.c) */
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         uint32_t state_seq = state_exchange_get_state(&current_state);
         state_exchange_get_flight_state(&flight_state);
@@ -114,7 +114,5 @@ void controls_task_start(void *argument)
             flight_controller_run(&current_state, &ref, &config, &control_output, CONTROLS_DT_S);
         }
         state_exchange_publish_control_output(&control_output);
-
-
     }
 }
