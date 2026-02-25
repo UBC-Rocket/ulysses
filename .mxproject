@@ -14,22 +14,22 @@ CDefines=USE_HAL_DRIVER;STM32H563xx;USE_HAL_DRIVER;USE_HAL_DRIVER;
 [PreviousGenFiles]
 AdvancedFolderStructure=true
 HeaderFileListSize=5
-HeaderFiles#0=../Core/Inc/FreeRTOSConfig.h
-HeaderFiles#1=../Core/Inc/app_freertos.h
-HeaderFiles#2=../Core/Inc/stm32h5xx_it.h
-HeaderFiles#3=../Core/Inc/stm32h5xx_hal_conf.h
-HeaderFiles#4=../Core/Inc/main.h
+HeaderFiles#0=..\Core\Inc\FreeRTOSConfig.h
+HeaderFiles#1=..\Core\Inc\app_freertos.h
+HeaderFiles#2=..\Core\Inc\stm32h5xx_it.h
+HeaderFiles#3=..\Core\Inc\stm32h5xx_hal_conf.h
+HeaderFiles#4=..\Core\Inc\main.h
 HeaderFolderListSize=1
-HeaderPath#0=../Core/Inc
+HeaderPath#0=..\Core\Inc
 HeaderFiles=;
 SourceFileListSize=5
-SourceFiles#0=../Core/Src/app_freertos.c
-SourceFiles#1=../Core/Src/stm32h5xx_it.c
-SourceFiles#2=../Core/Src/stm32h5xx_hal_msp.c
-SourceFiles#3=../Core/Src/stm32h5xx_hal_timebase_tim.c
-SourceFiles#4=../Core/Src/main.c
+SourceFiles#0=..\Core\Src\app_freertos.c
+SourceFiles#1=..\Core\Src\stm32h5xx_it.c
+SourceFiles#2=..\Core\Src\stm32h5xx_hal_msp.c
+SourceFiles#3=..\Core\Src\stm32h5xx_hal_timebase_tim.c
+SourceFiles#4=..\Core\Src\main.c
 SourceFolderListSize=1
-SourcePath#0=../Core/Src
+SourcePath#0=..\Core\Src
 SourceFiles=;
 
 [ThirdPartyIp]
@@ -37,6 +37,6 @@ ThirdPartyIpNumber=1
 ThirdPartyIpName#0=STMicroelectronics.X-CUBE-FREERTOS.1.3.1
 
 [ThirdPartyIp#STMicroelectronics.X-CUBE-FREERTOS.1.3.1]
-include=../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;../Drivers/CMSIS/RTOS2/Include;
-source=../Middlewares/Third_Party/FreeRTOS/Source/croutine.c;../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c;../Middlewares/Third_Party/FreeRTOS/Source/list.c;../Middlewares/Third_Party/FreeRTOS/Source/queue.c;../Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c;../Middlewares/Third_Party/FreeRTOS/Source/tasks.c;../Middlewares/Third_Party/FreeRTOS/Source/timers.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/port.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c;
+include=..\Middlewares\Third_Party\FreeRTOS\Source\include;..\Middlewares\Third_Party\FreeRTOS\Source\portable\GCC\ARM_CM33_NTZ\non_secure;..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2;..\Drivers\CMSIS\RTOS2\Include;
+source=..\Middlewares\Third_Party\FreeRTOS\Source\croutine.c;..\Middlewares\Third_Party\FreeRTOS\Source\event_groups.c;..\Middlewares\Third_Party\FreeRTOS\Source\list.c;..\Middlewares\Third_Party\FreeRTOS\Source\queue.c;..\Middlewares\Third_Party\FreeRTOS\Source\stream_buffer.c;..\Middlewares\Third_Party\FreeRTOS\Source\tasks.c;..\Middlewares\Third_Party\FreeRTOS\Source\timers.c;..\Middlewares\Third_Party\FreeRTOS\Source\portable\GCC\ARM_CM33_NTZ\non_secure\port.c;..\Middlewares\Third_Party\FreeRTOS\Source\portable\GCC\ARM_CM33_NTZ\non_secure\portasm.c;..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.c;..\Middlewares\Third_Party\FreeRTOS\Source\portable\MemMang\heap_4.c;
 
