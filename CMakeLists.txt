@@ -155,6 +155,17 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     $<$<BOOL:${ULYSSES_ENABLE_DEBUG_LOGGING}>:ULYSSES_ENABLE_DEBUG_LOGGING>
 )
 
+# Enable -ffast-math for EKF math sources (FMA contraction, relaxed NaN handling)
+set(EKF_FAST_MATH_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/body.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/quaternion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/matrix.c
+)
+set_source_files_properties(${EKF_FAST_MATH_SRCS} PROPERTIES
+    COMPILE_FLAGS "-ffast-math"
+)
+
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 

@@ -24,6 +24,6 @@ void get_h_jacobian_quaternion(
     float h_jacobian[3][4]
 );
 
-
+void quat_to_euler(float q[4], float e[3]);
 
 #endif

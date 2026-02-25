@@ -122,7 +122,7 @@ void debug_log_print(const char *const message, ...)
         return;
     }
 
-    (void)xStreamBufferSend(logger.message_buffer_handle, formatted, length, 0);
+    (void)xStreamBufferSend(logger.message_buffer_handle, formatted, written, 0);
     (void)osMutexRelease(logger.message_buffer_mutex_id);
 }
 

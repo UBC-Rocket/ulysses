@@ -10,66 +10,30 @@ void normalize(float q[4]) {
     for (int i = 0; i < 4; i++) q[i] = q[i] / norm;
 }
 
-#define DIM_N 3
+/* Closed-form 3x3 inverse via cofactor/determinant.
+   Returns 1 if successful, 0 if singular (det ≈ 0).
+   Does not modify input matrix a. */
+int inverse(float a[3][3], float inv[3][3]) {
+    float c00 = a[1][1]*a[2][2] - a[1][2]*a[2][1];
+    float c01 = a[1][2]*a[2][0] - a[1][0]*a[2][2];
+    float c02 = a[1][0]*a[2][1] - a[1][1]*a[2][0];
 
-/* finds inverse of matrix
-    1 if successful, 0 if no inverse exists */
-int inverse(float a[DIM_N][DIM_N], float inverse[DIM_N][DIM_N]) {
-    // Initialize inverse as the identity matrix
-    for (int i = 0; i < DIM_N; i++)
-        for (int j = 0; j < DIM_N; j++)
-            inverse[i][j] = (i == j) ? 1.0 : 0.0;
+    float det = a[0][0]*c00 + a[0][1]*c01 + a[0][2]*c02;
+    if (fabsf(det) < 1e-10f) return 0;
 
-    // Perform elementary row operations
-    for (int i = 0; i < DIM_N; i++) {
-        // Find the pivot element
-        float pivot = a[i][i];
-        if (fabs(pivot) < 1e-6) {
-            // Find a row below with a non-zero element and swap
-            int swap_row = -1;
-            for (int r = i + 1; r < DIM_N; r++) {
-                if (fabs(a[r][i]) > 1e-6) {
-                    swap_row = r;
-                    break;
-                }
-            }
-            if (swap_row == -1) {
-                return 0; // No inverse
-            }
+    float inv_det = 1.0f / det;
 
-            // Swap rows in both a and inverse
-            for (int c = 0; c < DIM_N; c++) {
-                float temp = a[i][c];
-                a[i][c] = a[swap_row][c];
-                a[swap_row][c] = temp;
+    inv[0][0] = c00 * inv_det;
+    inv[0][1] = (a[0][2]*a[2][1] - a[0][1]*a[2][2]) * inv_det;
+    inv[0][2] = (a[0][1]*a[1][2] - a[0][2]*a[1][1]) * inv_det;
+    inv[1][0] = c01 * inv_det;
+    inv[1][1] = (a[0][0]*a[2][2] - a[0][2]*a[2][0]) * inv_det;
+    inv[1][2] = (a[0][2]*a[1][0] - a[0][0]*a[1][2]) * inv_det;
+    inv[2][0] = c02 * inv_det;
+    inv[2][1] = (a[0][1]*a[2][0] - a[0][0]*a[2][1]) * inv_det;
+    inv[2][2] = (a[0][0]*a[1][1] - a[0][1]*a[1][0]) * inv_det;
 
-                temp = inverse[i][c];
-                inverse[i][c] = inverse[swap_row][c];
-                inverse[swap_row][c] = temp;
-            }
-
-            pivot = a[i][i];
-        }
-
-        // Normalize the pivot row
-        for (int j = 0; j < DIM_N; j++) {
-            a[i][j] /= pivot;
-            inverse[i][j] /= pivot;
-        }
-
-        // Eliminate all other elements in column i
-        for (int r = 0; r < DIM_N; r++) {
-            if (r != i) {
-                float factor = a[r][i];
-                for (int c = 0; c < DIM_N; c++) {
-                    a[r][c] -= factor * a[i][c];
-                    inverse[r][c] -= factor * inverse[i][c];
-                }
-            }
-        }
-    }
-
-    return 1; // Success
+    return 1;
 }
 
 void transpose4x4(const float A[4][4], float AT[4][4])

@@ -15,6 +15,20 @@
 #include <stdbool.h>
 
 #include "FreeRTOS.h"
+#include <stdint.h>
+#include <string.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "cmsis_os2.h"
+#include "main.h"
+#include "printf/printf.h"
+#include "debug/log.h"
+#include "mission_manager/mission_manager.h"
+#include "SD_logging/log_service.h"
+#include "state_estimation/state.h"
+#include "state_exchange.h"
+#include "spi_drivers/gnss_radio_master.h"
+#include "sensors_init.h"
 #include "command.pb.h"
 #include "telemetry.pb.h"
 #include "downlink.pb.h"
@@ -25,6 +39,7 @@
 #include "rp/codec.h"
 #include "task.h"
 #include <stdint.h>
+#include "rp/codec.h"
 
 static flight_state_t last_logged_flight_state = IDLE;
 static bool flight_header_logged = false;
@@ -118,8 +133,7 @@ void mission_manager_task_start(void *argument) {
 
         log_flight_header_if_ready(current_state.u_s);
 
-        xTaskNotifyWait(0, UINT32_MAX, &flags, 0);
-        
+        /* ── Radio RX: decode FlightCommand ── */
         if (flags & GNSS_RADIO_MSG_READY_FLAG) {
             uint8_t spi_msg[GNSS_RADIO_MESSAGE_MAX_LEN];
 
@@ -198,8 +212,6 @@ void mission_manager_task_start(void *argument) {
         log_service_periodic_flush();
         log_flight_state_if_changed(flight_state, current_state.u_s);
         state_exchange_publish_flight_state(flight_state);
-
-        osDelay(2);
     }
 }
 

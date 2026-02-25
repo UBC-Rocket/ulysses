@@ -53,6 +53,8 @@ static bool sd_card_is_inserted(void)
 
 /* Private variables ---------------------------------------------------------*/
 
+DCACHE_HandleTypeDef hdcache1;
+
 SD_HandleTypeDef hsd1;
 
 SPI_HandleTypeDef hspi1;
@@ -102,6 +104,8 @@ static void MX_USB_PCD_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_ICACHE_Init(void);
+static void MX_DCACHE1_Init(void);
 /* USER CODE BEGIN PFP */
 static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd);
 
@@ -155,6 +159,8 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+  MX_ICACHE_Init();
+  MX_DCACHE1_Init();
   /* USER CODE BEGIN 2 */
 
   /* Start TIM3 output compare interrupts for controls task timing */
@@ -269,6 +275,33 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief DCACHE1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DCACHE1_Init(void)
+{
+
+  /* USER CODE BEGIN DCACHE1_Init 0 */
+
+  /* USER CODE END DCACHE1_Init 0 */
+
+  /* USER CODE BEGIN DCACHE1_Init 1 */
+
+  /* USER CODE END DCACHE1_Init 1 */
+  hdcache1.Instance = DCACHE1;
+  hdcache1.Init.ReadBurstType = DCACHE_READ_BURST_WRAP;
+  if (HAL_DCACHE_Init(&hdcache1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DCACHE1_Init 2 */
+
+  /* USER CODE END DCACHE1_Init 2 */
+
+}
+
+/**
   * @brief GPDMA1 Initialization Function
   * @param None
   * @retval None
@@ -345,6 +378,34 @@ static void MX_GPDMA2_Init(void)
 }
 
 /**
+  * @brief ICACHE Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ICACHE_Init(void)
+{
+
+  /* USER CODE BEGIN ICACHE_Init 0 */
+
+  /* USER CODE END ICACHE_Init 0 */
+
+  /* USER CODE BEGIN ICACHE_Init 1 */
+
+  /* USER CODE END ICACHE_Init 1 */
+
+  /** Enable instruction cache (default 2-ways set associative cache)
+  */
+  if (HAL_ICACHE_Enable() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ICACHE_Init 2 */
+
+  /* USER CODE END ICACHE_Init 2 */
+
+}
+
+/**
   * @brief SDMMC1 Initialization Function
   * @param None
   * @retval None
@@ -414,7 +475,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -1008,8 +1069,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : EXT_INT_2_Pin EXT_INT_3_Pin EXT_INT_4_Pin */
-  GPIO_InitStruct.Pin = EXT_INT_2_Pin|EXT_INT_3_Pin|EXT_INT_4_Pin;
+  /*Configure GPIO pin : EXT_INT_2_Pin */
+  GPIO_InitStruct.Pin = EXT_INT_2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(EXT_INT_2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : EXT_INT_3_Pin EXT_INT_4_Pin */
+  GPIO_InitStruct.Pin = EXT_INT_3_Pin|EXT_INT_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
