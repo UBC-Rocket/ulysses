@@ -5,6 +5,7 @@
 #ifndef STATE_EXCHANGE_H
 #define STATE_EXCHANGE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "state_estimation/state.h"
 #include "mission_manager/mission_manager.h"
@@ -57,5 +58,33 @@ uint32_t state_exchange_publish_control_output(const control_output_t *out);
  * @return Sequence number associated with the returned output.
  */
 uint32_t state_exchange_get_control_output(control_output_t *out);
+
+/**
+ * @brief Publish armed state.  Set by mission manager on CMD_ARM.
+ * @param armed true = controls enabled, false = outputs zeroed.
+ * @return Monotonic sequence number after publish.
+ */
+uint32_t state_exchange_publish_armed(bool armed);
+
+/**
+ * @brief Copy the latest armed state.
+ * @param armed_out Destination pointer (optional).
+ * @return Sequence number associated with the returned value.
+ */
+uint32_t state_exchange_get_armed(bool *armed_out);
+
+/**
+ * @brief Publish startup actuator test completion.
+ * @param complete true once the startup test sequence finishes.
+ * @return Monotonic sequence number after publish.
+ */
+uint32_t state_exchange_publish_startup_test_complete(bool complete);
+
+/**
+ * @brief Copy the startup test completion flag.
+ * @param complete_out Destination pointer (optional).
+ * @return Sequence number associated with the returned value.
+ */
+uint32_t state_exchange_get_startup_test_complete(bool *complete_out);
 
 #endif /* STATE_EXCHANGE_H */

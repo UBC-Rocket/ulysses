@@ -203,8 +203,18 @@ static void handle_state_command(const tvr_StateCommand *cmd,
                                  flight_state_t *flight_state) {
     switch (cmd->type) {
         case tvr_StateCommand_Type_CMD_ARM:
-            /* TODO: arm sequence */
+        {
+            bool test_done = false;
+            state_exchange_get_startup_test_complete(&test_done);
+            if (test_done && *flight_state == IDLE) {
+                state_exchange_publish_armed(true);
+                DLOG_PRINT("[MM] Armed\r\n");
+            } else {
+                DLOG_PRINT("[MM] ARM rejected: test_done=%d state=%d\r\n",
+                           test_done, (int)*flight_state);
+            }
             break;
+        }
 
         case tvr_StateCommand_Type_CMD_LAUNCH:
             if (*flight_state == IDLE) {
@@ -213,6 +223,7 @@ static void handle_state_command(const tvr_StateCommand *cmd,
             break;
 
         case tvr_StateCommand_Type_CMD_ABORT:
+            state_exchange_publish_armed(false);
             *flight_state = E_STOP;
             break;
 

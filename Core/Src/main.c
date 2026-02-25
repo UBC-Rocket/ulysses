@@ -108,8 +108,8 @@ static void MX_TIM3_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM4_Init(void);
-static void MX_ICACHE_Init(void);
 static void MX_DCACHE1_Init(void);
+static void MX_ICACHE_Init(void);
 /* USER CODE BEGIN PFP */
 static HAL_StatusTypeDef sd_enable_internal_dma(SD_HandleTypeDef *hsd);
 
@@ -164,8 +164,8 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
-  MX_ICACHE_Init();
   MX_DCACHE1_Init();
+  MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
 
   /* --- TIM4 interrupt channels ------------------------------------ */

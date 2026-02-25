@@ -39,10 +39,14 @@ static SemaphoreHandle_t control_mutex_handle = NULL;
 static state_t latest_state = {0};
 static flight_state_t latest_flight_state = IDLE;
 static control_output_t latest_control_output = {0};
+static bool latest_armed = false;
+static bool latest_startup_test_complete = false;
 
 static uint32_t state_seq = 0;
 static uint32_t flight_state_seq = 0;
 static uint32_t control_seq = 0;
+static uint32_t armed_seq = 0;
+static uint32_t startup_test_seq = 0;
 
 /* -------------------------------------------------------------------------- */
 /* Private helpers                                                            */
@@ -176,5 +180,65 @@ uint32_t state_exchange_get_control_output(control_output_t *out)
     }
     uint32_t seq = control_seq;
     xSemaphoreGive(control_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_publish_armed(bool armed)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        return armed_seq;
+    }
+    latest_armed = armed;
+    armed_seq++;
+    uint32_t seq = armed_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_get_armed(bool *armed_out)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        if (armed_out) {
+            *armed_out = latest_armed;
+        }
+        return armed_seq;
+    }
+    if (armed_out) {
+        *armed_out = latest_armed;
+    }
+    uint32_t seq = armed_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_publish_startup_test_complete(bool complete)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        return startup_test_seq;
+    }
+    latest_startup_test_complete = complete;
+    startup_test_seq++;
+    uint32_t seq = startup_test_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_get_startup_test_complete(bool *complete_out)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        if (complete_out) {
+            *complete_out = latest_startup_test_complete;
+        }
+        return startup_test_seq;
+    }
+    if (complete_out) {
+        *complete_out = latest_startup_test_complete;
+    }
+    uint32_t seq = startup_test_seq;
+    xSemaphoreGive(flight_mutex_handle);
     return seq;
 }
