@@ -58,7 +58,7 @@ const osThreadAttr_t DebugLoggingTask_attributes = {
 osThreadId_t MissionManagerHandle;
 const osThreadAttr_t MissionManager_attributes = {
   .name = "MissionManager",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 512 * 4
 };
 /* Definitions for Controls */

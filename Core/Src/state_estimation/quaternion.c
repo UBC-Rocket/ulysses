@@ -30,7 +30,7 @@ void state_transition_orientation(
 
     MAT_MUL(B, P, C, 4, 4, 1);
 
-    for (int i = 0; i < 4; i++) C[i][0] = C[i][0] * (time_step / 2);
+    for (int i = 0; i < 4; i++) C[i][0] = C[i][0] * (time_step * 0.5f);
 
     for (int i = 0; i < 4; i++) {
         out_q[i] = state->vals[i] + C[i][0];
@@ -120,4 +120,22 @@ void get_h_jacobian_quaternion(float q[4], float eg[3], float H[3][4]) {
     //         H[i][j] = -H[i][j];
     //     }
     // }
+}
+
+void quat_to_euler(float q[4], float e[3]) {
+    float w = q[0], x = q[1], y = q[2], z = q[3];
+
+    float sinr = 2.0f * (w*x + y*z);
+    float cosr = 1.0f - 2.0f * (x*x + y*y);
+    e[0] = atan2f(sinr, cosr) * 180.0f / (float)M_PI;
+
+    float sinp = 2.0f * (w*y - z*x);
+    if (fabsf(sinp) >= 1.0f)
+        e[1] = copysignf((float)M_PI / 2.0f, sinp) * 180.0f / (float)M_PI;
+    else
+        e[1] = asinf(sinp) * 180.0f / (float)M_PI;
+
+    float siny = 2.0f * (w*z + x*y);
+    float cosy = 1.0f - 2.0f * (y*y + z*z);
+    e[2] = atan2f(siny, cosy) * 180.0f / (float)M_PI;
 }

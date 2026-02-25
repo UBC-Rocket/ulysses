@@ -1,6 +1,7 @@
 #ifndef BODY_H
 #define BODY_H
 
+#include <stdint.h>
 #include <ekf.h>
 
 
@@ -26,5 +27,7 @@ void get_state_jacobian_body(
 void get_h_jacobian_body(
     float h_jacobian[3][6]
 );
+
+float pressure_to_height(uint32_t pressure_centi);
 
 #endif

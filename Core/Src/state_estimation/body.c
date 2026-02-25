@@ -1,3 +1,4 @@
+#include <math.h>
 #include <matrix.h>
 #include <ekf.h>
 #include <string.h>
@@ -42,7 +43,7 @@ void state_transition_body(
 {
     for (int i = 0; i < 3; i++) {
         out_p[i] = state->position[i] + time_step * state->velocity[i]
-                              + 0.5 * time_step * time_step * a[i];
+                              + 0.5f * time_step * time_step * a[i];
     }
 
     for (int i = 0; i < 3; i++) {
@@ -79,4 +80,8 @@ void get_h_jacobian_body(
         {0, 0, 1, 0, 0, 0},
     },
     (sizeof (float[3][6])));
+}
+
+float pressure_to_height(uint32_t pressure_centi) {
+    return 44307.69f * (1.0f - powf((float)pressure_centi / 101325.0f, 0.190284f));
 }

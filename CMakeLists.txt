@@ -137,6 +137,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/matrix.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/quaternion.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/body.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/calibration.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/utils/gnss_utils.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/interrupts.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SD_logging/log_writer.c
@@ -169,6 +171,17 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     BMI_GYRO_Chip_Select_Pin=BMI_GYRO_CS_Pin
     $<$<BOOL:${ULYSSES_USE_USB}>:ULYSSES_USE_USB>
     $<$<BOOL:${ULYSSES_ENABLE_DEBUG_LOGGING}>:ULYSSES_ENABLE_DEBUG_LOGGING>
+)
+
+# Enable -ffast-math for EKF math sources (FMA contraction, relaxed NaN handling)
+set(EKF_FAST_MATH_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/ekf.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/body.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/quaternion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/state_estimation/matrix.c
+)
+set_source_files_properties(${EKF_FAST_MATH_SRCS} PROPERTIES
+    COMPILE_FLAGS "-ffast-math"
 )
 
 # Remove wrong libob.a library dependency when using cpp files
