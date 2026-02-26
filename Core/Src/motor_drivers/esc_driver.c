@@ -2,18 +2,11 @@
 
 #include <stddef.h>
 
-#define ESC_LUT_POINTS 11U
-
 static float clamp_f32(float x, float lo, float hi);
-static uint16_t thrust_to_us_lut(float thrust);
+static uint16_t thrust_to_us(float thrust);
 
 static esc_pair_t g_esc_pair;
 static volatile bool g_esc_pair_ready = false;
-
-static const uint16_t g_esc_us_lut[ESC_LUT_POINTS] = {
-    /* F45A 3-6S baseline thrust curve, tune on bench if needed. */
-    1000U, 1080U, 1160U, 1240U, 1320U, 1400U, 1520U, 1640U, 1760U, 1880U, 2000U
-};
 
 /* ---- Init / arm / disarm ----------------------------------------------- */
 
@@ -62,7 +55,7 @@ void ESC_set_thrust(esc_t *esc, float thrust) {
     }
 
     float clamped = clamp_f32(thrust, 0.0f, 1.0f);
-    uint16_t pulse_us = thrust_to_us_lut(clamped);
+    uint16_t pulse_us = thrust_to_us(clamped);
     uint32_t pulse_ticks = pwm_clamp_ticks(&esc->pwm, pwm_us_to_ticks(&esc->pwm, pulse_us));
 
     esc->desired_thrust = clamped;
@@ -134,18 +127,8 @@ static float clamp_f32(float x, float lo, float hi) {
     return x;
 }
 
-static uint16_t thrust_to_us_lut(float thrust) {
+static uint16_t thrust_to_us(float thrust) {
     float clamped = clamp_f32(thrust, 0.0f, 1.0f);
-
-    float scaled = clamped * (float)(ESC_LUT_POINTS - 1U);
-    uint32_t i = (uint32_t)scaled;
-    if (i >= (ESC_LUT_POINTS - 1U)) {
-        return g_esc_us_lut[ESC_LUT_POINTS - 1U];
-    }
-
-    float frac = scaled - (float)i;
-    uint16_t us0 = g_esc_us_lut[i];
-    uint16_t us1 = g_esc_us_lut[i + 1U];
-    float us = (float)us0 + frac * (float)(us1 - us0);
+    float us = (float)ESC_PWM_MIN_US + clamped * (float)(ESC_PWM_MAX_US - ESC_PWM_MIN_US);
     return (uint16_t)(us + 0.5f);
 }

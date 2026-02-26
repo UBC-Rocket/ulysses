@@ -184,6 +184,7 @@ static void run_startup_actuator_test(void)
 
     /* ── Motor test ── */
     ESC_pair_arm();
+    osDelay(7000);
 
     DLOG_PRINT("[CTRL] Motor 1 ramp\r\n");
     ramp_motor(0);

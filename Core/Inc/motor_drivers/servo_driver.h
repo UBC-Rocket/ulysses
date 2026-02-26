@@ -21,20 +21,17 @@ typedef struct {
     bool enabled;
 } servo_t;
 
-/** Calibration: add these [deg] to commanded angle so straight-down lines up. Tune per axis. */
-#define GIMBAL_SERVO1_DEG_OFFSET 40.0f
-#define GIMBAL_SERVO2_DEG_OFFSET 0.0f
 
 /* ── Per-servo pulse width calibration (microseconds) ───────────────── */
-/* Servo 1: TIM1 CH2 / PE11 */
+/* Servo 1: TIM1 CH2 / PE11 (physical "Servo 2") */
 #define SERVO1_US_MIN   900
-#define SERVO1_US_MID  1175
+#define SERVO1_US_MID  1125
 #define SERVO1_US_MAX  1450
 
-/* Servo 2: TIM3 CH3 / PB0 */
-#define SERVO2_US_MIN  1600
-#define SERVO2_US_MID  2000
-#define SERVO2_US_MAX  2300
+/* Servo 2: TIM3 CH3 / PB0 (physical "Servo 1") */
+#define SERVO2_US_MIN  1575
+#define SERVO2_US_MID  1860
+#define SERVO2_US_MAX  2200
 
 typedef struct {
     servo_t servo1;
@@ -42,8 +39,6 @@ typedef struct {
 } servo_pair_t;
 
 void servo_init(servo_t *servo, const pwm_output_t *pwm);
-void servo_init_with_cal(servo_t *servo, const pwm_output_t *pwm,
-                         uint16_t us_min, uint16_t us_mid, uint16_t us_max);
 void servo_init_with_deg_range(servo_t *servo, const pwm_output_t *pwm, float deg_range, float mid_pt);
 void servo_enable(servo_t *servo, bool enable);
 void servo_set_deg_range(servo_t *servo, float deg_range, float mid_pt);

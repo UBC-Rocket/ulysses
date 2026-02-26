@@ -5,6 +5,8 @@
 static float clamp_f(float x, float lo, float hi);
 static uint16_t clamp_u16(uint16_t x, uint16_t lo, uint16_t hi);
 static uint16_t degree_to_us(const servo_t *servo, float degree);
+static void servo_init_with_cal(servo_t *servo, const pwm_output_t *pwm,
+                                uint16_t us_min, uint16_t us_mid, uint16_t us_max);
 
 /* Written by task (set_servo_pair_degrees); read by ISR (apply_servo_pair_degrees). */
 static servo_pair_t servos;
@@ -27,8 +29,8 @@ void set_servo_pair_degrees(float degree1, float degree2) {
     if (!g_servo_pair_ready) {
         return;
     }
-    set_servo_degree(&servos.servo1, degree1 - GIMBAL_SERVO1_DEG_OFFSET);
-    set_servo_degree(&servos.servo2, degree2 - GIMBAL_SERVO2_DEG_OFFSET);
+    set_servo_degree(&servos.servo1, degree1);
+    set_servo_degree(&servos.servo2, degree2);
 }
 
 /* ---- ISR-level API ----------------------------------------------------- */
@@ -43,8 +45,8 @@ void apply_servo_pair_degrees(void) {
 
 /* ---- Init / enable ----------------------------------------------------- */
 
-void servo_init_with_cal(servo_t *servo, const pwm_output_t *pwm,
-                         uint16_t us_min, uint16_t us_mid, uint16_t us_max) {
+static void servo_init_with_cal(servo_t *servo, const pwm_output_t *pwm,
+                                uint16_t us_min, uint16_t us_mid, uint16_t us_max) {
     if (servo == NULL || pwm == NULL || pwm->htim == NULL) {
         return;
     }
