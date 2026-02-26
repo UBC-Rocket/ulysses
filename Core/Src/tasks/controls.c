@@ -169,6 +169,7 @@ static void run_startup_actuator_test(void)
 
     /* ── Servo test ── */
     servo_pair_enable(true);
+    set_servo_pair_degrees(0.0f, 0.0f);
 
     DLOG_PRINT("[CTRL] Servo 1 sweep\r\n");
     sweep_servo(0);
@@ -256,7 +257,7 @@ void controls_task_start(void *argument)
         state_exchange_publish_control_output(&control_output);
 
         /* Drive actuators only when armed. */
-        if (armed) {
+        if (armed||true) {
             servo_pair_enable(true);
             ESC_pair_arm();
 
