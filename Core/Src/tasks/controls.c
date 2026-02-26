@@ -234,6 +234,7 @@ void controls_task_start(void *argument)
 
         bool armed = false;
         state_exchange_get_armed(&armed);
+        armed = true;
 
         if (!config_done) {
             flight_controller_init(&config);
@@ -247,10 +248,10 @@ void controls_task_start(void *argument)
             last_state_seq = state_seq;
             stale_tick_count = 0;
         }
-        bool state_stale = (stale_tick_count >= STALE_STATE_THRESHOLD_TICKS);
+        //bool state_stale = (stale_tick_count >= STALE_STATE_THRESHOLD_TICKS);
 
         /* Do not run controller unless armed with valid state. */
-        if (!armed || state_seq == 0 || state_stale) {
+        if (!armed || state_seq == 0 ){//|| state_stale) {
             memset(&control_output, 0, sizeof(control_output));
         } else {
             flight_controller_run(&current_state, &ref, &config, &control_output, CONTROLS_DT_S);
@@ -258,9 +259,9 @@ void controls_task_start(void *argument)
         state_exchange_publish_control_output(&control_output);
 
         /* Drive actuators only when armed. */
-        if (armed||true) {
+        if (armed) {
             servo_pair_enable(true);
-            ESC_pair_arm();
+            //ESC_pair_arm();
 
             /* Gimbal: apply theta_x_cmd, theta_y_cmd [rad] to servo pair (converted to degrees). */
             set_servo_pair_degrees(
@@ -270,7 +271,7 @@ void controls_task_start(void *argument)
             /* ESC: 0-100% command mapped to duty cycle range (1000-2000us).
              * TODO: proper counter-rotating prop allocation using T_cmd + tau_thrust. */
             float esc_pct = 0.0f;
-            ESC_set_pair_thrust(esc_pct / 100.0f, esc_pct / 100.0f);
+            //ESC_set_pair_thrust(esc_pct / 100.0f, esc_pct / 100.0f);
         } else {
             set_servo_pair_degrees(0.0f, 0.0f);
             ESC_set_pair_thrust(0.0f, 0.0f);
