@@ -87,4 +87,19 @@ uint32_t state_exchange_publish_startup_test_complete(bool complete);
  */
 uint32_t state_exchange_get_startup_test_complete(bool *complete_out);
 
+/**
+ * @brief Publish a rearm request.  Set by mission manager on CMD_ARM; cleared
+ *        by the controls task once the startup sequence begins.
+ * @param requested true = run startup sequence and re-arm.
+ * @return Monotonic sequence number after publish.
+ */
+uint32_t state_exchange_publish_rearm_request(bool requested);
+
+/**
+ * @brief Copy the rearm request flag.
+ * @param requested_out Destination pointer (optional).
+ * @return Sequence number associated with the returned value.
+ */
+uint32_t state_exchange_get_rearm_request(bool *requested_out);
+
 #endif /* STATE_EXCHANGE_H */

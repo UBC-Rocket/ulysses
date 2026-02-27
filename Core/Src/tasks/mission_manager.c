@@ -204,14 +204,16 @@ static void handle_state_command(const tvr_StateCommand *cmd,
     switch (cmd->type) {
         case tvr_StateCommand_Type_CMD_ARM:
         {
-            bool test_done = false;
-            state_exchange_get_startup_test_complete(&test_done);
-            if (test_done && *flight_state == IDLE) {
-                state_exchange_publish_armed(true);
-                DLOG_PRINT("[MM] Armed\r\n");
+            if (*flight_state == IDLE) {
+                /* Disarm and invalidate the previous test so the controls task
+                 * re-runs the full startup sequence before going live. */
+                state_exchange_publish_armed(false);
+                state_exchange_publish_startup_test_complete(false);
+                state_exchange_publish_rearm_request(true);
+                DLOG_PRINT("[MM] ARM: rearm sequence requested\r\n");
             } else {
-                DLOG_PRINT("[MM] ARM rejected: test_done=%d state=%d\r\n",
-                           test_done, (int)*flight_state);
+                DLOG_PRINT("[MM] ARM rejected: flight_state=%d\r\n",
+                           (int)*flight_state);
             }
             break;
         }

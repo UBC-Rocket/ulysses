@@ -41,12 +41,14 @@ static flight_state_t latest_flight_state = IDLE;
 static control_output_t latest_control_output = {0};
 static bool latest_armed = false;
 static bool latest_startup_test_complete = false;
+static bool latest_rearm_requested = false;
 
 static uint32_t state_seq = 0;
 static uint32_t flight_state_seq = 0;
 static uint32_t control_seq = 0;
 static uint32_t armed_seq = 0;
 static uint32_t startup_test_seq = 0;
+static uint32_t rearm_seq = 0;
 
 /* -------------------------------------------------------------------------- */
 /* Private helpers                                                            */
@@ -239,6 +241,36 @@ uint32_t state_exchange_get_startup_test_complete(bool *complete_out)
         *complete_out = latest_startup_test_complete;
     }
     uint32_t seq = startup_test_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_publish_rearm_request(bool requested)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        return rearm_seq;
+    }
+    latest_rearm_requested = requested;
+    rearm_seq++;
+    uint32_t seq = rearm_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_get_rearm_request(bool *requested_out)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        if (requested_out) {
+            *requested_out = latest_rearm_requested;
+        }
+        return rearm_seq;
+    }
+    if (requested_out) {
+        *requested_out = latest_rearm_requested;
+    }
+    uint32_t seq = rearm_seq;
     xSemaphoreGive(flight_mutex_handle);
     return seq;
 }

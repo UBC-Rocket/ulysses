@@ -229,12 +229,32 @@ void controls_task_start(void *argument)
         /* Block until TIM4 CH2 output-compare ISR fires (see timing.c) */
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
+        /* Re-arm request: safe actuators, redo startup test, then arm. */
+        bool rearm = false;
+        state_exchange_get_rearm_request(&rearm);
+        if (rearm) {
+            state_exchange_publish_rearm_request(false);
+            DLOG_PRINT("[CTRL] Rearm: starting startup sequence\r\n");
+
+            servo_pair_enable(false);
+            ESC_set_pair_thrust(0.0f, 0.0f);
+            ESC_pair_disarm();
+
+            run_startup_actuator_test();
+
+            flight_controller_init(&config);
+            config_done = 1;
+
+            state_exchange_publish_armed(true);
+            DLOG_PRINT("[CTRL] Rearm complete, armed\r\n");
+            continue;
+        }
+
         uint32_t state_seq = state_exchange_get_state(&current_state);
         state_exchange_get_flight_state(&flight_state);
 
         bool armed = false;
         state_exchange_get_armed(&armed);
-        armed = true;
 
         if (!config_done) {
             flight_controller_init(&config);
