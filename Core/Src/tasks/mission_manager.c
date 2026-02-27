@@ -225,8 +225,8 @@ static void handle_state_command(const tvr_StateCommand *cmd,
             break;
 
         case tvr_StateCommand_Type_CMD_ABORT:
-            state_exchange_publish_armed(false);
-            *flight_state = E_STOP;
+            *flight_state = IDLE;
+            DLOG_PRINT("[MM] Abort: ESC off, flight_state -> IDLE\r\n");
             break;
 
         case tvr_StateCommand_Type_CMD_LAND:

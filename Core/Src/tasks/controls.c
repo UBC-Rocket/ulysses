@@ -8,6 +8,7 @@
  */
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 #include "cmsis_os2.h"
 #include "state_exchange.h"
 #include "main.h"
@@ -30,6 +31,9 @@
 #define SWEEP_RANGE_DEG   90.0f   /**< Servo sweep half-range (degrees). */
 #define SWEEP_STEP_DEG    1.0f    /**< Degrees per step. */
 #define SWEEP_STEP_MS     5       /**< Milliseconds between steps. */
+#define CIRCLE_RADIUS_DEG 72.0f   /**< Servo circle sweep radius (degrees). */
+#define CIRCLE_STEPS      72      /**< Steps per full revolution (5 deg each). */
+#define CIRCLE_STEP_MS    18      /**< Milliseconds between circle steps. */
 #define ESC_TEST_THRUST   0.10f   /**< Motor test thrust (10%). */
 #define ESC_RAMP_STEPS    50      /**< Steps to ramp up/down. */
 #define ESC_RAMP_STEP_MS  10      /**< Milliseconds per ramp step. */
@@ -129,6 +133,21 @@ static void sweep_servo(int servo_index)
     }
 }
 
+/** Trace one full clockwise circle with both servos simultaneously. */
+static void sweep_circle(void)
+{
+    for (int i = 0; i <= CIRCLE_STEPS; i++) {
+        float angle_rad = (2.0f * 3.14159265f * (float)i) / (float)CIRCLE_STEPS;
+        float x = CIRCLE_RADIUS_DEG * cosf(angle_rad);
+        float y = CIRCLE_RADIUS_DEG * sinf(angle_rad);
+        set_servo_pair_degrees(x, y);
+        osDelay(CIRCLE_STEP_MS);
+    }
+    /* Return to centre */
+    set_servo_pair_degrees(0.0f, 0.0f);
+    osDelay(50);
+}
+
 /** Smooth ramp a single motor: 0 → peak → hold → 0. */
 static void ramp_motor(int motor_index)
 {
@@ -177,6 +196,9 @@ static void run_startup_actuator_test(void)
     DLOG_PRINT("[CTRL] Servo 2 sweep\r\n");
     sweep_servo(1);
 
+    DLOG_PRINT("[CTRL] Servo circle\r\n");
+    sweep_circle();
+
     /* Return to center and disable */
     set_servo_pair_degrees(0.0f, 0.0f);
     osDelay(50);
@@ -218,6 +240,8 @@ void controls_task_start(void *argument)
     uint8_t config_done = 0;
     uint32_t last_state_seq = 0;
     uint32_t stale_tick_count = 0;
+    bool esc_running = false;
+    uint32_t esc_arm_tick = 0;
 
     init_default_config(&config);
     init_default_ref(&ref);
@@ -239,6 +263,8 @@ void controls_task_start(void *argument)
             servo_pair_enable(false);
             ESC_set_pair_thrust(0.0f, 0.0f);
             ESC_pair_disarm();
+            esc_running = false;
+            esc_arm_tick = 0;
 
             run_startup_actuator_test();
 
@@ -280,23 +306,37 @@ void controls_task_start(void *argument)
 
         /* Drive actuators only when armed. */
         if (armed) {
-            servo_pair_enable(true);
-            //ESC_pair_arm();
+            /* Gimbal locked out post-startup: hold centre and keep disabled. */
+            set_servo_pair_degrees(0.0f, 0.0f);
+            servo_pair_enable(false);
 
-            /* Gimbal: apply theta_x_cmd, theta_y_cmd [rad] to servo pair (converted to degrees). */
-            set_servo_pair_degrees(
-                control_output.theta_x_cmd * RAD_TO_DEG,
-                control_output.theta_y_cmd * RAD_TO_DEG);
-
-            /* ESC: 0-100% command mapped to duty cycle range (1000-2000us).
-             * TODO: proper counter-rotating prop allocation using T_cmd + tau_thrust. */
-            float esc_pct = 0.0f;
-            //ESC_set_pair_thrust(esc_pct / 100.0f, esc_pct / 100.0f);
+            /* ESC: arm once on RISE entry, hold min throttle for the same
+             * 7 s init window the startup sequence uses, then run at 10%.
+             * Disarm once on exit. */
+            if (flight_state == RISE) {
+                if (!esc_running) {
+                    ESC_pair_arm();
+                    esc_arm_tick = HAL_GetTick();
+                    esc_running = true;
+                }
+                if ((HAL_GetTick() - esc_arm_tick) >= 7000UL) {
+                    ESC_set_pair_thrust(0.10f, 0.10f);
+                }
+            } else {
+                if (esc_running) {
+                    ESC_set_pair_thrust(0.0f, 0.0f);
+                    ESC_pair_disarm();
+                    esc_running = false;
+                }
+            }
         } else {
             set_servo_pair_degrees(0.0f, 0.0f);
-            ESC_set_pair_thrust(0.0f, 0.0f);
             servo_pair_enable(false);
-            ESC_pair_disarm();
+            if (esc_running) {
+                ESC_set_pair_thrust(0.0f, 0.0f);
+                ESC_pair_disarm();
+                esc_running = false;
+            }
         }
     }
 }
