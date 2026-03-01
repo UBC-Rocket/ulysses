@@ -57,3 +57,7 @@ build/
 /tools/Serial/logs/*.jsonl
 
 /tools/SD/__pycache__
+
+
+
+.metadata
