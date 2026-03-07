@@ -1,0 +1,18 @@
+[CTRL] Star3] ori t g(0.00 0.00 1.00)
+ Servo 1 sweep
+[EKF 1364373] body init Rzz=15.00
+[MM] Ta[EKF 1364473] body init Rzz=15.00
+[MM] Task sed
+-0.116246, 0.175889, -0.000037, 997.009033]deg
+[CTRL] Star4] ori init g(0.00 0.00 1.00)
+ Servo 1 sweep
+[EKF 1364371] body init Rzz=15.00
+[MM] Ta[EKF 1364471] body init Rzz=15.00
+[MM] Task started
+0.179997, -0.270497, -0.000004, 997.009033]deg
+[CTRL] Star4] ori init g(0.00 0.00 1.00)
+ Servo 1 sweep
+[EKF 1364371] body init Rzz=15.00
+[MM] Ta[EKF 1364471] body init Rzz=15.00
+[MM] Task started
+-0.168281, 0.369606, -0.000646, 997.009033]deg
