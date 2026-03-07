@@ -70,3 +70,9 @@ void transpose3x6_to_6x3(const float A[3][6], float AT[6][3])
         for (int j = 0; j < 6; ++j)
             AT[j][i] = A[i][j];
 }
+
+void transpose4x3_to_3x4(float in[4][3], float out[3][4]) {
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 3; j++)
+            out[j][i] = in[i][j];
+}

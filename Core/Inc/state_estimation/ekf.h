@@ -2,7 +2,7 @@
 #define EKF_H
 
 #define STATE_DIM 4
-#define UPDATE_COVAR 10
+#define UPDATE_COVAR -1
 
 typedef struct {
     float vals[4];            // real, i, j, k (or w, x, y, z)

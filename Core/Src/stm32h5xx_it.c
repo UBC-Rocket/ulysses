@@ -114,6 +114,9 @@ void HardFault_Handler(void)
   g_hardfault_hfsr = SCB->HFSR;
   g_hardfault_bfar = SCB->BFAR;
   g_hardfault_shcsr = SCB->SHCSR;
+  volatile uint32_t psp   = __get_PSP();
+  volatile uint32_t *frame = (uint32_t *)psp;
+  volatile uint32_t faulting_pc = frame[6]; 
   __asm volatile ("mov %0, lr" : "=r" (g_hardfault_lr));
   g_hardfault_sp = __get_MSP();
   __BKPT(0);
