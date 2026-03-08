@@ -76,7 +76,7 @@ static void se_run_imu_step(se_imu_context_t *ctx,
     /* Compute delta time */
     if (ctx->last_tick_us != 0U) {
         uint32_t dt_us = timestamp_elapsed_us(ctx->last_tick_us, gyro_s->t_us);
-        if ((dt_us < 500U) || (dt_us > 5000U)) {
+        if ((dt_us < 5U) || (dt_us > 5000U)) {
             ctx->last_tick_us = gyro_s->t_us;
             return;
         }
@@ -86,12 +86,12 @@ static void se_run_imu_step(se_imu_context_t *ctx,
 
     /* Startup calibration */
     if (ctx->calibration_samples < STARTUP_CALIBRATION_SAMPLES) {
-        if (stationary) {
-            ctx->calibration_samples++;
-            update_bias(ctx->gyro_bias, (float *)g_data_raw,
-                        ctx->accel_bias, (float *)a_data_raw,
-                        (float *)EXPECTED_GRAVITY, ctx->calibration_samples);
-        }
+
+        ctx->calibration_samples++;
+        update_bias(ctx->gyro_bias, (float *)g_data_raw,
+                    ctx->accel_bias, (float *)a_data_raw,
+                    (float *)EXPECTED_GRAVITY, ctx->calibration_samples);
+        
         return;
     }
 
