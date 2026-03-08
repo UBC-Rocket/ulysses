@@ -135,18 +135,16 @@ void mission_manager_task_start(void *argument) {
 
         /* 10 Hz telemetry */
         static TickType_t last_telem_tick = 0;
-        if ((now - last_telem_tick) >= pdMS_TO_TICKS(TELEMETRY_INTERVAL_MS)) {
-            last_telem_tick = now;
-            control_output_t ctrl = {0};
-            state_exchange_get_control_output(&ctrl);
-            send_telemetry(&current_state, &ctrl, flight_state);
-        }
-
         /* 1 Hz system status */
         static TickType_t last_status_tick = 0;
         if ((now - last_status_tick) >= pdMS_TO_TICKS(STATUS_INTERVAL_MS)) {
             last_status_tick = now;
             send_status(flight_state);
+        } else if ((now - last_telem_tick) >= pdMS_TO_TICKS(TELEMETRY_INTERVAL_MS)) {
+            last_telem_tick = now;
+            control_output_t ctrl = {0};
+            state_exchange_get_control_output(&ctrl);
+            send_telemetry(&current_state, &ctrl, flight_state);
         }
 
         /* ── Periodic GNSS stats (debug) ── */
