@@ -39,6 +39,13 @@ extern "C" {
 /** RX staging buffer size (matches TX buffer) */
 #define SPI1_RX_STAGING_SIZE  272
 
+/** Minimum inter-transaction gap in microseconds.
+ *  The GNSS radio slave (16 MHz Cortex-M0+) needs ~50-150μs to re-arm its
+ *  SPI slave DMA after each transaction.  Without this delay the master can
+ *  chain the next job in ~2-5μs, which lands while the slave's SPI is still
+ *  disabled, causing the second packet to be lost every time. */
+#define SPI1_INTER_JOB_DELAY_US  200
+
 /* -------------------------------------------------------------------------- */
 /* Job Structure                                                              */
 /* -------------------------------------------------------------------------- */

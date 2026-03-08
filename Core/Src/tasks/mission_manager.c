@@ -280,9 +280,8 @@ static void send_telemetry(const state_t *st, const control_output_t *ctrl,
         pkt, sizeof(pkt), tvr_Downlink_fields, &dl);
 
     if (enc.status == RP_CODEC_OK) {
-        if (gnss_radio_send(pkt, (uint16_t)enc.written)) {
-            radio_tx_count++;
-        }
+        gnss_radio_send(pkt, (uint16_t)enc.written);
+        radio_tx_count++;
     }
 }
 
@@ -310,8 +309,7 @@ static void send_status(flight_state_t flight_state) {
         pkt, sizeof(pkt), tvr_Downlink_fields, &dl);
 
     if (enc.status == RP_CODEC_OK) {
-        if (gnss_radio_send(pkt, (uint16_t)enc.written)) {
-            radio_tx_count++;
-        }
+        gnss_radio_send(pkt, (uint16_t)enc.written);
+        radio_tx_count++;
     }
 }

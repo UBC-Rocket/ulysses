@@ -17,7 +17,7 @@
             ],
             "svdFile": "${workspaceFolder}/platform/svd/STM32H563.svd",
             "searchDir": [
-                "${env:STM32_OPENOCD_SCRIPTS_PATH}"
+                "/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.openocd.macos64_2.4.300.202509300731/tools/scripts"
             ],
             "runToEntryPoint": "main",
             "showDevDebugOutput": "raw"
@@ -35,7 +35,7 @@
             ],
             "svdFile": "${workspaceFolder}/platform/svd/STM32H563.svd",
             "searchDir": [
-                "${env:STM32_OPENOCD_SCRIPTS_PATH}"
+                "/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.openocd.macos64_2.4.300.202509300731/tools/scripts"
             ],
             "runToEntryPoint": "main",
             "showDevDebugOutput": "raw"
