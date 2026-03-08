@@ -139,3 +139,18 @@ void quat_to_euler(float q[4], float e[3]) {
     float cosy = 1.0f - 2.0f * (y*y + z*z);
     e[2] = atan2f(siny, cosy) * 180.0f / (float)M_PI;
 }
+
+/**
+ * Quaternions in format [w, x, y, z]
+ * out = q1 * q2
+ */
+void quat_mult(const float q1[4], const float q2[4], float out[4])
+{
+    float w1 = q1[0], x1 = q1[1], y1 = q1[2], z1 = q1[3];
+    float w2 = q2[0], x2 = q2[1], y2 = q2[2], z2 = q2[3];
+
+    out[0] = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2; // w
+    out[1] = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2; // x
+    out[2] = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2; // y
+    out[3] = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2; // z
+}
