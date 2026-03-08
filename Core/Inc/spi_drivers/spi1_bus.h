@@ -39,6 +39,9 @@ extern "C" {
 /** RX staging buffer size (matches TX buffer) */
 #define SPI1_RX_STAGING_SIZE  272
 
+// TODO workaround for busy DMA for spi1_submit_job
+#define SPI1_INTER_JOB_DELAY_US 800
+
 /* -------------------------------------------------------------------------- */
 /* Job Structure                                                              */
 /* -------------------------------------------------------------------------- */
