@@ -78,15 +78,27 @@ static void rpy_to_quat_rad(float roll, float pitch, float yaw, float q[4])
     q[3] = cr * cp * sy - sr * sp * cy;
 }
 
-static void ekf_preserve_predicted_yaw(const float q_pred[4], float q_corr[4])
-{
-    float roll_corr, pitch_corr, yaw_corr_unused;
-    float roll_pred_unused, pitch_pred_unused, yaw_pred;
+ static void ekf_preserve_predicted_yaw(const float q_pred[4], float q_corr[4]) {
+    float norm_corr = sqrtf(q_corr[0] * q_corr[0] + q_corr[3] * q_corr[3]);
+    float twist_corr[4] = { 1.0f, 0, 0, 0 }; 
+    if (norm_corr > 1e-6f) {
+        twist_corr[0] = q_corr[0] / norm_corr;
+        twist_corr[3] = q_corr[3] / norm_corr;
+    }
 
-    quat_to_rpy_rad(q_corr, &roll_corr, &pitch_corr, &yaw_corr_unused);
-    quat_to_rpy_rad(q_pred, &roll_pred_unused, &pitch_pred_unused, &yaw_pred);
+    float norm_pred = sqrtf(q_pred[0] * q_pred[0] + q_pred[3] * q_pred[3]);
+    float twist_pred_inv[4] = { 1.0f, 0, 0, 0 };
+    if (norm_pred > 1e-6f) {
+        twist_pred_inv[0] = q_pred[0] / norm_pred;
+        twist_pred_inv[3] = -q_pred[3] / norm_pred; // Conjugate for inverse
+    }
 
-    rpy_to_quat_rad(roll_corr, pitch_corr, yaw_pred, q_corr);
+    // swing_pred = q_pred * twist_pred_inv
+    float swing_pred[4];
+    quat_mult(q_pred, twist_pred_inv, swing_pred);
+
+    // restores corrected yaw to the predicted tilt
+    quat_mult(swing_pred, twist_corr, q_corr);
     normalize(q_corr);
 }
 
