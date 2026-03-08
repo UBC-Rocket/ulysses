@@ -244,10 +244,10 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3])
     float g_norm = sqrtf(gyro[0]*gyro[0] + gyro[1]*gyro[1] + gyro[2]*gyro[2]);
 
     /* Skip measurement correction during strong linear accel or fast rotation */
-    if (!ekf_accel_update_valid(a_norm) || !ekf_gyro_update_valid(g_norm)) {
-        memcpy(ekf.quaternion.vals, processing_quaternion, sizeof(processing_quaternion));
-        memcpy(ekf.quaternion.covar, predicted_covar_quaternion, sizeof(predicted_covar_quaternion));
-        return;
+     if (!ekf_accel_update_valid(a_norm) || !ekf_gyro_update_valid(g_norm)) {
+         memcpy(ekf.quaternion.vals, processing_quaternion, sizeof(processing_quaternion));
+         memcpy(ekf.quaternion.covar, predicted_covar_quaternion, sizeof(predicted_covar_quaternion));
+         return;
     }
 
     predict_accel_from_quat(processing_quaternion, predicted_accel, ekf.expected_g);
@@ -281,6 +281,7 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3])
             mat3_q[i][j] += R_orientation[i][j];
 
     static float inv_mat3_q[3][3];
+    bool inverse_success = inverse(mat3_q, inv_mat3_q);
     if (!inverse(mat3_q, inv_mat3_q)) {
         EKF_LOG("ori S inv fail");
         return;

@@ -19,7 +19,7 @@ int inverse(float a[3][3], float inv[3][3]) {
     float c02 = a[1][0]*a[2][1] - a[1][1]*a[2][0];
 
     float det = a[0][0]*c00 + a[0][1]*c01 + a[0][2]*c02;
-    if (fabsf(det) < 1e-10f) return 0;
+    if (fabsf(det) < 1e-16f) return 0;
 
     float inv_det = 1.0f / det;
 
