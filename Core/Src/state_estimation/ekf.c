@@ -250,23 +250,25 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
     }
 
     // --- 1. PREDICTION ---
-    float processing_quaternion[4];
+    static float processing_quaternion[4];
     state_transition_orientation(&ekf.quaternion, deltaTime, gyro, processing_quaternion);
 
-    float state_jacobian_quaternion[4][4];
+    static float state_jacobian_quaternion[4][4];
     get_state_jacobian_orientation(gyro, deltaTime, state_jacobian_quaternion);
 
-    float predicted_covar_quaternion[4][4];
+    static float predicted_covar_quaternion[4][4];
     predict_covar_orientation(state_jacobian_quaternion, predicted_covar_quaternion);
 
     // --- 2. UPDATE (Correction) ---
-    float innovation_quaternion[3][1];
-    float predicted_accel[3];
+    static float innovation_quaternion[3][1];
+    static float predicted_accel[3];
 
     // Normalize accel for innovation
-    float a_norm = sqrtf(accel[0]*accel[0] + accel[1]*accel[1] + accel[2]*accel[2]);
+    static float a_norm;
+    a_norm = sqrtf(accel[0]*accel[0] + accel[1]*accel[1] + accel[2]*accel[2]);
 
-    const float g_norm = sqrtf(gyro[0]*gyro[0] + gyro[1]*gyro[1] + gyro[2]*gyro[2]);
+    static float g_norm;
+    g_norm = sqrtf(gyro[0]*gyro[0] + gyro[1]*gyro[1] + gyro[2]*gyro[2]);
 
     /* During strong linear acceleration or fast angular motion, gravity direction from
        accel is unreliable. Skip measurement correction and run gyro-only propagation. */
@@ -282,7 +284,7 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
     // Project current quaternion to expected gravity vector
     predict_accel_from_quat(processing_quaternion, predicted_accel, ekf.expected_g);
 
-    float a_normalized[3];
+    static float a_normalized[3];
     if (a_norm > 0.1f) {
         for(int i=0; i<3; i++) a_normalized[i] = accel[i] / a_norm;
     } else {
@@ -294,17 +296,17 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
         innovation_quaternion[i][0] = a_normalized[i] - predicted_accel[i];
 
     // H Jacobian
-    float h_jacobian_quaternion[3][4];
+    static float h_jacobian_quaternion[3][4];
     get_h_jacobian_quaternion(processing_quaternion, ekf.expected_g, h_jacobian_quaternion);
 
-    float h_jacobian_quaternion_t[4][3];
+    static float h_jacobian_quaternion_t[4][3];
     transpose3x4_to_4x3(h_jacobian_quaternion, h_jacobian_quaternion_t);
 
     // Calculate S = H * (P * H') + R  (reuse P*H' for Kalman gain)
-    float mat1_q[4][3];
+    static float mat1_q[4][3];
     MAT_MUL(predicted_covar_quaternion, h_jacobian_quaternion_t, mat1_q, 4, 4, 3); // P * H'
 
-    float mat3_q[3][3]; // S = H * (P * H')
+    static float mat3_q[3][3]; // S = H * (P * H')
     MAT_MUL(h_jacobian_quaternion, mat1_q, mat3_q, 3, 4, 3);
 
     // Add Measurement Noise (R)
@@ -313,18 +315,18 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
             mat3_q[i][j] += ekf.quaternion.measurement[i][j];
 
     // Invert S
-    float inv_mat3_q[3][3]; 
+    static float inv_mat3_q[3][3]; 
     if (!inverse(mat3_q, inv_mat3_q)) {
         EKF_LOG("ori S inv fail");
         return; // Failed to invert
     }
 
     // Calculate Kalman Gain: K = P * H' * S^-1
-    float kalman_gain_quaternion[4][3]; 
+    static float kalman_gain_quaternion[4][3]; 
     MAT_MUL(mat1_q, inv_mat3_q, kalman_gain_quaternion, 4, 3, 3);
 
     // Update State
-    float adjustment_quaternion[4][1];
+    static float adjustment_quaternion[4][1];
     MAT_MUL(kalman_gain_quaternion, innovation_quaternion, adjustment_quaternion, 4, 3, 1);
 
     for (int i = 0; i < 4; i++) 
@@ -347,27 +349,27 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
     ekf.quaternion.index = 0;
 
     // Joseph form: P = (I-KH)*P*(I-KH)' + K*R*K'
-    float IKH[4][4];
+    static float IKH[4][4];
     MAT_MUL(kalman_gain_quaternion, h_jacobian_quaternion, IKH, 4, 3, 4);
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             IKH[i][j] = (i == j) ? (1.0f - IKH[i][j]) : (-IKH[i][j]);
 
     // (I-KH)*P
-    float IKH_P[4][4];
+    static float IKH_P[4][4];
     MAT_MUL(IKH, predicted_covar_quaternion, IKH_P, 4, 4, 4);
 
     // (I-KH)*P*(I-KH)'
-    float IKH_t[4][4];
+    static float IKH_t[4][4];
     transpose4x4(IKH, IKH_t);
-    float new_covar_quaternion[4][4];
+    static float new_covar_quaternion[4][4];
     MAT_MUL(IKH_P, IKH_t, new_covar_quaternion, 4, 4, 4);
 
     // K*R*K'
-    float KR[4][3];
+    static float KR[4][3];
     MAT_MUL(kalman_gain_quaternion, ekf.quaternion.measurement, KR, 4, 3, 3);
-    float KR_Kt[4][4];
-    float K_t[3][4];
+    static float KR_Kt[4][4];
+    static float K_t[3][4];
     transpose4x3_to_3x4(kalman_gain_quaternion, K_t);
     MAT_MUL(KR, K_t, KR_Kt, 4, 3, 4);
 
@@ -412,35 +414,35 @@ void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]) {
     // }
 
     /* --- 1. PREDICTION --- */
-    float processing_position[3];
-    float processing_velocity[3];
+    static float processing_position[3];
+    static float processing_velocity[3];
     state_transition_body(&ekf.body, deltaTime, accel,
                           processing_position, processing_velocity);
 
-    float predicted_covar[6][6];
+    static float predicted_covar[6][6];
     predict_covar_body_sparse(deltaTime, predicted_covar);
 
     /* --- 2. UPDATE (Correction) --- */
 
     /* Innovation: y = z - H*x_pred = gps - position */
-    float innovation[3];
+    static float innovation[3];
     for (int i = 0; i < 3; i++)
         innovation[i] = gps_pos[i] - processing_position[i];
 
     /* S = H*P*H' + R = P[0:3][0:3] + R   (3x3, zero multiplies) */
-    float S[3][3];
+    static float S[3][3];
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
             S[i][j] = predicted_covar[i][j] + ekf.body.measurement[i][j];
 
-    float S_inv[3][3];
+    static float S_inv[3][3];
     if (!inverse(S, S_inv)) {
         EKF_LOG("body S inv fail");
         return;
     }
 
     /* K = P*H' * S⁻¹ = P[:,0:3] * S⁻¹   (6x3 * 3x3 = 54 MACs) */
-    float K[6][3];
+    static float K[6][3];
     for (int i = 0; i < 6; i++)
         for (int j = 0; j < 3; j++) {
             float sum = 0.0f;
@@ -471,7 +473,7 @@ void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]) {
     }
     ekf.body.index = 0;
 
-    float new_covar[6][6];
+    static float new_covar[6][6];
     for (int i = 0; i < 6; i++)
         for (int j = 0; j < 6; j++) {
             float kp = K[i][0]*predicted_covar[0][j]

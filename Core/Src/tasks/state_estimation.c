@@ -236,10 +236,8 @@ void state_estimation_task_start(void *argument)
 
                 get_state(q, pos, vel);
                 transform_accel_data(a_data, q, a_nav);
-                if (have_pos_meters_this_cycle || 1) {
-                    for (int i = 0; i < 3; i++) a_nav[i] *= GRAV;
-                    
-                    tick_ekf_body(delta_time, a_nav, (float[3]){0,0,0});
+                if (have_pos_meters_this_cycle || 1) {                    
+                    tick_ekf_body(delta_time, a_nav, (float[3]){1,0,0});
                 }
 
                 /* Publish State */
@@ -261,7 +259,7 @@ void state_estimation_task_start(void *argument)
                 log_service_log_state(&data, flight_state);
 
                 if (ticks % 500 == 0) {
-                    DLOG_PRINT("%f, %f, %f]deg\r\n", pos[0], pos[1], pos[2], (1 / (float) delta_time));
+                    DLOG_PRINT("[%f, %f, %f]m/s\r\n", vel[0], vel[1], vel[2]);
                 }
                 ticks++;
             }
