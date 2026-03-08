@@ -102,6 +102,27 @@ void mission_manager_task_start(void *argument) {
                             /* TODO: apply vehicle config */
                             break;
 
+                        case tvr_FlightCommand_set_pid_tag:
+                            cmd_rx_count++;
+
+                            DLOG_PRINT(
+                                "[MM] PID rx: x1=%.4f x2=%.4f x3=%.4f x4=%.4f x5=%.4f x6=%.4f x7=%.4f x8=%.4f x9=%.4f\r\n",
+                                decoded.payload.set_pid.x1,
+                                decoded.payload.set_pid.x2,
+                                decoded.payload.set_pid.x3,
+                                decoded.payload.set_pid.x4,
+                                decoded.payload.set_pid.x5,
+                                decoded.payload.set_pid.x6,
+                                decoded.payload.set_pid.x7,
+                                decoded.payload.set_pid.x8,
+                                decoded.payload.set_pid.x9
+                            );
+
+                            /* TODO: apply pid values */
+                            
+                            
+                            break;
+
                         default:
                             break;
                     }

@@ -26,12 +26,12 @@ static void init_default_config(flight_controller_config_t *cfg)
 {
     memset(cfg, 0, sizeof(*cfg));
     /* Attitude: diagonal gains and identity-like inertia (tune in use) */
-    cfg->attitude.Kp[0][0] = 1.0f;
+    cfg->attitude.Kp[0][0] = 1.0f; //
     cfg->attitude.Kp[1][1] = 1.0f;
     cfg->attitude.Kp[2][2] = 1.0f;
     cfg->attitude.Kd[0][0] = 0.1f;
     cfg->attitude.Kd[1][1] = 0.1f;
-    cfg->attitude.Kd[2][2] = 0.1f;
+    cfg->attitude.Kd[2][2] = 0.1f; //
     cfg->attitude.I[0][0] = 0.01f;
     cfg->attitude.I[1][1] = 0.01f;
     cfg->attitude.I[2][2] = 0.01f;
@@ -48,9 +48,9 @@ static void init_default_config(flight_controller_config_t *cfg)
     cfg->thrust.g = 9.8067f;
     cfg->thrust.T_min = 0.0f;
     cfg->thrust.T_max = 50.0f;
-    cfg->thrust.kp = 2.0f;
+    cfg->thrust.kp = 2.0f; //
     cfg->thrust.ki = 0.5f;
-    cfg->thrust.kd = 1.0f;
+    cfg->thrust.kd = 1.0f; //
     cfg->thrust.integral_limit = 2.0f;
     cfg->thrust.a_z_min = -20.0f;
     cfg->thrust.a_z_max = 20.0f;
