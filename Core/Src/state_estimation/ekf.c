@@ -79,28 +79,29 @@ static void rpy_to_quat_rad(float roll, float pitch, float yaw, float q[4])
 }
 
  static void ekf_preserve_predicted_yaw(const float q_pred[4], float q_corr[4]) {
+    // isolate yaw of quaternion
     float norm_corr = sqrtf(q_corr[0] * q_corr[0] + q_corr[3] * q_corr[3]);
-    float twist_corr[4] = { 1.0f, 0, 0, 0 }; 
+    float twist_corr_inv[4] = { 1.0f, 0, 0, 0 };
     if (norm_corr > 1e-6f) {
-        twist_corr[0] = q_corr[0] / norm_corr;
-        twist_corr[3] = q_corr[3] / norm_corr;
+        twist_corr_inv[0] = q_corr[0] / norm_corr;
+        twist_corr_inv[3] = -q_corr[3] / norm_corr; // Conjugate
     }
+
+    // swing_corr = q_corr * twist_corr_inv
+    float swing_corr[4];
+    quat_mult(q_corr, twist_corr_inv, swing_corr);
 
     float norm_pred = sqrtf(q_pred[0] * q_pred[0] + q_pred[3] * q_pred[3]);
-    float twist_pred_inv[4] = { 1.0f, 0, 0, 0 };
+    float twist_pred[4] = { 1.0f, 0, 0, 0 };
     if (norm_pred > 1e-6f) {
-        twist_pred_inv[0] = q_pred[0] / norm_pred;
-        twist_pred_inv[3] = -q_pred[3] / norm_pred; // Conjugate for inverse
+        twist_pred[0] = q_pred[0] / norm_pred;
+        twist_pred[3] = q_pred[3] / norm_pred;
     }
 
-    // swing_pred = q_pred * twist_pred_inv
-    float swing_pred[4];
-    quat_mult(q_pred, twist_pred_inv, swing_pred);
-
-    // restores corrected yaw to the predicted tilt
-    quat_mult(swing_pred, twist_corr, q_corr);
+    // swing_corr * twist_pred
+    quat_mult(swing_corr, twist_pred, q_corr);
     normalize(q_corr);
-}
+ }
 
 #define EKF_LOG(fmt, ...) \
     //DLOG_PRINT("[EKF %lu] " fmt "\r\n", (unsigned long)1, ##__VA_ARGS__)
