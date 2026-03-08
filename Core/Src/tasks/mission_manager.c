@@ -130,23 +130,28 @@ void mission_manager_task_start(void *argument) {
             }
         }
 
-        /* ── Periodic downlink ── */
+        /* ── Periodic downlink ──
+         * Send at most one message per loop iteration to avoid
+         * back-to-back SPI transactions.  The GNSS radio slave needs
+         * ~50-150μs to re-arm its SPI DMA; the master chains queued
+         * jobs in ~2-5μs, so the second packet is always lost.
+         * Status is checked first (less frequent, easier to starve). */
         TickType_t now = xTaskGetTickCount();
 
-        /* 10 Hz telemetry */
         static TickType_t last_telem_tick = 0;
-        if ((now - last_telem_tick) >= pdMS_TO_TICKS(TELEMETRY_INTERVAL_MS)) {
+        static TickType_t last_status_tick = 0;
+
+        /* 1 Hz system status (priority — checked first) */
+        if ((now - last_status_tick) >= pdMS_TO_TICKS(STATUS_INTERVAL_MS)) {
+            last_status_tick = now;
+            send_status(flight_state);
+        }
+        /* 10 Hz telemetry (skipped when status sent this cycle) */
+        else if ((now - last_telem_tick) >= pdMS_TO_TICKS(TELEMETRY_INTERVAL_MS)) {
             last_telem_tick = now;
             control_output_t ctrl = {0};
             state_exchange_get_control_output(&ctrl);
             send_telemetry(&current_state, &ctrl, flight_state);
-        }
-
-        /* 1 Hz system status */
-        static TickType_t last_status_tick = 0;
-        if ((now - last_status_tick) >= pdMS_TO_TICKS(STATUS_INTERVAL_MS)) {
-            last_status_tick = now;
-            send_status(flight_state);
         }
 
         /* ── Periodic GNSS stats (debug) ── */

@@ -196,9 +196,6 @@ void spi1_dma_complete_handler(void)
 
     /* Start next job outside critical section */
     if (should_start_next) {
-        /* Give slave time to re-arm DMA (~50-150μs on 16 MHz M0+) */
-        uint32_t t0 = timestamp_us();
-        while ((timestamp_us() - t0) < SPI1_INTER_JOB_DELAY_US) { /* spin */ }
         spi1_start_job(&spi1_ctx.current_job);
     }
 
