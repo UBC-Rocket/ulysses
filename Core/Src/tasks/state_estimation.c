@@ -234,13 +234,21 @@ void state_estimation_task_start(void *argument)
                 float a_nav[3];
                 float e[3];
 
+                // get data so we can use the quaternion to adjust gravity
                 get_state(q, pos, vel);
-                transform_accel_data(a_data, q, a_nav);
+
+                // rotates gravity to nav frame and converts it back to m/s 
+                transform_accel_data(a_data, q, a_nav); 
+
+                // tick ekf only if we have gps
                 if (have_pos_meters_this_cycle || 1) {                    
                     tick_ekf_body(delta_time, a_nav, (float[3]){1,0,0});
                 }
 
-                /* Publish State */
+                // update the data to reflect body tick
+                get_state(q, pos, vel);
+
+                // publish the data
                 state_t data = {
                     .pos = {pos[0], pos[1], pos[2]},
                     .vel = {vel[0], vel[1], vel[2]},
@@ -259,7 +267,7 @@ void state_estimation_task_start(void *argument)
                 log_service_log_state(&data, flight_state);
 
                 if (ticks % 500 == 0) {
-                    DLOG_PRINT("[%f, %f, %f]m/s\r\n", vel[0], vel[1], vel[2]);
+                    DLOG_PRINT("[%f, %f, %f]deg\r\n", e[0], e[1], e[2]);
                 }
                 ticks++;
             }
