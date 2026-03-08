@@ -58,6 +58,8 @@ static inline void delay_us(uint32_t us)
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -71,8 +73,12 @@ extern bool g_sd_card_initialized;
 #define BNO_RST_GPIO_Port GPIOE
 #define BNO_CS_Pin GPIO_PIN_4
 #define BNO_CS_GPIO_Port GPIOE
+#define ESC_1_PWM_Pin GPIO_PIN_1
+#define ESC_1_PWM_GPIO_Port GPIOA
 #define BNO_WAKE_Pin GPIO_PIN_2
 #define BNO_WAKE_GPIO_Port GPIOA
+#define ESC_2_PWM_Pin GPIO_PIN_3
+#define ESC_2_PWM_GPIO_Port GPIOA
 #define BNO_BOOTN_Pin GPIO_PIN_4
 #define BNO_BOOTN_GPIO_Port GPIOA
 #define EXT_INT_1_Pin GPIO_PIN_4
@@ -80,6 +86,8 @@ extern bool g_sd_card_initialized;
 #define EXT_INT_1_EXTI_IRQn EXTI4_IRQn
 #define EXT_CS_1_Pin GPIO_PIN_5
 #define EXT_CS_1_GPIO_Port GPIOC
+#define SERVO_1_PWM_Pin GPIO_PIN_0
+#define SERVO_1_PWM_GPIO_Port GPIOB
 #define EXT_INT_2_Pin GPIO_PIN_7
 #define EXT_INT_2_GPIO_Port GPIOE
 #define EXT_INT_2_EXTI_IRQn EXTI7_IRQn
@@ -90,6 +98,8 @@ extern bool g_sd_card_initialized;
 #define EXT_INT_3_EXTI_IRQn EXTI9_IRQn
 #define EXT_CS_3_Pin GPIO_PIN_10
 #define EXT_CS_3_GPIO_Port GPIOE
+#define SERVO_2_PWM_Pin GPIO_PIN_11
+#define SERVO_2_PWM_GPIO_Port GPIOE
 #define EXT_INT_4_Pin GPIO_PIN_13
 #define EXT_INT_4_GPIO_Port GPIOE
 #define EXT_INT_4_EXTI_IRQn EXTI13_IRQn

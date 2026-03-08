@@ -80,6 +80,14 @@ void mission_manager_task_start(void *argument) {
                 if (dec.status == RP_CODEC_OK) {
                     radio_rx_count++;
 
+                    DLOG_PRINT("[RADIO] Decoded OK, which_payload=%d\r\n",
+                    (int)decoded.which_payload);
+
+                    if (decoded.which_payload == tvr_FlightCommand_state_cmd_tag) {
+                        DLOG_PRINT("[RADIO] StateCommand, type=%d\r\n",
+                        (int)decoded.payload.state_cmd.type);
+                    }
+
                     switch (decoded.which_payload) {
                         case tvr_FlightCommand_state_cmd_tag:
                             cmd_rx_count++;
@@ -216,8 +224,20 @@ static void handle_state_command(const tvr_StateCommand *cmd,
                                  flight_state_t *flight_state) {
     switch (cmd->type) {
         case tvr_StateCommand_Type_CMD_ARM:
-            /* TODO: arm sequence */
+        {
+            if (*flight_state == IDLE) {
+                /* Disarm and invalidate the previous test so the controls task
+                 * re-runs the full startup sequence before going live. */
+                state_exchange_publish_armed(false);
+                state_exchange_publish_startup_test_complete(false);
+                state_exchange_publish_rearm_request(true);
+                DLOG_PRINT("[MM] ARM: rearm sequence requested\r\n");
+            } else {
+                DLOG_PRINT("[MM] ARM rejected: flight_state=%d\r\n",
+                           (int)*flight_state);
+            }
             break;
+        }
 
         case tvr_StateCommand_Type_CMD_LAUNCH:
             if (*flight_state == IDLE) {
@@ -226,7 +246,8 @@ static void handle_state_command(const tvr_StateCommand *cmd,
             break;
 
         case tvr_StateCommand_Type_CMD_ABORT:
-            *flight_state = E_STOP;
+            *flight_state = IDLE;
+            DLOG_PRINT("[MM] Abort: ESC off, flight_state -> IDLE\r\n");
             break;
 
         case tvr_StateCommand_Type_CMD_LAND:
