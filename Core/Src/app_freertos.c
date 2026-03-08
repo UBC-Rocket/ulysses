@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * File Name          : app_freertos.c
-  * Description        : FreeRTOS applicative file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : app_freertos.c
+ * Description        : FreeRTOS applicative file
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -47,9 +47,9 @@
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
 osThreadId_t DebugLoggingTaskHandle;
 const osThreadAttr_t DebugLoggingTask_attributes = {
-  .name = "DebugLogging",
-  .priority = (osPriority_t) osPriorityHigh,
-  .stack_size = 128 * 4,
+    .name = "DebugLogging",
+    .priority = (osPriority_t)osPriorityHigh,
+    .stack_size = 128 * 4,
 };
 #endif // ULYSSES_ENABLE_DEBUG_LOGGING
 
@@ -57,24 +57,21 @@ const osThreadAttr_t DebugLoggingTask_attributes = {
 /* Definitions for MissionManager */
 osThreadId_t MissionManagerHandle;
 const osThreadAttr_t MissionManager_attributes = {
-  .name = "MissionManager",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 512 * 4
-};
+    .name = "MissionManager",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 512 * 4};
 /* Definitions for Controls */
 osThreadId_t ControlsHandle;
-const osThreadAttr_t Controls_attributes = {
-  .name = "Controls",
-  .priority = (osPriority_t) osPriorityHigh,
-  .stack_size = 512 * 4
-};
+const osThreadAttr_t Controls_attributes = {.name = "Controls",
+                                            .priority =
+                                                (osPriority_t)osPriorityHigh,
+                                            .stack_size = 512 * 4};
 /* Definitions for StateEstimation */
 osThreadId_t StateEstimationHandle;
 const osThreadAttr_t StateEstimation_attributes = {
-  .name = "StateEstimation",
-  .priority = (osPriority_t) osPriorityAboveNormal,
-  .stack_size = 512 * 4
-};
+    .name = "StateEstimation",
+    .priority = (osPriority_t)osPriorityAboveNormal,
+    .stack_size = 512 * 4};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -82,10 +79,10 @@ const osThreadAttr_t StateEstimation_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
   state_exchange_init();
@@ -108,18 +105,21 @@ void MX_FREERTOS_Init(void) {
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
   /* creation of MissionManager */
-  MissionManagerHandle = osThreadNew(mission_manager_task_start, NULL, &MissionManager_attributes);
+  MissionManagerHandle =
+      osThreadNew(mission_manager_task_start, NULL, &MissionManager_attributes);
 
   /* creation of Controls */
   ControlsHandle = osThreadNew(controls_task_start, NULL, &Controls_attributes);
 
   /* creation of StateEstimation */
-  StateEstimationHandle = osThreadNew(state_estimation_task_start, NULL, &StateEstimation_attributes);
+  StateEstimationHandle = osThreadNew(state_estimation_task_start, NULL,
+                                      &StateEstimation_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 
 #ifdef ULYSSES_ENABLE_DEBUG_LOGGING
-  DebugLoggingTaskHandle = osThreadNew(debug_logging_task_start, NULL, &DebugLoggingTask_attributes);
+  DebugLoggingTaskHandle =
+      osThreadNew(debug_logging_task_start, NULL, &DebugLoggingTask_attributes);
 #endif // ULYSSES_ENABLE_DEBUG_LOGGING
 
   /* USER CODE END RTOS_THREADS */
@@ -127,11 +127,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-
