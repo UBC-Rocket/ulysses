@@ -8,7 +8,6 @@
 #include "debug/log.h"
 
 static EKF ekf;
-long long int mm = 0;
 
 // ==========================================
 // HELPER FUNCTIONS
@@ -27,17 +26,44 @@ void predict_covar_orientation(float jacobian[4][4], float predicted_covar[4][4]
             predicted_covar[i][j] += ekf.quaternion.process[i][j];
 }
 
-void predict_covar_body(float jacobian[6][6], float predicted_covar[6][6]) {
-    float m1[6][6];
-    float jacobian_transposed[6][6];
+/**
+ * Sparse covariance prediction exploiting F = [[I, dt*I], [0, I]].
+ *
+ * P (6x6) is partitioned into 3x3 blocks:
+ *   P = [[Ppp, Ppv],
+ *        [Pvp, Pvv]]
+ *
+ * F*P*F' = [[Ppp + dt*(Ppv+Pvp) + dt²*Pvv,  Ppv + dt*Pvv],
+ *           [Pvp + dt*Pvv,                    Pvv         ]]
+ */
+void predict_covar_body_sparse(float dt, float predicted_covar[6][6]) {
+    const float dt2 = dt * dt;
+    const float (*P)[6] = (const float (*)[6])ekf.body.covar;
 
-    transpose6x6(jacobian, jacobian_transposed);
-    MAT_MUL(jacobian, ekf.body.covar, m1, 6, 6, 6);
-    MAT_MUL(m1, jacobian_transposed, predicted_covar, 6, 6, 6);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            float Ppp = P[i][j];
+            float Ppv = P[i][j + 3];
+            float Pvp = P[i + 3][j];
+            float Pvv = P[i + 3][j + 3];
 
-    for (int i = 0; i < 6; i++) 
-        for (int j = 0; j < 6; j++) 
-            predicted_covar[i][j] += ekf.body.process[i][j];
+            /* Top-left: Ppp + dt*(Ppv+Pvp) + dt²*Pvv */
+            predicted_covar[i][j] = Ppp + dt * (Ppv + Pvp) + dt2 * Pvv
+                                    + ekf.body.process[i][j];
+
+            /* Top-right: Ppv + dt*Pvv */
+            predicted_covar[i][j + 3] = Ppv + dt * Pvv
+                                         + ekf.body.process[i][j + 3];
+
+            /* Bottom-left: Pvp + dt*Pvv */
+            predicted_covar[i + 3][j] = Pvp + dt * Pvv
+                                         + ekf.body.process[i + 3][j];
+
+            /* Bottom-right: Pvv (unchanged) */
+            predicted_covar[i + 3][j + 3] = Pvv
+                                             + ekf.body.process[i + 3][j + 3];
+        }
+    }
 }
 
 // ==========================================
@@ -158,15 +184,12 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
     float h_jacobian_quaternion_t[4][3];
     transpose3x4_to_4x3(h_jacobian_quaternion, h_jacobian_quaternion_t);
 
-    // Calculate S = H * P * H' + R
-    float mat1_q[4][3]; 
+    // Calculate S = H * (P * H') + R  (reuse P*H' for Kalman gain)
+    float mat1_q[4][3];
     MAT_MUL(predicted_covar_quaternion, h_jacobian_quaternion_t, mat1_q, 4, 4, 3); // P * H'
 
-    float mat2_q[3][4]; 
-    MAT_MUL(h_jacobian_quaternion, predicted_covar_quaternion, mat2_q, 3, 4, 4); // H * P
-
-    float mat3_q[3][3]; // S
-    MAT_MUL(mat2_q, h_jacobian_quaternion_t, mat3_q, 3, 4, 3);
+    float mat3_q[3][3]; // S = H * (P * H')
+    MAT_MUL(h_jacobian_quaternion, mat1_q, mat3_q, 3, 4, 3);
 
     // Add Measurement Noise (R)
     for (int i = 0; i < 3; i++) 
@@ -202,7 +225,7 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
 
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            KH_q[i][j] = (i == j) ? (1 - KH_q[i][j]) : (-KH_q[i][j]);
+            KH_q[i][j] = (i == j) ? (1.0f - KH_q[i][j]) : (-KH_q[i][j]);
 
     float new_covar_quaternion[4][4];
     MAT_MUL(KH_q, predicted_covar_quaternion, new_covar_quaternion, 4, 4, 4);
@@ -210,82 +233,81 @@ void tick_ekf_orientation(float deltaTime, float gyro[3], float accel[3]) {
     memcpy(ekf.quaternion.covar, new_covar_quaternion, sizeof(new_covar_quaternion));
 }
 
+/**
+ * Body EKF update exploiting H = [I₃, 0₃] sparsity throughout.
+ *
+ * With H = [I, 0]:
+ *   H*P*H' = P[0:3][0:3]  (top-left 3x3 block, zero multiplies)
+ *   P*H'   = P[:,0:3]     (first 3 columns of P, zero multiplies)
+ *   K      = P[:,0:3] * S⁻¹
+ *   P_new  = P - K * P[0:3,:]  (since (I-KH)*P simplifies)
+ */
 void tick_ekf_body(float deltaTime, float accel[3], float gps_pos[3]) {
     ekf.body.index += 1;
 
-    // --- 1. PREDICTION ---
+    /* --- 1. PREDICTION --- */
     float processing_position[3];
     float processing_velocity[3];
+    state_transition_body(&ekf.body, deltaTime, accel,
+                          processing_position, processing_velocity);
 
-    // Note: Ideally, accel should be transformed by ekf.quaternion.vals here if needed
-    state_transition_body(&ekf.body, deltaTime, accel, processing_position, processing_velocity);
+    float predicted_covar[6][6];
+    predict_covar_body_sparse(deltaTime, predicted_covar);
 
-    float state_jacobian_body[6][6];
-    get_state_jacobian_body(deltaTime, state_jacobian_body);
+    /* --- 2. UPDATE (Correction) --- */
 
-    float predicted_covar_body[6][6];
-    predict_covar_body(state_jacobian_body, predicted_covar_body);
+    /* Innovation: y = z - H*x_pred = gps - position */
+    float innovation[3];
+    for (int i = 0; i < 3; i++)
+        innovation[i] = gps_pos[i] - processing_position[i];
 
-    // --- 2. UPDATE (Correction) ---
-    float innovation_body[3][1];
-    for (int i = 0; i < 3; i++) 
-        innovation_body[i][0] = gps_pos[i] - processing_position[i];
+    /* S = H*P*H' + R = P[0:3][0:3] + R   (3x3, zero multiplies) */
+    float S[3][3];
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            S[i][j] = predicted_covar[i][j] + ekf.body.measurement[i][j];
 
-    // H Jacobian
-    float h_jacobian_body[3][6];
-    get_h_jacobian_body(h_jacobian_body);
+    float S_inv[3][3];
+    if (!inverse(S, S_inv)) return;
 
-    float h_jacobian_body_t[6][3];
-    transpose3x6_to_6x3(h_jacobian_body, h_jacobian_body_t);
+    /* K = P*H' * S⁻¹ = P[:,0:3] * S⁻¹   (6x3 * 3x3 = 54 MACs) */
+    float K[6][3];
+    for (int i = 0; i < 6; i++)
+        for (int j = 0; j < 3; j++) {
+            float sum = 0.0f;
+            for (int k = 0; k < 3; k++)
+                sum += predicted_covar[i][k] * S_inv[k][j];
+            K[i][j] = sum;
+        }
 
-    // Calculate S = H * P * H' + R
-    float mat1_b[6][3];
-    MAT_MUL(predicted_covar_body, h_jacobian_body_t, mat1_b, 6, 6, 3); // P * H'
+    /* State update: x += K * innovation */
+    for (int i = 0; i < 3; i++) {
+        float adj = K[i][0]*innovation[0] + K[i][1]*innovation[1] + K[i][2]*innovation[2];
+        ekf.body.position[i] = processing_position[i] + adj;
+    }
+    for (int i = 0; i < 3; i++) {
+        float adj = K[i+3][0]*innovation[0] + K[i+3][1]*innovation[1] + K[i+3][2]*innovation[2];
+        ekf.body.velocity[i] = processing_velocity[i] + adj;
+    }
 
-    float mat2_b[3][6];
-    MAT_MUL(h_jacobian_body, predicted_covar_body, mat2_b, 3, 6, 6); // H * P
-
-    float mat3_b[3][3]; // S
-    MAT_MUL(mat2_b, h_jacobian_body_t, mat3_b, 3, 6, 3);
-
-    // Add Measurement Noise (R)
-    for (int i = 0; i < 3; i++) 
-        for (int j = 0; j < 3; j++) 
-            mat3_b[i][j] += ekf.body.measurement[i][j];
-
-    // Invert S
-    float inv_mat3_b[3][3];
-    if (!inverse(mat3_b, inv_mat3_b)) return; // Failed to invert
-
-    // Calculate Kalman Gain: K = P * H' * S^-1
-    float kalman_gain_body[6][3];
-    MAT_MUL(mat1_b, inv_mat3_b, kalman_gain_body, 6, 3, 3);
-
-    // Update State
-    float adjustment_body[6][1];
-    MAT_MUL(kalman_gain_body, innovation_body, adjustment_body, 6, 3, 1);
-
-    for (int i = 0; i < 3; i++) ekf.body.position[i] = processing_position[i] + adjustment_body[i][0];
-    for (int i = 0; i < 3; i++) ekf.body.velocity[i] = processing_velocity[i] + adjustment_body[i + 3][0];
-
-    // Update Covariance: P = (I - K * H) * P
+    /* Covariance update: P = (I - K*H) * P = P - K * P[0:3,:]
+     * Since H=[I,0], K*H has non-zero only in first 3 columns,
+     * so (I-KH)*P[i][j] = P[i][j] - sum_{k=0..2} K[i][k]*P[k][j] */
     if (ekf.body.index <= UPDATE_COVAR) {
         return;
     }
-
     ekf.body.index = 0;
 
-    float KH_b[6][6];
-    MAT_MUL(kalman_gain_body, h_jacobian_body, KH_b, 6, 3, 6);
-
+    float new_covar[6][6];
     for (int i = 0; i < 6; i++)
-        for (int j = 0; j < 6; j++)
-            KH_b[i][j] = (i == j) ? (1 - KH_b[i][j]) : (-KH_b[i][j]);
+        for (int j = 0; j < 6; j++) {
+            float kp = K[i][0]*predicted_covar[0][j]
+                     + K[i][1]*predicted_covar[1][j]
+                     + K[i][2]*predicted_covar[2][j];
+            new_covar[i][j] = predicted_covar[i][j] - kp;
+        }
 
-    float new_covar_body[6][6];
-    MAT_MUL(KH_b, predicted_covar_body, new_covar_body, 6, 6, 6);
-
-    memcpy(ekf.body.covar, new_covar_body, sizeof(new_covar_body));
+    memcpy(ekf.body.covar, new_covar, sizeof(new_covar));
 }
 
 // ==========================================
