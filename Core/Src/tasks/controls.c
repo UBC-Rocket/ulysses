@@ -242,9 +242,15 @@ void controls_task_start(void *argument)
     uint32_t stale_tick_count = 0;
     bool esc_running = false;
     uint32_t esc_arm_tick = 0;
+    uint32_t last_fc_config_seq = 0;
+    uint32_t last_fc_ref_seq = 0;
 
     init_default_config(&config);
     init_default_ref(&ref);
+
+    /* Seed state_exchange so mission_manager can read and patch these. */
+    last_fc_config_seq = state_exchange_publish_fc_config(&config);
+    last_fc_ref_seq    = state_exchange_publish_fc_ref(&ref);
 
     /* Run cinematic startup test before entering the control loop. */
     run_startup_actuator_test();
@@ -281,6 +287,22 @@ void controls_task_start(void *argument)
 
         bool armed = false;
         state_exchange_get_armed(&armed);
+
+        /* Pick up config updates published by mission_manager (armed commands). */
+        uint32_t cur_fc_config_seq = state_exchange_get_fc_config(NULL);
+        if (cur_fc_config_seq != last_fc_config_seq) {
+            last_fc_config_seq = cur_fc_config_seq;
+            state_exchange_get_fc_config(&config);
+            flight_controller_init(&config);
+            config_done = 1;
+        }
+
+        /* Pick up reference updates published by mission_manager. */
+        uint32_t cur_fc_ref_seq = state_exchange_get_fc_ref(NULL);
+        if (cur_fc_ref_seq != last_fc_ref_seq) {
+            last_fc_ref_seq = cur_fc_ref_seq;
+            state_exchange_get_fc_ref(&ref);
+        }
 
         if (!config_done) {
             flight_controller_init(&config);

@@ -102,4 +102,34 @@ uint32_t state_exchange_publish_rearm_request(bool requested);
  */
 uint32_t state_exchange_get_rearm_request(bool *requested_out);
 
+/**
+ * @brief Publish the flight controller config (gains and physical limits).
+ *        Written by controls task on init and by mission manager on armed update.
+ * @param cfg Pointer to config to publish.
+ * @return Monotonic sequence number after publish.
+ */
+uint32_t state_exchange_publish_fc_config(const flight_controller_config_t *cfg);
+
+/**
+ * @brief Copy the latest flight controller config.
+ * @param cfg_out Destination pointer (optional).
+ * @return Sequence number associated with the returned value.
+ */
+uint32_t state_exchange_get_fc_config(flight_controller_config_t *cfg_out);
+
+/**
+ * @brief Publish the flight controller reference setpoint.
+ *        Written by controls task on init and by mission manager on armed update.
+ * @param ref Pointer to reference to publish.
+ * @return Monotonic sequence number after publish.
+ */
+uint32_t state_exchange_publish_fc_ref(const flight_controller_ref_t *ref);
+
+/**
+ * @brief Copy the latest flight controller reference setpoint.
+ * @param ref_out Destination pointer (optional).
+ * @return Sequence number associated with the returned value.
+ */
+uint32_t state_exchange_get_fc_ref(flight_controller_ref_t *ref_out);
+
 #endif /* STATE_EXCHANGE_H */

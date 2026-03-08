@@ -42,6 +42,8 @@ static control_output_t latest_control_output = {0};
 static bool latest_armed = false;
 static bool latest_startup_test_complete = false;
 static bool latest_rearm_requested = false;
+static flight_controller_config_t latest_fc_config = {0};
+static flight_controller_ref_t    latest_fc_ref    = {0};
 
 static uint32_t state_seq = 0;
 static uint32_t flight_state_seq = 0;
@@ -49,6 +51,8 @@ static uint32_t control_seq = 0;
 static uint32_t armed_seq = 0;
 static uint32_t startup_test_seq = 0;
 static uint32_t rearm_seq = 0;
+static uint32_t fc_config_seq = 0;
+static uint32_t fc_ref_seq = 0;
 
 /* -------------------------------------------------------------------------- */
 /* Private helpers                                                            */
@@ -271,6 +275,70 @@ uint32_t state_exchange_get_rearm_request(bool *requested_out)
         *requested_out = latest_rearm_requested;
     }
     uint32_t seq = rearm_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_publish_fc_config(const flight_controller_config_t *cfg)
+{
+    if (!cfg) return fc_config_seq;
+
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        return fc_config_seq;
+    }
+    latest_fc_config = *cfg;
+    fc_config_seq++;
+    uint32_t seq = fc_config_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_get_fc_config(flight_controller_config_t *cfg_out)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        if (cfg_out) {
+            *cfg_out = latest_fc_config;
+        }
+        return fc_config_seq;
+    }
+    if (cfg_out) {
+        *cfg_out = latest_fc_config;
+    }
+    uint32_t seq = fc_config_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_publish_fc_ref(const flight_controller_ref_t *ref)
+{
+    if (!ref) return fc_ref_seq;
+
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        return fc_ref_seq;
+    }
+    latest_fc_ref = *ref;
+    fc_ref_seq++;
+    uint32_t seq = fc_ref_seq;
+    xSemaphoreGive(flight_mutex_handle);
+    return seq;
+}
+
+uint32_t state_exchange_get_fc_ref(flight_controller_ref_t *ref_out)
+{
+    ensure_initialized();
+    if (take_mutex_safe(flight_mutex_handle) != pdTRUE) {
+        if (ref_out) {
+            *ref_out = latest_fc_ref;
+        }
+        return fc_ref_seq;
+    }
+    if (ref_out) {
+        *ref_out = latest_fc_ref;
+    }
+    uint32_t seq = fc_ref_seq;
     xSemaphoreGive(flight_mutex_handle);
     return seq;
 }
