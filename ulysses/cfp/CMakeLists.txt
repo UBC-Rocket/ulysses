@@ -18,5 +18,8 @@ set(CMAKE_PROJECT_NAME ulysses)
 project(${CMAKE_PROJECT_NAME})
 
 # Include external project file
-include("mx-generated.cmake")
-
+#
+# We are using our own version of the file, since the one generated
+# by STM32CubeMX has poorly named binaries, and unecessarily creates
+# a build folder for each core under a path different from PROJECT_BINARY_DIR.
+include("mx-generated-user.cmake")

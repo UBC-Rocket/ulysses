@@ -30,7 +30,7 @@ set(STM32_LINKER_SCRIPT stm32h745xx_flash_CM4.ld)
 set(STM32_LINKER_OPTION  )
 
 # Set the project name
-set(CMAKE_PROJECT_NAME TVR_FC_2026-27_CM4)
+set(CMAKE_PROJECT_NAME ulysses_cm4)
 project(${CMAKE_PROJECT_NAME})
 
 # Create an executable object type
