@@ -1,0 +1,84 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug CM7 + CM4",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/ulysses/cfp/build/Debug/CM7/build/ulysses_cm7.elf",
+            "loadFiles": [
+                "${workspaceFolder}/ulysses/cfp/build/Debug/CM7/build/ulysses_cm7.elf",
+                "${workspaceFolder}/ulysses/cfp/build/Debug/CM4/build/ulysses_cm4.elf"
+            ],
+            "symbolFiles": [
+                "${workspaceFolder}/ulysses/cfp/build/Debug/CM7/build/ulysses_cm7.elf"
+            ],
+            "svdFile": "${workspaceFolder}/ulysses/platform/svd/STM32H745_CM7.svd",
+            "servertype": "pyocd",
+            "targetId": "stm32h745zitx",
+            "numberOfProcessors": 2,
+            "targetProcessor": 0,
+            "breakAfterReset": true,
+            "preLaunchCommands": [
+                // Default launch commands only reset halt the selected core,
+                // so we must manually reset halt the other core to ensure
+                // we are broken in on the reset vector
+                "monitor core 1",
+                "monitor halt",
+                "monitor set vector-catch hr",
+                "monitor core 0"
+            ],
+            "postLaunchCommands": [
+                // Reset vector catch options
+                "monitor core 1",
+                "monitor set vector-catch h",
+                "monitor core 0"
+            ],
+            "showDevDebugOutput": "raw",
+            "serverArgs": [
+                "-O",
+                "connect_mode=under-reset", // Need to wake CM4 in case it is in deep sleep
+                "-O",
+                "enable_multicore_debug=true",
+                "-O",
+                "primary_core=0",
+                "-O",
+                "pack.debug_sequences.debugvars=DbgMCU_CR |= 0x38;", // Ensure D2 is always debuggable
+                "--script",
+                "${workspaceFolder}/ulysses/platform/pyocd/pyocd_fix_cm7_flash.py",
+            ],
+            "chainedConfigurations": {
+                "enabled": true,
+                "waitOnEvent": "postInit",
+                "detached": false,
+                "lifecycleManagedByParent": true,
+                "launches": [
+                    {
+                        "name": "CM4"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "CM4",
+            "type": "cortex-debug",
+            "request": "attach",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/ulysses/cfp/build/Debug/CM4/build/ulysses_cm4.elf",
+            "svdFile": "${workspaceFolder}/ulysses/platform/svd/STM32H745_CM4.svd",
+            "servertype": "pyocd",
+            "targetId": "stm32h745zitx",
+            "numberOfProcessors": 2,
+            "targetProcessor": 1,
+            "breakAfterReset": true,
+            "showDevDebugOutput": "raw",
+            "presentation": {
+                "hidden": true
+            }
+        },
+    ]
+}
