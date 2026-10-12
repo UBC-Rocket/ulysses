@@ -33,6 +33,8 @@ jobs:
           sudo apt-get install -y cmake ninja-build
       - name: Install ARM GCC
         uses: carlosperate/arm-none-eabi-gcc-action@0edbb000a5a98e2292b051b463bff6f512547118 # v1.14.0
+        with:
+          release: "15.3.Rel1"
       - name: Configure firmware
         run: cmake --preset "$CMAKE_PRESET"
       - name: Build firmware
