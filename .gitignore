@@ -2,6 +2,12 @@
 .cache/
 compile_commands.json
 
+# Ignore personal VSCode configuration
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+
 # CMake
 build/
 

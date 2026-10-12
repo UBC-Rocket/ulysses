@@ -1,0 +1,5 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/ulysses/cfp",
+    "cmake.useCMakePresets": "always",
+    "cmake.mergedCompileCommands": "${workspaceFolder}/compile_commands.json"
+}
