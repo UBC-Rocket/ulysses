@@ -22,4 +22,14 @@ typedef enum {
     SPI_ERR_BUS,     /* hardware error reported by the peripheral */
 } spi_status_t;
 
+/*
+ * One SPI peripheral (for example SPI1).
+ *
+ * The caller owns the memory and fills it with spi_bus_init(). Do not access
+ * the fields directly.
+ */
+typedef struct {
+    void *handle; /* platform SPI handle (e.g. a HAL SPI handle), only used by spi.c */
+} spi_bus_t;
+
 #endif /* ULYSSES_IO_SPI_H */
