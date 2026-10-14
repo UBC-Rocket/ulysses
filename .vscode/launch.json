@@ -17,7 +17,7 @@
             "symbolFiles": [
                 "${workspaceFolder}/ulysses/cfp/build/Debug/CM7/build/ulysses_cm7.elf"
             ],
-            "svdFile": "${workspaceFolder}/ulysses/platform/svd/STM32H745_CM7.svd",
+            "svdFile": "${workspaceFolder}/tools/debugger/svd/STM32H745_CM7.svd",
             "servertype": "pyocd",
             "targetId": "stm32h745zitx",
             "numberOfProcessors": 2,
@@ -49,7 +49,7 @@
                 "-O",
                 "pack.debug_sequences.debugvars=DbgMCU_CR |= 0x38;", // Ensure D2 is always debuggable
                 "--script",
-                "${workspaceFolder}/ulysses/platform/pyocd/pyocd_fix_cm7_flash.py",
+                "${workspaceFolder}/tools/debugger/pyocd/pyocd_fix_cm7_flash.py",
             ],
             "chainedConfigurations": {
                 "enabled": true,
@@ -69,7 +69,7 @@
             "request": "attach",
             "cwd": "${workspaceFolder}",
             "executable": "${workspaceFolder}/ulysses/cfp/build/Debug/CM4/build/ulysses_cm4.elf",
-            "svdFile": "${workspaceFolder}/ulysses/platform/svd/STM32H745_CM4.svd",
+            "svdFile": "${workspaceFolder}/tools/debugger/svd/STM32H745_CM4.svd",
             "servertype": "pyocd",
             "targetId": "stm32h745zitx",
             "numberOfProcessors": 2,
