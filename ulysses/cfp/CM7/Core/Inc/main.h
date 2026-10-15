@@ -67,8 +67,6 @@ void Error_Handler(void);
 #define MAG_MISO_GPIO_Port GPIOE
 #define MAG_MOSI_Pin GPIO_PIN_6
 #define MAG_MOSI_GPIO_Port GPIOE
-#define IMU1_INT2_Pin GPIO_PIN_15
-#define IMU1_INT2_GPIO_Port GPIOC
 #define IMU2_MISO_Pin GPIO_PIN_2
 #define IMU2_MISO_GPIO_Port GPIOC
 #define IMU2_MOSI_Pin GPIO_PIN_3
@@ -105,8 +103,6 @@ void Error_Handler(void);
 #define ESC2_PWM_GPIO_Port GPIOE
 #define TTL_TX_EN_Pin GPIO_PIN_12
 #define TTL_TX_EN_GPIO_Port GPIOE
-#define MAG_INT_Pin GPIO_PIN_15
-#define MAG_INT_GPIO_Port GPIOE
 #define LiDAR_SCL_Pin GPIO_PIN_10
 #define LiDAR_SCL_GPIO_Port GPIOB
 #define LiDAR_SDA_Pin GPIO_PIN_11
