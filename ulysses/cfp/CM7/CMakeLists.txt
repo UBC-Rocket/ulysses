@@ -43,8 +43,9 @@ include("mx-generated.cmake")
 set(CMAKE_CXX_COMPILER_FORCED "true")
 
 set(ULYSSES_BUILD_CONTEXT "CM7")
+set(ULYSSES_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../)
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../ ${PROJECT_BINARY_DIR}/ulysses)
+add_subdirectory(${ULYSSES_ROOT} ${PROJECT_BINARY_DIR}/ulysses)
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
@@ -70,8 +71,9 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add linked libraries
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
+    ulysses_io
 )
 
 # Remove wrong libob.a library dependency when using cpp files

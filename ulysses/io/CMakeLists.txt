@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-add_library(ulysses_io STATIC)
+add_library(ulysses_io OBJECT)
 
 target_link_libraries(ulysses_io
     PRIVATE
