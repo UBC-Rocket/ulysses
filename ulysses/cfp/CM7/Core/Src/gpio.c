@@ -53,20 +53,20 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LiDAR_EN_GPIO_Port, LiDAR_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, TTL_LVL_SHIFT_EN_Pin|TTL_TX_EN_Pin|MAG_INT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, TTL_LVL_SHIFT_EN_Pin|TTL_TX_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GATE_DRIVER1_EN_Pin|GATE_DRIVER2_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : BARO_INT_Pin */
   GPIO_InitStruct.Pin = BARO_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BARO_INT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IMU1_INT2_Pin IMU2_INT2_Pin IMU1_INT1_Pin IMU3_INT1_Pin */
-  GPIO_InitStruct.Pin = IMU1_INT2_Pin|IMU2_INT2_Pin|IMU1_INT1_Pin|IMU3_INT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pins : IMU2_INT2_Pin IMU1_INT1_Pin IMU3_INT1_Pin */
+  GPIO_InitStruct.Pin = IMU2_INT2_Pin|IMU1_INT1_Pin|IMU3_INT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -79,12 +79,12 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : LiDAR_INT_Pin */
   GPIO_InitStruct.Pin = LiDAR_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LiDAR_INT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : TTL_LVL_SHIFT_EN_Pin TTL_TX_EN_Pin MAG_INT_Pin */
-  GPIO_InitStruct.Pin = TTL_LVL_SHIFT_EN_Pin|TTL_TX_EN_Pin|MAG_INT_Pin;
+  /*Configure GPIO pins : TTL_LVL_SHIFT_EN_Pin TTL_TX_EN_Pin */
+  GPIO_InitStruct.Pin = TTL_LVL_SHIFT_EN_Pin|TTL_TX_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -99,7 +99,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : IMU2_INT1_Pin IMU3_INT2_Pin */
   GPIO_InitStruct.Pin = IMU2_INT1_Pin|IMU3_INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 

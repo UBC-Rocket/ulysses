@@ -87,6 +87,8 @@ void Error_Handler(void);
 #define BMS_SCL_GPIO_Port GPIOF
 #define BMS_SDA_Pin GPIO_PIN_15
 #define BMS_SDA_GPIO_Port GPIOF
+#define SD_CARD_DETECT_Pin GPIO_PIN_13
+#define SD_CARD_DETECT_GPIO_Port GPIOE
 #define SDCARD_D0_Pin GPIO_PIN_14
 #define SDCARD_D0_GPIO_Port GPIOB
 #define SDCARD_D1_Pin GPIO_PIN_15
