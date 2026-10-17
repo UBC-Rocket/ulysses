@@ -39,9 +39,12 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Include mx-generated
 include("mx-generated.cmake")
 
-
 # In order to use CMake for cross-compiling
 set(CMAKE_CXX_COMPILER_FORCED "true")
+
+set(ULYSSES_BUILD_CONTEXT "CM4")
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../ ${PROJECT_BINARY_DIR}/ulysses)
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
