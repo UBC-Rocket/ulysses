@@ -1,0 +1,11 @@
+#ifndef ULYSSES_IO_STATUS
+#define ULYSSES_IO_STATUS
+
+enum io_status {
+    IO_STATUS_OK,
+    IO_STATUS_ERROR,
+    IO_STATUS_BUSY,
+    IO_STATUS_TIMEOUT,
+};
+
+#endif // ULYSSES_IO_STATUS
