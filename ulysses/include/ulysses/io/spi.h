@@ -45,14 +45,16 @@ struct io_spi_device {
 // device:     handle filled in by a platform init function. Must not be NULL.
 // tx:         len bytes to send. Must not be NULL.
 // rx:         buffer for len received bytes, or NULL to discard them.
-// len:        number of bytes to exchange, from 1 to 65535.
+// len:        number of bytes to exchange, at least 1. The platform may
+//             limit the maximum (65535 on STM32).
 // timeout_ms: how long to wait before giving up, in milliseconds.
 //
 // Do not call from an interrupt handler. Not thread-safe: do not use devices
 // on the same SPI peripheral from two contexts at once.
 //
-// Asserts if device or tx is NULL or len is out of range. Returns IO_SPI_OK,
-// IO_SPI_ERR_TIMEOUT, IO_SPI_ERR_BUSY or IO_SPI_ERR_BUS.
+// Asserts if device or tx is NULL, the device was not initialized or len is
+// out of range. Returns IO_SPI_OK, IO_SPI_ERR_TIMEOUT, IO_SPI_ERR_BUSY or
+// IO_SPI_ERR_BUS.
 enum io_spi_status io_spi_transfer(io_spi_device_t *device, const uint8_t *tx, uint8_t *rx,
                                    size_t len, uint32_t timeout_ms);
 
