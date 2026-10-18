@@ -14,4 +14,5 @@ target_sources(ulysses_io
         assert/handler.c
         irq/irq.c
         irq/isr_hooks.c
+        uart/uart.c
 )
