@@ -21,24 +21,20 @@ enum io_spi_status {
     IO_SPI_ERR_BUS,     // hardware error reported by the peripheral
 };
 
-// One SPI device: an SPI peripheral plus its own chip-select pin.
-//
-// Opaque: the contents are private to spi.c. Get one from io_spi_device_init().
 typedef struct io_spi_device io_spi_device_t;
 
-// Register one SPI device and get a handle for it.
+// Platform function that performs one transfer. See io_spi_transfer().
+typedef enum io_spi_status (*io_spi_transfer_fn_t)(io_spi_device_t *device, const uint8_t *tx,
+                                                   uint8_t *rx, size_t len, uint32_t timeout_ms);
+
+// One SPI device: an SPI peripheral plus its own chip-select pin.
 //
-// Call once per device at startup, before any io_spi_transfer() on it. Not
-// thread-safe: do all device inits from a single context.
-//
-// hw_handle: platform SPI handle the device is wired to (e.g. a HAL SPI
-//            handle). Must not be NULL.
-// cs_port:   platform GPIO port of the chip-select pin. Must not be NULL.
-// cs_pin:    chip-select pin within cs_port.
-//
-// The chip-select pin is driven high (device not selected) before returning.
-// Asserts if a pointer is NULL or no free device slot is left.
-io_spi_device_t *io_spi_device_init(void *hw_handle, void *cs_port, uint16_t cs_pin);
+// The caller provides the memory and a platform init function (e.g.
+// io_spi_stm32_init()) fills it in. Do not modify the fields directly.
+struct io_spi_device {
+    const void *config;            // platform config, owned by the caller
+    io_spi_transfer_fn_t transfer; // platform transfer function
+};
 
 // Exchange len bytes with a device, waiting until the transfer is done.
 //
@@ -46,7 +42,7 @@ io_spi_device_t *io_spi_device_init(void *hw_handle, void *cs_port, uint16_t cs_
 // also when the transfer fails. SPI sends and receives at the same time, so
 // rx[i] is the byte that arrived while tx[i] was being sent.
 //
-// device:     handle from io_spi_device_init(). Must not be NULL.
+// device:     handle filled in by a platform init function. Must not be NULL.
 // tx:         len bytes to send. Must not be NULL.
 // rx:         buffer for len received bytes, or NULL to discard them.
 // len:        number of bytes to exchange, from 1 to 65535.
