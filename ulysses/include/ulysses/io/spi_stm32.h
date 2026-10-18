@@ -1,7 +1,4 @@
-// STM32 HAL backend for the SPI driver.
-//
-// Only board init code should include this header. Everything above the IO
-// layer uses ulysses/io/spi.h and never sees HAL types.
+// STM32 backend for the SPI driver. Only for board init code.
 
 #ifndef ULYSSES_IO_SPI_STM32
 #define ULYSSES_IO_SPI_STM32
@@ -12,24 +9,19 @@
 
 #include "ulysses/io/spi.h"
 
-// Wiring of one SPI device on an STM32.
-//
-// The caller owns this and must keep it alive as long as the device is used,
-// e.g. by making it static const.
+// STM32 wiring of an SPI device
 struct io_spi_stm32_config {
-    SPI_HandleTypeDef *hw_handle; // HAL SPI handle the device is wired to
-    GPIO_TypeDef *cs_port;        // GPIO port of the chip-select pin
-    uint16_t cs_pin;              // chip-select pin within cs_port
+    SPI_HandleTypeDef *hw_handle; // HAL SPI handle
+    GPIO_TypeDef *cs_port;        // chip-select GPIO port
+    uint16_t cs_pin;              // chip-select GPIO pin
 };
 
-// Fill in a device so it talks through the STM32 HAL.
-//
-// Call once per device at startup, before any io_spi_transfer() on it.
-//
-// device: memory for the device, provided by the caller. Must not be NULL.
-// config: wiring of the device. Must not be NULL.
-//
-// The chip-select pin is driven high (device not selected) before returning.
+/**
+ * @brief Initializes an SPI device on an STM32
+ *
+ * @param device Device to initialize
+ * @param config Wiring of the device, must stay valid while the device is used
+ */
 void io_spi_stm32_init(io_spi_device_t *device, const struct io_spi_stm32_config *config);
 
 #endif // ULYSSES_IO_SPI_STM32
