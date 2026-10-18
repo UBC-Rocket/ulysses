@@ -9,6 +9,7 @@
 #ifndef ULYSSES_IO_SPI_H
 #define ULYSSES_IO_SPI_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /*
@@ -51,5 +52,27 @@ typedef struct spi_device spi_device_t;
  */
 spi_status_t spi_device_init(spi_device_t **out_device, void *hw_handle, void *cs_port,
                              uint16_t cs_pin);
+
+/*
+ * Exchange len bytes with a device, waiting until the transfer is done.
+ *
+ * Chip select is pulled low for the whole transfer and released afterwards,
+ * also when the transfer fails. SPI sends and receives at the same time, so
+ * rx[i] is the byte that arrived while tx[i] was being sent.
+ *
+ * device:     handle from spi_device_init(). Must not be NULL.
+ * tx:         len bytes to send. Must not be NULL.
+ * rx:         buffer for len received bytes, or NULL to discard them.
+ * len:        number of bytes to exchange. Must not be 0. Lengths above 65535
+ *             are rejected with SPI_ERR_PARAM.
+ * timeout_ms: how long to wait before giving up, in milliseconds.
+ *
+ * Do not call from an interrupt handler. Not thread-safe: do not use devices
+ * on the same SPI peripheral from two contexts at once.
+ *
+ * Returns SPI_OK, SPI_ERR_PARAM, SPI_ERR_TIMEOUT, SPI_ERR_BUSY or SPI_ERR_BUS.
+ */
+spi_status_t spi_transfer(spi_device_t *device, const uint8_t *tx, uint8_t *rx, size_t len,
+                          uint32_t timeout_ms);
 
 #endif /* ULYSSES_IO_SPI_H */
