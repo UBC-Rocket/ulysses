@@ -4,13 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Result of an SPI transfer
-enum io_spi_status {
-    IO_SPI_OK = 0,      // success
-    IO_SPI_ERR_TIMEOUT, // transfer did not finish in time
-    IO_SPI_ERR_BUSY,    // peripheral is in use
-    IO_SPI_ERR_BUS,     // hardware error
-};
+#include "ulysses/io/status.h"
 
 // SPI device, set up by a platform init function
 typedef struct io_spi_device io_spi_device_t;
@@ -24,9 +18,9 @@ typedef struct io_spi_device io_spi_device_t;
  * @param len Number of bytes to send and receive
  * @param timeout_ms Timeout in milliseconds
  *
- * @return IO_SPI_OK on success, otherwise an IO_SPI_ERR_* code
+ * @return IO_STATUS_OK on success, otherwise an IO_STATUS_* error code
  */
-enum io_spi_status io_spi_transfer(io_spi_device_t *device, const uint8_t *tx, uint8_t *rx,
-                                   size_t len, uint32_t timeout_ms);
+enum io_status io_spi_transfer(io_spi_device_t *device, const uint8_t *tx, uint8_t *rx, size_t len,
+                               uint32_t timeout_ms);
 
 #endif // ULYSSES_IO_SPI

@@ -6,22 +6,22 @@
 
 #include "spi_stm32.h"
 
-static enum io_spi_status to_io_spi_status(HAL_StatusTypeDef hal_status)
+static enum io_status to_io_status(HAL_StatusTypeDef hal_status)
 {
     switch (hal_status) {
     case HAL_OK:
-        return IO_SPI_OK;
+        return IO_STATUS_OK;
     case HAL_TIMEOUT:
-        return IO_SPI_ERR_TIMEOUT;
+        return IO_STATUS_TIMEOUT;
     case HAL_BUSY:
-        return IO_SPI_ERR_BUSY;
+        return IO_STATUS_BUSY;
     default:
-        return IO_SPI_ERR_BUS;
+        return IO_STATUS_ERROR;
     }
 }
 
-static enum io_spi_status stm32_transfer(io_spi_device_t *device, const uint8_t *tx, uint8_t *rx,
-                                         size_t len, uint32_t timeout_ms)
+static enum io_status stm32_transfer(io_spi_device_t *device, const uint8_t *tx, uint8_t *rx,
+                                     size_t len, uint32_t timeout_ms)
 {
     // HAL takes the length as uint16_t
     ULYSSES_ASSERT(len <= UINT16_MAX, "SPI transfer length must fit in 16 bits");
@@ -40,7 +40,7 @@ static enum io_spi_status stm32_transfer(io_spi_device_t *device, const uint8_t 
     // Release chip select even if the transfer failed
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 
-    return to_io_spi_status(hal_status);
+    return to_io_status(hal_status);
 }
 
 void io_spi_stm32_init(io_spi_device_t *device, const struct io_spi_stm32_config *config)
