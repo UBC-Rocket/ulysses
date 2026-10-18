@@ -32,4 +32,24 @@ typedef enum {
  */
 typedef struct spi_device spi_device_t;
 
+/*
+ * Register one SPI device and get a handle for it.
+ *
+ * Call once per device at startup, before any spi_transfer() on it. Not
+ * thread-safe: do all device inits from a single context.
+ *
+ * out_device: receives the device handle on success. Must not be NULL.
+ * hw_handle:  platform SPI handle the device is wired to (e.g. a HAL SPI
+ *             handle). Must not be NULL.
+ * cs_port:    platform GPIO port of the chip-select pin. Must not be NULL.
+ * cs_pin:     chip-select pin within cs_port.
+ *
+ * The chip-select pin is driven high (device not selected) before returning.
+ *
+ * Returns SPI_OK, SPI_ERR_PARAM if a pointer is NULL, or SPI_ERR_NO_SPACE if
+ * no free device slot is left.
+ */
+spi_status_t spi_device_init(spi_device_t **out_device, void *hw_handle, void *cs_port,
+                             uint16_t cs_pin);
+
 #endif /* ULYSSES_IO_SPI_H */
