@@ -16,9 +16,23 @@ enum io_irq_event {
 
 typedef void (*io_irq_handler_t)(void *user_data);
 
+/**
+ * @brief Registers a handler for an interrupt request
+ * 
+ * @param id Identifier of the interrupt request source
+ * @param event Event associated with the interrupt request
+ * @param handler Function to be called when receiving an interrupt request
+ * @param user_data Data to be passed to the handler
+ */
 void io_irq_register(uint64_t id, enum io_irq_event event, io_irq_handler_t handler,
                      void *user_data);
 
+/**
+ * @brief Signals that an interrupt has occured
+ * 
+ * @param id Identifier of the interrupt request source
+ * @param event Event associated with the interrupt request
+ */
 void io_irq_signal(uint64_t id, enum io_irq_event event);
 
 #endif // ULYSSES_IO_IRQ
