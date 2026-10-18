@@ -18,7 +18,10 @@ target_link_libraries(ulysses_layer_interface
 
 target_compile_options(ulysses_layer_interface
     INTERFACE
-        -Wall -Wextra -Wpedantic
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror
 )
 
 target_compile_features(ulysses_layer_interface
