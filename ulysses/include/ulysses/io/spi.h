@@ -6,7 +6,6 @@
 
 #include "ulysses/io/status.h"
 
-// SPI device, set up by a platform init function
 typedef struct io_spi_device io_spi_device_t;
 
 /**
