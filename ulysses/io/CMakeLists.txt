@@ -15,4 +15,5 @@ target_sources(ulysses_io
         irq/irq.c
         irq/isr_hooks.c
         spi/spi.c
+        spi/stm32/spi_stm32.c
 )

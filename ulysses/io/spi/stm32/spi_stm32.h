@@ -1,5 +1,3 @@
-// STM32 backend for the SPI driver. Only for board init code.
-
 #ifndef ULYSSES_IO_SPI_STM32
 #define ULYSSES_IO_SPI_STM32
 
@@ -8,6 +6,8 @@
 #include "stm32h7xx_hal.h" // IWYU pragma: keep
 
 #include "ulysses/io/spi.h"
+
+#include "../spi.h"
 
 // STM32 wiring of an SPI device
 struct io_spi_stm32_config {

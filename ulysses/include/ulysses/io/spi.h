@@ -12,17 +12,8 @@ enum io_spi_status {
     IO_SPI_ERR_BUS,     // hardware error
 };
 
+// SPI device, set up by a platform init function
 typedef struct io_spi_device io_spi_device_t;
-
-// Platform transfer function, see io_spi_transfer()
-typedef enum io_spi_status (*io_spi_transfer_fn_t)(io_spi_device_t *device, const uint8_t *tx,
-                                                   uint8_t *rx, size_t len, uint32_t timeout_ms);
-
-// SPI device. Filled in by a platform init function, do not modify the fields directly
-struct io_spi_device {
-    const void *config;            // platform config
-    io_spi_transfer_fn_t transfer; // platform transfer function
-};
 
 /**
  * @brief Sends and receives bytes with an SPI device, blocking until done
