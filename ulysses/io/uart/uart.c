@@ -1,20 +1,16 @@
-#include <stdbool.h>
-
-#include "ulysses/io/uart.h"
 #include "ulysses/io/irq.h"
 #include "ulysses/lib/assert.h"
 
-#include "uart.h"
-#include "ulysses/io/status.h"
+#include "uart/uart.h"
 
 struct io_uart {
     void *config;
-    enum io_status (*transmit_async)(const io_uart_t *uart, const uint8_t *buf, uint16_t len);
-    enum io_status (*receive_async)(const io_uart_t *uart, uint8_t *buf, uint16_t len);
-    enum io_status (*receive_continuous)(const io_uart_t *uart, uint8_t *ring_buf, uint16_t len);
+    enum io_status (*transmit_async)(const io_uart_t *uart, const uint8_t *data, uint16_t length);
+    enum io_status (*receive_async)(const io_uart_t *uart, uint8_t *data, uint16_t length);
+    enum io_status (*receive_continuous)(const io_uart_t *uart, uint8_t *ring_buf, uint16_t length);
 };
 
-enum io_status io_uart_transmit(const io_uart_t *uart, const uint8_t *buf, uint16_t len,
+enum io_status io_uart_transmit(const io_uart_t *uart, const uint8_t *data, uint16_t length,
                              uint32_t timeout_ms)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
@@ -22,61 +18,61 @@ enum io_status io_uart_transmit(const io_uart_t *uart, const uint8_t *buf, uint1
 
     ULYSSES_ASSERT(config->huart, "uart handle must not be NULL");
 
-    if (len == 0) {
+    if (length == 0) {
         return IO_STATUS_OK;
     }
 
-    return HAL_UART_Transmit(config->huart, buf, len, timeout_ms) == HAL_OK ? IO_STATUS_OK
+    return HAL_UART_Transmit(config->huart, data, length, timeout_ms) == HAL_OK ? IO_STATUS_OK
                                                                             : IO_STATUS_TIMEOUT;
 }
 
-enum io_status io_uart_receive(const io_uart_t *uart, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+enum io_status io_uart_receive(const io_uart_t *uart, uint8_t *data, uint16_t length, uint32_t timeout_ms)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
 
     ULYSSES_ASSERT(config->huart, "uart handle must not be NULL");
 
-    if (len == 0) {
+    if (length == 0) {
         return IO_STATUS_OK;
     }
 
-    return HAL_UART_Receive(config->huart, buf, len, timeout_ms) == HAL_OK ? IO_STATUS_OK : IO_STATUS_TIMEOUT;
+    return HAL_UART_Receive(config->huart, data, length, timeout_ms) == HAL_OK ? IO_STATUS_OK : IO_STATUS_TIMEOUT;
 }
 
-enum io_status io_uart_transmit_async(const io_uart_t *uart, const uint8_t *buf, uint16_t len)
+enum io_status io_uart_transmit_async(const io_uart_t *uart, const uint8_t *data, uint16_t length)
 {
-    return uart->transmit_async(uart, buf, len);
+    return uart->transmit_async(uart, data, length);
 }
 
-enum io_status io_uart_receive_async(const io_uart_t *uart, uint8_t *buf, uint16_t len)
+enum io_status io_uart_receive_async(const io_uart_t *uart, uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart->receive_async,
                    "must not call receive_async on continuous mode uart object");
 
-    return uart->receive_async(uart, buf, len);
+    return uart->receive_async(uart, data, length);
 }
 
-enum io_status io_uart_receive_continous(const io_uart_t *uart, uint8_t *buf, uint16_t len)
+enum io_status io_uart_receive_continous(const io_uart_t *uart, uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart->receive_async,
                    "must not call receive_continuous on packet mode uart object");
 
-    return uart->receive_continuous(uart, buf, len);
+    return uart->receive_continuous(uart, data, length);
 }
 
-enum io_status io_uart_transmit_dma(const io_uart_t *uart, const uint8_t *buf, uint16_t len)
+enum io_status io_uart_transmit_dma(const io_uart_t *uart, const uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
 
     ULYSSES_ASSERT(config->huart, "uart handle must not be NULL");
 
-    if (len == 0) {
+    if (length == 0) {
         return IO_STATUS_OK;
     }
 
-    switch (HAL_UART_Transmit_DMA(config->huart, buf, len)) {
+    switch (HAL_UART_Transmit_DMA(config->huart, data, length)) {
     case HAL_OK:
         return IO_STATUS_OK;
     case HAL_BUSY:
@@ -86,7 +82,7 @@ enum io_status io_uart_transmit_dma(const io_uart_t *uart, const uint8_t *buf, u
     }
 }
 
-enum io_status io_uart_receive_dma(const io_uart_t *uart, uint8_t *buf, uint16_t len)
+enum io_status io_uart_receive_dma(const io_uart_t *uart, uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
@@ -97,7 +93,7 @@ enum io_status io_uart_receive_dma(const io_uart_t *uart, uint8_t *buf, uint16_t
     __HAL_DMA_ENABLE_IT(config->huart->hdmarx, DMA_IT_HT | DMA_IT_TC);
     __HAL_UART_DISABLE_IT(config->huart, UART_IT_CM);
 
-    switch (HAL_UART_Receive_DMA(config->huart, buf, len)) {
+    switch (HAL_UART_Receive_DMA(config->huart, data, length)) {
     case HAL_OK:
         return IO_STATUS_OK;
     case HAL_BUSY:
@@ -107,7 +103,7 @@ enum io_status io_uart_receive_dma(const io_uart_t *uart, uint8_t *buf, uint16_t
     }
 }
 
-enum io_status io_uart_receive_continuous_dma(const io_uart_t *uart, uint8_t *ring_buf, uint16_t len)
+enum io_status io_uart_receive_continuous_dma(const io_uart_t *uart, uint8_t *ring_buf, uint16_t length)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
@@ -118,7 +114,7 @@ enum io_status io_uart_receive_continuous_dma(const io_uart_t *uart, uint8_t *ri
     __HAL_DMA_DISABLE_IT(config->huart->hdmarx, DMA_IT_HT | DMA_IT_TC);
     __HAL_UART_ENABLE_IT(config->huart, UART_IT_CM);
 
-    switch (HAL_UART_Receive_DMA(config->huart, ring_buf, len)) {
+    switch (HAL_UART_Receive_DMA(config->huart, ring_buf, length)) {
     case HAL_OK:
         return IO_STATUS_OK;
     case HAL_BUSY:
@@ -128,14 +124,14 @@ enum io_status io_uart_receive_continuous_dma(const io_uart_t *uart, uint8_t *ri
     }
 }
 
-enum io_status io_uart_transmit_irq(const io_uart_t *uart, const uint8_t *buf, uint16_t len)
+enum io_status io_uart_transmit_irq(const io_uart_t *uart, const uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
 
     ULYSSES_ASSERT(config->huart, "uart handle must not be NULL");
 
-    switch (HAL_UART_Transmit_IT(config->huart, buf, len)) {
+    switch (HAL_UART_Transmit_IT(config->huart, data, length)) {
     case HAL_OK:
         return IO_STATUS_OK;
     case HAL_BUSY:
@@ -145,14 +141,14 @@ enum io_status io_uart_transmit_irq(const io_uart_t *uart, const uint8_t *buf, u
     }
 }
 
-enum io_status io_uart_receive_irq(const io_uart_t *uart, uint8_t *buf, uint16_t len)
+enum io_status io_uart_receive_irq(const io_uart_t *uart, uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
 
     ULYSSES_ASSERT(config->huart, "uart handle must not be NULL");
 
-    switch (HAL_UART_Receive_IT(config->huart, buf, len)) {
+    switch (HAL_UART_Receive_IT(config->huart, data, length)) {
     case HAL_OK:
         return IO_STATUS_OK;
     case HAL_BUSY:
@@ -162,14 +158,14 @@ enum io_status io_uart_receive_irq(const io_uart_t *uart, uint8_t *buf, uint16_t
     }
 }
 
-enum io_status io_uart_receive_continuous_irq(const io_uart_t *uart, uint8_t *buf, uint16_t len)
+enum io_status io_uart_receive_continuous_irq(const io_uart_t *uart, uint8_t *data, uint16_t length)
 {
     ULYSSES_ASSERT(uart, "uart object must not be NULL");
     uart_config_t *config = (uart_config_t *)uart->config;
 
     ULYSSES_ASSERT(config->huart, "uart handle must not be NULL");
 
-    switch (HAL_UART_Receive_IT(config->huart, buf, len)) {
+    switch (HAL_UART_Receive_IT(config->huart, data, length)) {
     case HAL_OK:
         return IO_STATUS_OK;
     case HAL_BUSY:
