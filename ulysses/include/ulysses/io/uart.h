@@ -3,23 +3,38 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <usart.h>
 
-typedef enum { // FIXME: this is copied from old code, maybe trim down possible values? or have separate status per module
-    IO_OK = 0,
-    IO_ERR_BUSY,      ///< queue full / channel still transmitting (try again)
-    IO_ERR_TIMEOUT,   ///< blocking call did not complete in time
-    IO_ERR_NACK,      ///< target did not acknowledge
-    IO_ERR_BUS,       ///< bus-level fault (DMA error, framing, etc.)
-    IO_ERR_NO_DEVICE, ///< @p dev not present / @p id out of range
-    IO_ERR_PARAM,     ///< bad argument
-    IO_ERR_NOT_READY, ///< called before init or in the wrong mode
-} io_status_t;
+#include "ulysses/io/status.h"
+
+enum io_uart_async_mode {
+    IO_UART_DMA = 0,
+    IO_UART_IRQ
+};
+
+enum io_uart_receive_mode {
+    IO_UART_PACKET = 0,
+    IO_UART_CONTINUOUS
+};
 
 typedef struct io_uart io_uart_t;
 
-typedef void (*io_uart_recv_cb)(const uint8_t *buf, uint16_t len);
-typedef void (*io_uart_send_cb)(uint16_t xferd);
+typedef void (*io_uart_transmit_cb_t)(void);
+typedef void (*io_uart_receive_cb_t)(void);
 
-io_uart_t *io_uart_init(void);
+void io_uart_init(io_uart_t *uart, UART_HandleTypeDef *huart, enum io_uart_async_mode async_mode,
+                  enum io_uart_receive_mode receive_mode, uint8_t cm_byte,
+                  io_uart_transmit_cb_t transmit_cb, io_uart_receive_cb_t receive_cb);
+
+enum io_status io_uart_transmit(const io_uart_t *uart, const uint8_t *buf, uint16_t len,
+                             uint32_t timeout_ms);
+
+enum io_status io_uart_receive(const io_uart_t *uart, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
+
+enum io_status io_uart_transmit_async(const io_uart_t *uart, const uint8_t *buf, uint16_t len);
+
+enum io_status io_uart_receive_async(const io_uart_t *uart, uint8_t *buf, uint16_t len);
+
+enum io_status io_uart_receive_continous(const io_uart_t *uart, uint8_t *buf, uint16_t len);
 
 #endif // ULYSSES_IO_UART
