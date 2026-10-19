@@ -20,8 +20,8 @@ static enum io_status to_io_status(HAL_StatusTypeDef hal_status)
     }
 }
 
-static enum io_status stm32_transfer(io_spi_device_t *device, const uint8_t *tx, uint8_t *rx,
-                                     size_t len, uint32_t timeout_ms)
+static enum io_status stm32_transfer(io_spi_device_t *device, const uint8_t *tx_data,
+                                     uint8_t *rx_data, size_t len, uint32_t timeout_ms)
 {
     // HAL takes the length as uint16_t
     ULYSSES_ASSERT(len <= UINT16_MAX, "SPI transfer length must fit in 16 bits");
@@ -31,10 +31,11 @@ static enum io_status stm32_transfer(io_spi_device_t *device, const uint8_t *tx,
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
 
-    if (rx != NULL) {
-        hal_status = HAL_SPI_TransmitReceive(config->hw_handle, tx, rx, (uint16_t)len, timeout_ms);
+    if (rx_data != NULL) {
+        hal_status =
+            HAL_SPI_TransmitReceive(config->hw_handle, tx_data, rx_data, (uint16_t)len, timeout_ms);
     } else {
-        hal_status = HAL_SPI_Transmit(config->hw_handle, tx, (uint16_t)len, timeout_ms);
+        hal_status = HAL_SPI_Transmit(config->hw_handle, tx_data, (uint16_t)len, timeout_ms);
     }
 
     // Release chip select even if the transfer failed
