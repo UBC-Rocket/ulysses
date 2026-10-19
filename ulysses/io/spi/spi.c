@@ -7,7 +7,7 @@
 #include "spi.h"
 
 enum io_status io_spi_transfer(io_spi_device_t *device, const uint8_t *tx_data, uint8_t *rx_data,
-                               size_t len, uint32_t timeout_ms)
+                               uint16_t len, uint32_t timeout_ms)
 {
     ULYSSES_ASSERT(device != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(device->transfer != NULL, "SPI device must be initialized");
