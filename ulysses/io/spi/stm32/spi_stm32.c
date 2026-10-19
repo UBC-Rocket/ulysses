@@ -24,17 +24,34 @@ static enum io_status stm32_transfer(io_spi_device_t *device, const uint8_t *tx_
                                      uint8_t *rx_data, uint16_t len, uint32_t timeout_ms)
 {
     const struct io_spi_stm32_config *config = device->config;
-    HAL_StatusTypeDef hal_status;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
+    HAL_StatusTypeDef hal_status =
+        HAL_SPI_TransmitReceive(config->hw_handle, tx_data, rx_data, len, timeout_ms);
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 
-    if (rx_data != NULL) {
-        hal_status = HAL_SPI_TransmitReceive(config->hw_handle, tx_data, rx_data, len, timeout_ms);
-    } else {
-        hal_status = HAL_SPI_Transmit(config->hw_handle, tx_data, len, timeout_ms);
-    }
+    return to_io_status(hal_status);
+}
 
-    // Release chip select even if the transfer failed
+static enum io_status stm32_transmit(io_spi_device_t *device, const uint8_t *tx_data, uint16_t len,
+                                     uint32_t timeout_ms)
+{
+    const struct io_spi_stm32_config *config = device->config;
+
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
+    HAL_StatusTypeDef hal_status = HAL_SPI_Transmit(config->hw_handle, tx_data, len, timeout_ms);
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
+
+    return to_io_status(hal_status);
+}
+
+static enum io_status stm32_receive(io_spi_device_t *device, uint8_t *rx_data, uint16_t len,
+                                    uint32_t timeout_ms)
+{
+    const struct io_spi_stm32_config *config = device->config;
+
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
+    HAL_StatusTypeDef hal_status = HAL_SPI_Receive(config->hw_handle, rx_data, len, timeout_ms);
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 
     return to_io_status(hal_status);
@@ -50,6 +67,8 @@ void io_spi_stm32_init(io_spi_device_t *device, const struct io_spi_stm32_config
 
     device->config = config;
     device->transfer = stm32_transfer;
+    device->transmit = stm32_transmit;
+    device->receive = stm32_receive;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 }
