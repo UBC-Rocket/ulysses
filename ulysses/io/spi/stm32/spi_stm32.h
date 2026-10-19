@@ -7,7 +7,7 @@
 
 #include "ulysses/io/spi.h"
 
-#include "../spi.h"
+#include "spi/spi.h"
 
 // STM32 wiring of an SPI device
 struct io_spi_stm32_config {

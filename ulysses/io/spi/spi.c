@@ -4,7 +4,7 @@
 #include "ulysses/lib/assert.h"
 #include "ulysses/io/spi.h"
 
-#include "spi.h"
+#include "spi/spi.h"
 
 enum io_status io_spi_transfer(io_spi_device_t *device, const uint8_t *tx_data, uint8_t *rx_data,
                                uint16_t len, uint32_t timeout_ms)

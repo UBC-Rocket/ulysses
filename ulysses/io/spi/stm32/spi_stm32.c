@@ -4,7 +4,7 @@
 #include "ulysses/lib/assert.h"
 #include "ulysses/io/spi.h"
 
-#include "spi_stm32.h"
+#include "spi/stm32/spi_stm32.h"
 
 static enum io_status to_io_status(HAL_StatusTypeDef hal_status)
 {
