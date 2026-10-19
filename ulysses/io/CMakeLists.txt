@@ -14,7 +14,8 @@ target_sources(ulysses_io
         assert/handler.c
         irq/irq.c
         irq/isr_hooks.c
-        i2c/i2c.c
+        i2c/i2c_dev.c
+        i2c/i2c_bus.c
         i2c/stm32/i2c_stm32.c
 )
 
