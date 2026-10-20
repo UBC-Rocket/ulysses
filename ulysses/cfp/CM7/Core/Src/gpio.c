@@ -61,7 +61,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin : BARO_INT_Pin */
   GPIO_InitStruct.Pin = BARO_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BARO_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IMU1_INT2_Pin */
@@ -70,16 +70,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(IMU1_INT2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : IMU2_INT2_Pin */
-  GPIO_InitStruct.Pin = IMU2_INT2_Pin;
+  /*Configure GPIO pins : IMU2_INT2_Pin IMU1_INT1_Pin IMU3_INT1_Pin */
+  GPIO_InitStruct.Pin = IMU2_INT2_Pin|IMU1_INT1_Pin|IMU3_INT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(IMU2_INT2_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : IMU1_INT1_Pin IMU3_INT1_Pin */
-  GPIO_InitStruct.Pin = IMU1_INT1_Pin|IMU3_INT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LiDAR_EN_Pin */
@@ -92,7 +86,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin : LiDAR_INT_Pin */
   GPIO_InitStruct.Pin = LiDAR_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LiDAR_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : TTL_LVL_SHIFT_EN_Pin TTL_TX_EN_Pin */
@@ -118,7 +112,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin : IMU2_INT1_Pin */
   GPIO_InitStruct.Pin = IMU2_INT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(IMU2_INT1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IMU3_INT2_Pin */
