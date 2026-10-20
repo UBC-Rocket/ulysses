@@ -75,8 +75,8 @@ void Error_Handler(void);
 #define RTK_GNSS_INT_GPIO_Port GPIOC
 #define SDCARD_CK_Pin GPIO_PIN_1
 #define SDCARD_CK_GPIO_Port GPIOC
-#define RTK_CORREC_TX_Pin GPIO_PIN_2
-#define RTK_CORREC_TX_GPIO_Port GPIOA
+#define RTK_CORRECT_TX_Pin GPIO_PIN_2
+#define RTK_CORRECT_TX_GPIO_Port GPIOA
 #define RTK_CORRECT_RX_Pin GPIO_PIN_3
 #define RTK_CORRECT_RX_GPIO_Port GPIOA
 #define BUZZER_PWM_Pin GPIO_PIN_6
