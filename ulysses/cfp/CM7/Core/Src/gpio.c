@@ -58,11 +58,11 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GATE_DRIVER1_EN_Pin|GATE_DRIVER2_EN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : BARO_INT_Pin MAG_INT_Pin */
-  GPIO_InitStruct.Pin = BARO_INT_Pin|MAG_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  /*Configure GPIO pin : BARO_INT_Pin */
+  GPIO_InitStruct.Pin = BARO_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(BARO_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IMU1_INT2_Pin */
   GPIO_InitStruct.Pin = IMU1_INT2_Pin;
@@ -101,6 +101,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : MAG_INT_Pin */
+  GPIO_InitStruct.Pin = MAG_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MAG_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GATE_DRIVER1_EN_Pin GATE_DRIVER2_EN_Pin */
   GPIO_InitStruct.Pin = GATE_DRIVER1_EN_Pin|GATE_DRIVER2_EN_Pin;
