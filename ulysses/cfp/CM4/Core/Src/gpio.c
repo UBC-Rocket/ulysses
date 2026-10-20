@@ -55,9 +55,6 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOF, STAT_LEDG_Pin|STAT_LEDR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GATE_DRIVER1_nFAULT_Pin|GATE_DRIVER2_nFAULT_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, GATE_DRIVER1_CS_Pin|GATE_DRIVER2_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -94,9 +91,8 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : GATE_DRIVER1_nFAULT_Pin GATE_DRIVER2_nFAULT_Pin */
   GPIO_InitStruct.Pin = GATE_DRIVER1_nFAULT_Pin|GATE_DRIVER2_nFAULT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GATE_DRIVER1_CS_Pin GATE_DRIVER2_CS_Pin */
