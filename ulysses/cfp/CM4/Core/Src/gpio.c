@@ -55,6 +55,9 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOF, STAT_LEDG_Pin|STAT_LEDR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(RTK_GNSS_INT_GPIO_Port, RTK_GNSS_INT_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GATE_DRIVER1_nFAULT_Pin|GATE_DRIVER2_nFAULT_Pin|RTK_GNSS_NRST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -63,12 +66,12 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(STAT_LEDO_GPIO_Port, STAT_LEDO_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : RADIO_NRST_Pin */
-  GPIO_InitStruct.Pin = RADIO_NRST_Pin;
+  /*Configure GPIO pins : RADIO_NRST_Pin RTK_GNSS_INT_Pin */
+  GPIO_InitStruct.Pin = RADIO_NRST_Pin|RTK_GNSS_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(RADIO_NRST_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : RADIO_BUSY_Pin */
   GPIO_InitStruct.Pin = RADIO_BUSY_Pin;
@@ -82,12 +85,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : RTK_GNSS_INT_Pin */
-  GPIO_InitStruct.Pin = RTK_GNSS_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(RTK_GNSS_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SD_CARD_DETECT_Pin */
   GPIO_InitStruct.Pin = SD_CARD_DETECT_Pin;
