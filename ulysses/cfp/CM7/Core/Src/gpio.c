@@ -91,8 +91,8 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : LiDAR_INT_Pin */
   GPIO_InitStruct.Pin = LiDAR_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(LiDAR_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : TTL_LVL_SHIFT_EN_Pin TTL_TX_EN_Pin */
