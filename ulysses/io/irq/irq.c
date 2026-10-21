@@ -14,8 +14,7 @@ struct irq_handler_entry {
 
 static struct irq_handler_entry event_handlers[IO_IRQ_EVENT_COUNT][MAX_EVENT_HANDLER_ENTRIES];
 
-void io_irq_register(uint64_t id, enum io_irq_event event,
-    io_irq_handler_t handler,
+void io_irq_register(uint64_t id, enum io_irq_event event, io_irq_handler_t handler,
                      void *user_data)
 {
     ULYSSES_ASSERT(event < IO_IRQ_EVENT_COUNT, "Invalid IRQ event");
