@@ -14,9 +14,6 @@ struct io_i2c_stm32_config {
  * @brief Links an I2C bus to an already initialized STM32 HAL handle
  *
  * Stores config by reference; config and its HAL handle must remain valid while the bus is used.
- * Transfers block in the HAL and use 8-bit register addresses. The transfer timeout is passed
- * directly to the HAL; its separate 25 ms bus-busy wait may exceed that value. HAL_MAX_DELAY
- * disables the transfer timeout, but not the bus-busy timeout.
  *
  * @param[out] bus Non-NULL bus to configure
  * @param config Non-NULL configuration whose HAL handle is in HAL_I2C_STATE_READY

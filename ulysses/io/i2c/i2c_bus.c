@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief Dispatches I2C register transfers without translating backend arguments or status
- */
 #include <stddef.h>
 #include <stdint.h>
 

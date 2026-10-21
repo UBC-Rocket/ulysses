@@ -6,7 +6,7 @@
 #include "ulysses/io/i2c.h"
 
 /** @brief Backend operations for synchronous I2C register transfers */
-typedef struct {
+struct io_i2c_bus_ops {
     /**
      * @brief Reads device registers through the backend
      *
@@ -48,12 +48,12 @@ typedef struct {
         uint16_t len,
         uint32_t timeout_ms
     );
-} io_i2c_bus_ops_t;
+};
 
 /** @brief I2C bus retaining references to its backend configuration and operations */
 struct io_i2c_bus {
     const void *config;          ///< Backend configuration that must remain valid while in use
-    const io_i2c_bus_ops_t *ops; ///< Non-NULL operations that must remain valid while in use
+    const struct io_i2c_bus_ops *ops; ///< Non-NULL operations that must remain valid while in use
 };
 
 /**

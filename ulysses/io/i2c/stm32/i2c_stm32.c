@@ -92,8 +92,8 @@ static enum io_status stm32_mem_write(
 }
 
 
-/** @brief Shared blocking operations; device addresses are shifted for the HAL in each callback */
-static const io_i2c_bus_ops_t stm32_i2c_ops = {
+/** @brief Shared blocking operations */
+static const struct io_i2c_bus_ops stm32_i2c_ops = {
     .mem_read = stm32_mem_read,
     .mem_write = stm32_mem_write
 };
