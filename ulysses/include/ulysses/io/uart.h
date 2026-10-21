@@ -11,14 +11,14 @@
 typedef struct io_uart io_uart_t;
 
 /**
- * @brief UART asynchronous transmit callback type
+ * @brief UART asynchronous transmit callback 
  */
-typedef void (io_uart_transmit_cb_t)(void);
+typedef void (*io_uart_transmit_cb_t)(void);
 
 /**
- * @brief UART asynchronous receive callback type
+ * @brief UART asynchronous receive callback
  */
-typedef void (io_uart_receive_cb_t)(void);
+typedef void (*io_uart_receive_cb_t)(void);
 
 /**
  * @brief Transmits data synchronously

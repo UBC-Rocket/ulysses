@@ -13,8 +13,8 @@ typedef struct {
     enum io_uart_async_mode async_mode;     ///< Asynchronous transfer implementation
     enum io_uart_receive_mode receive_mode; ///< Requested receive mode
     uint8_t cm_byte;                        ///< Character-match byte
-    io_uart_transmit_cb_t *transmit_cb;      ///< Callback for transmit-complete events
-    io_uart_receive_cb_t *receive_cb;        ///< Callback for receive-complete events
+    io_uart_transmit_cb_t transmit_cb;      ///< Callback for transmit-complete events
+    io_uart_receive_cb_t receive_cb;        ///< Callback for receive-complete events
 } uart_config_t;
 
 const io_uart_methods_t *stm32_uart_get_dma_methods(void);
