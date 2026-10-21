@@ -19,14 +19,8 @@ struct io_i2c_bus_ops {
      *
      * @return Transfer status
      */
-    enum io_status (*mem_read)(
-        const void *config,
-        uint8_t addr,
-        uint8_t reg,
-        uint8_t *data,
-        uint16_t len,
-        uint32_t timeout_ms
-    );
+    enum io_status (*mem_read)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
+                               uint16_t len, uint32_t timeout_ms);
 
     /**
      * @brief Writes device registers through the backend
@@ -40,19 +34,13 @@ struct io_i2c_bus_ops {
      *
      * @return Transfer status
      */
-    enum io_status (*mem_write)(
-        const void *config,
-        uint8_t addr,
-        uint8_t reg,
-        const uint8_t *data,
-        uint16_t len,
-        uint32_t timeout_ms
-    );
+    enum io_status (*mem_write)(const void *config, uint8_t addr, uint8_t reg, const uint8_t *data,
+                                uint16_t len, uint32_t timeout_ms);
 };
 
 /** @brief I2C bus retaining references to its backend configuration and operations */
 struct io_i2c_bus {
-    const void *config;          ///< Backend configuration that must remain valid while in use
+    const void *config;               ///< Backend configuration that must remain valid while in use
     const struct io_i2c_bus_ops *ops; ///< Non-NULL operations that must remain valid while in use
 };
 
@@ -70,14 +58,8 @@ struct io_i2c_bus {
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_read(
-    const io_i2c_bus_t *bus,
-    uint8_t addr,
-    uint8_t reg,
-    uint8_t *data,
-    uint16_t len,
-    uint32_t timeout_ms
-);
+enum io_status io_i2c_bus_mem_read(const io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+                                   uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 /**
  * @brief Dispatches a synchronous register write to the bus backend
@@ -93,13 +75,7 @@ enum io_status io_i2c_bus_mem_read(
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_write(
-    const io_i2c_bus_t *bus,
-    uint8_t addr,
-    uint8_t reg,
-    const uint8_t *data,
-    uint16_t len,
-    uint32_t timeout_ms
-);
+enum io_status io_i2c_bus_mem_write(const io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+                                    const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 #endif // ULYSSES_IO_I2C_I2C_BUS_H
