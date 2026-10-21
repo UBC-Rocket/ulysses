@@ -20,4 +20,5 @@ target_sources(ulysses_io
         irq/irq.c
         irq/isr_hooks.c
         uart/uart.c
+        uart/stm32/uart_stm32.c
 )
