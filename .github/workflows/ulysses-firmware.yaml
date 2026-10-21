@@ -59,6 +59,11 @@ jobs:
     steps:
       - name: Checkout firmware
         uses: actions/checkout@v7.0.1
+        with:
+          # super-linter needs the full git history to get the
+          # list of files that changed across commits
+          fetch-depth: 0
+          persist-credentials: false
       - name: Run linter
         uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
