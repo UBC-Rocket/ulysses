@@ -26,7 +26,7 @@ struct io_uart_ops {
 };
 
 struct io_uart {
-    const void *config;                ///< Caller-provided backend configuration storage
+    const void *config;            ///< Caller-provided backend configuration storage
     const struct io_uart_ops *ops; ///< Shared backend operation table
 };
 
