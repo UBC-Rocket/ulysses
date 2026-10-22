@@ -24,3 +24,8 @@ target_include_directories(ulysses_io
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
+
+# Board wiring, one file per core
+if(ULYSSES_BUILD_CONTEXT STREQUAL "CM7")
+    target_sources(ulysses_io PRIVATE board/board_cm7.c)
+endif()
