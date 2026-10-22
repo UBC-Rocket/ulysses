@@ -11,14 +11,30 @@
 typedef struct io_uart io_uart_t;
 
 /**
- * @brief UART asynchronous transmit callback 
+ * @brief UART asynchronous transmit callback type
  */
 typedef void (*io_uart_transmit_cb_t)(void);
 
 /**
- * @brief UART asynchronous receive callback
+ * @brief UART asynchronous receive callback type
  */
 typedef void (*io_uart_receive_cb_t)(void);
+
+/**
+ * @brief Set or unset transmit callback
+ *
+ * @param uart Initialized UART object
+ * @param cb Callback function, or NULL to disable transmit callbacks
+ */
+void io_uart_set_transmit_cb(const io_uart_t *uart, io_uart_receive_cb_t cb);
+
+/**
+ * @brief Set or unset receive callback
+ *
+ * @param uart Initialized UART object
+ * @param cb Callback function, or NULL to disable receive callbacks
+ */
+void io_uart_set_receive_cb(const io_uart_t *uart, io_uart_receive_cb_t cb);
 
 /**
  * @brief Transmits data synchronously
@@ -84,14 +100,13 @@ enum io_status io_uart_receive_async(const io_uart_t *uart, uint8_t *data, uint1
  * @brief Starts continuous reception
  *
  * @param uart Initialized UART object in continuous receive mode
- * @param[out] ring_buf Ring buffer to store received data
+ * @param[out] data Buffer to store received data
  * @param length Buffer capacity in bytes
  *
  * @retval IO_STATUS_OK The receive operation was started
  * @retval IO_STATUS_BUSY A receive operation is already in progress
  * @retval IO_STATUS_ERROR The operation could not be started
  */
-enum io_status io_uart_receive_continuous(const io_uart_t *uart, uint8_t *ring_buf,
-                                          uint16_t length);
+enum io_status io_uart_receive_continuous(const io_uart_t *uart, uint8_t *data, uint16_t length);
 
 #endif // ULYSSES_IO_UART
