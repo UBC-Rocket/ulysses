@@ -6,13 +6,11 @@
 enum io_uart_async_mode {
     IO_UART_DMA = 0, ///< Use DMA for asynchronous transfers
     IO_UART_IRQ,     ///< Use interrupts for asynchronous transfers
-    IO_UART_ASYNC_MODE_COUNT
 };
 
 enum io_uart_receive_mode {
     IO_UART_PACKET = 0, ///< Fixed-length packet reception
     IO_UART_CONTINUOUS, ///< Continuous reception
-    IO_UART_RECEIVE_MODE_COUNT
 };
 
 struct io_uart_ops {

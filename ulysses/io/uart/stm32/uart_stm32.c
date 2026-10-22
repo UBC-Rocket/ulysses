@@ -190,10 +190,6 @@ void stm32_uart_init(io_uart_t *uart, const struct uart_config *uart_config)
     ULYSSES_ASSERT(uart->config != NULL, "uart config must not be NULL");
     ULYSSES_ASSERT(uart_config != NULL, "uart initialization config must not be NULL");
     ULYSSES_ASSERT(uart_config->huart != NULL, "uart handle must not be NULL");
-    ULYSSES_ASSERT((unsigned)uart_config->async_mode < IO_UART_ASYNC_MODE_COUNT,
-                   "invalid uart asynchronous mode");
-    ULYSSES_ASSERT((unsigned)uart_config->receive_mode < IO_UART_RECEIVE_MODE_COUNT,
-                   "invalid uart receive mode");
 
     struct uart_config *config = (struct uart_config *)uart->config;
     memcpy(config, uart_config, sizeof(*config));
