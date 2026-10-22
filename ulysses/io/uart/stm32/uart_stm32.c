@@ -8,13 +8,13 @@
 
 #include "uart/stm32/uart_stm32.h"
 
-void stm32_uart_set_transmit_cb(const io_uart_t *uart, io_uart_transmit_cb_t cb)
+static void stm32_uart_set_transmit_cb(const io_uart_t *uart, io_uart_transmit_cb_t cb)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
     config->transmit_cb = cb;
 }
 
-void stm32_uart_set_receive_cb(const io_uart_t *uart, io_uart_receive_cb_t cb)
+static void stm32_uart_set_receive_cb(const io_uart_t *uart, io_uart_receive_cb_t cb)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
     config->receive_cb = cb;
