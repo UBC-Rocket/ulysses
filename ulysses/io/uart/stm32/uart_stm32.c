@@ -1,5 +1,6 @@
 // TODO: Add async error reporting and RX recovery
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "ulysses/io/irq.h"
@@ -64,7 +65,6 @@ static enum io_status stm32_uart_transmit_dma(const io_uart_t *uart, const uint8
                                               uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
-    ULYSSES_ASSERT(config->huart->hdmatx != NULL, "uart tx dma handle must not be NULL");
 
     if (length == 0) {
         return IO_STATUS_OK;
@@ -77,7 +77,6 @@ static enum io_status stm32_uart_receive_dma(const io_uart_t *uart, uint8_t *dat
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->receive_mode == IO_UART_PACKET, "uart must be in packet receive mode");
-    ULYSSES_ASSERT(config->huart->hdmarx != NULL, "uart rx dma handle must not be NULL");
 
     if (length == 0) {
         return IO_STATUS_OK;
@@ -95,7 +94,6 @@ static enum io_status stm32_uart_receive_continuous_dma(const io_uart_t *uart, u
     const struct uart_config *config = (const struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->receive_mode == IO_UART_CONTINUOUS,
                    "uart must be in continuous receive mode");
-    ULYSSES_ASSERT(config->huart->hdmarx != NULL, "uart rx dma handle must not be NULL");
 
     if (length == 0) {
         return IO_STATUS_ERROR;
@@ -209,6 +207,6 @@ void stm32_uart_init(io_uart_t *uart, const struct uart_config *uart_config)
         uart->ops = &stm32_uart_irq_ops;
         break;
     default:
-        ULYSSES_ASSERT(0, "invalid uart asynchronous mode");
+        ULYSSES_ASSERT(false, "invalid uart asynchronous mode");
     }
 }
