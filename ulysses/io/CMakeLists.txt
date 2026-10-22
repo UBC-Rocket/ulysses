@@ -28,4 +28,6 @@ target_include_directories(ulysses_io
 # Board wiring, one file per core
 if(ULYSSES_BUILD_CONTEXT STREQUAL "CM7")
     target_sources(ulysses_io PRIVATE board/board_cm7.c)
+elseif(ULYSSES_BUILD_CONTEXT STREQUAL "CM4")
+    target_sources(ulysses_io PRIVATE board/board_cm4.c)
 endif()
