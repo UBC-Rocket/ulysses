@@ -143,7 +143,7 @@ static enum io_status stm32_uart_receive_continuous_irq(const io_uart_t *uart, u
     return to_io_status(HAL_UART_Receive_IT(config->huart, data, length));
 }
 
-static const struct io_uart_ops stm32_uart_dma_methods = {
+static const struct io_uart_ops stm32_uart_dma_ops = {
     .set_transmit_cb = stm32_uart_set_transmit_cb,
     .set_receive_cb = stm32_uart_set_receive_cb,
     .transmit = stm32_uart_transmit_blocking,
@@ -153,7 +153,7 @@ static const struct io_uart_ops stm32_uart_dma_methods = {
     .receive_continuous = stm32_uart_receive_continuous_dma,
 };
 
-static const struct io_uart_ops stm32_uart_irq_methods = {
+static const struct io_uart_ops stm32_uart_irq_ops = {
     .set_transmit_cb = stm32_uart_set_transmit_cb,
     .set_receive_cb = stm32_uart_set_receive_cb,
     .transmit = stm32_uart_transmit_blocking,
@@ -203,10 +203,10 @@ void stm32_uart_init(io_uart_t *uart, const struct uart_config *uart_config)
 
     switch (config->async_mode) {
     case IO_UART_DMA:
-        uart->methods = &stm32_uart_dma_methods;
+        uart->ops = &stm32_uart_dma_ops;
         break;
     case IO_UART_IRQ:
-        uart->methods = &stm32_uart_irq_methods;
+        uart->ops = &stm32_uart_irq_ops;
         break;
     default:
         ULYSSES_ASSERT(0, "invalid uart asynchronous mode");

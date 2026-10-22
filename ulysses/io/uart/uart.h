@@ -27,7 +27,7 @@ struct io_uart_ops {
 
 struct io_uart {
     const void *config;                ///< Caller-provided backend configuration storage
-    const struct io_uart_ops *methods; ///< Shared backend operation table
+    const struct io_uart_ops *ops; ///< Shared backend operation table
 };
 
 #endif // ULYSSES_IO_UART_PRIVATE
