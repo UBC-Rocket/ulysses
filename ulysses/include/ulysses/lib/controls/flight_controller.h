@@ -6,13 +6,13 @@
 
 #include "ulysses/lib/math/quaternion.h"
 
-typedef struct {
+typedef struct fc_ref {
     quaternion_t attitude_ref;
     float pos_ref[3];
     float vel_ref[3];
 } fc_ref_t;
 
-typedef struct {
+typedef struct fc_command {
     float theta_x_cmd;
     float theta_y_cmd;
     float thrust_top;
