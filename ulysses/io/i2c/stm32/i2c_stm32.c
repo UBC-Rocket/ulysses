@@ -92,27 +92,17 @@ static enum io_status stm32_mem_write_async(const void *config, uint8_t addr, ui
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-/** @brief Shared operations; async transfers are interrupt driven */
+/** @brief Shared operations */
 static const struct io_i2c_bus_ops stm32_i2c_ops = {.mem_read = stm32_mem_read,
                                                     .mem_write = stm32_mem_write,
                                                     .mem_read_async = stm32_mem_read_async,
                                                     .mem_write_async = stm32_mem_write_async};
 
-/**
- * @brief Completes the in-flight async transfer successfully
- *
- * @param user_data Bus the transfer was started on
- */
 static void stm32_transfer_complete_handler(void *user_data)
 {
     io_i2c_bus_complete((io_i2c_bus_t *)user_data, IO_STATUS_OK);
 }
 
-/**
- * @brief Completes the in-flight async transfer with the HAL error mapped to an I/O status
- *
- * @param user_data Bus the transfer was started on
- */
 static void stm32_transfer_error_handler(void *user_data)
 {
     io_i2c_bus_t *bus = (io_i2c_bus_t *)user_data;

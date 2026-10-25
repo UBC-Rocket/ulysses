@@ -17,17 +17,7 @@ enum io_status io_i2c_bus_mem_write(const io_i2c_bus_t *bus, uint8_t addr, uint8
     return bus->ops->mem_write(bus->config, addr, reg, data, len, timeout_ms);
 }
 
-/**
- * @brief Claims the bus for an async transfer and records its callback
- *
- * The callback is recorded before the backend starts, since completion can interrupt the caller.
- *
- * @param bus Bus to claim
- * @param cb Completion callback
- * @param user_data Data passed to cb
- *
- * @return True if the bus was idle and is now claimed
- */
+// Records cb before the transfer starts, since completion can interrupt the caller
 static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
 {
     bool claimed = false;

@@ -14,8 +14,7 @@ struct io_i2c_stm32_config {
  * @brief Links an I2C bus to an already initialized STM32 HAL handle
  *
  * Stores config by reference; config and its HAL handle must remain valid while the bus is used.
- * Registers the bus for the handle's transfer complete and error IRQ events, so async transfers
- * need the peripheral's event and error interrupts enabled. Call once per bus.
+ * Call once per bus. Async transfers need the I2C event and error interrupts enabled.
  *
  * @param[out] bus Non-NULL bus to configure
  * @param config Non-NULL configuration whose HAL handle is in HAL_I2C_STATE_READY
