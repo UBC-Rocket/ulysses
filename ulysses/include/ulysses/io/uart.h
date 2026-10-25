@@ -13,12 +13,12 @@ typedef struct io_uart io_uart_t;
 /**
  * @brief UART asynchronous transmit callback type
  */
-typedef void (*io_uart_transmit_cb_t)(void);
+typedef void (*io_uart_transmit_cb_t)(enum io_status status, const io_uart_t *uart);
 
 /**
  * @brief UART asynchronous receive callback type
  */
-typedef void (*io_uart_receive_cb_t)(void);
+typedef void (*io_uart_receive_cb_t)(enum io_status status, const io_uart_t *uart);
 
 /**
  * @brief Set or unset transmit callback

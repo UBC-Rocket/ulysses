@@ -1,9 +1,10 @@
-// TODO: Add async error reporting and RX recovery
+// TODO: Add actual error handling
 
 #include <stdbool.h>
 #include <string.h>
 
 #include "ulysses/io/irq.h"
+#include "ulysses/io/status.h"
 #include "ulysses/lib/assert.h"
 
 #include "uart/stm32/uart_stm32.h"
@@ -161,13 +162,47 @@ static const struct io_uart_ops stm32_uart_irq_ops = {
     .receive_continuous = stm32_uart_receive_continuous_irq,
 };
 
+static void stm32_uart_event_error_handler(void *_uart)
+{
+    const io_uart_t *uart = (const io_uart_t *)_uart;
+    const struct uart_config *config = (const struct uart_config *)uart->config;
+
+    const uint32_t errors = config->huart->ErrorCode;
+    if (errors == HAL_UART_ERROR_NONE) {
+        return;
+    }
+
+    const uint32_t dma_requests = config->huart->Instance->CR3;
+    const uint32_t dma_rx = dma_requests & USART_CR3_DMAR;
+    const uint32_t dma_tx = dma_requests & USART_CR3_DMAT;
+    const uint32_t rx_errors =
+        HAL_UART_ERROR_PE | HAL_UART_ERROR_NE | HAL_UART_ERROR_FE | HAL_UART_ERROR_ORE;
+
+#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)
+    ULYSSES_ASSERT(!(errors & HAL_UART_ERROR_INVALID_CALLBACK),
+                   "invalid uart callback registration");
+#endif
+
+    if (config->receive_cb != NULL) {
+        if ((errors & rx_errors) || (dma_rx && (errors & HAL_UART_ERROR_DMA))) {
+            config->receive_cb(IO_STATUS_ERROR, uart);
+        } else if (errors & HAL_UART_ERROR_RTO) {
+            config->receive_cb(IO_STATUS_TIMEOUT, uart);
+        }
+    }
+
+    if (config->transmit_cb != NULL && dma_tx && (errors & HAL_UART_ERROR_DMA)) {
+        config->transmit_cb(IO_STATUS_ERROR, uart);
+    }
+}
+
 static void stm32_uart_event_transmit_complete_handler(void *_uart)
 {
     const io_uart_t *uart = (const io_uart_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
     if (config->transmit_cb != NULL) {
-        config->transmit_cb();
+        config->transmit_cb(IO_STATUS_OK, uart);
     }
 }
 
@@ -178,7 +213,7 @@ static void stm32_uart_event_receive_complete_handler(void *_uart)
 
     // TODO: Handle CM events
     if (config->receive_cb != NULL) {
-        config->receive_cb();
+        config->receive_cb(IO_STATUS_OK, uart);
     }
 }
 
@@ -194,6 +229,8 @@ void stm32_uart_init(io_uart_t *uart, const struct uart_config *uart_config)
 
     // TODO: Configure CM
 
+    io_irq_register(IO_IRQ_HAL_HANDLE_TO_ID(config->huart), IO_IRQ_EVENT_ERROR,
+                    stm32_uart_event_error_handler, uart);
     io_irq_register(IO_IRQ_HAL_HANDLE_TO_ID(config->huart), IO_IRQ_EVENT_TX_COMPLETE,
                     stm32_uart_event_transmit_complete_handler, uart);
     io_irq_register(IO_IRQ_HAL_HANDLE_TO_ID(config->huart), IO_IRQ_EVENT_RX_COMPLETE,
