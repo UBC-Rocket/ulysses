@@ -37,6 +37,7 @@ add_subdirectory(lib)
 if(NOT ULYSSES_BUILD_NATIVE)
     add_subdirectory(io)
     add_subdirectory(svc)
+    add_subdirectory(dev)
 endif()
 
 if(ULYSSES_BUILD_TESTS)

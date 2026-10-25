@@ -75,6 +75,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
     ulysses_io
     ulysses_svc
+    ulysses_dev
     ulysses_public_headers
 )
 
