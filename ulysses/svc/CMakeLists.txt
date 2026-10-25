@@ -11,4 +11,5 @@ target_link_libraries(ulysses_svc
 target_sources(ulysses_svc
     PRIVATE
         dev/mag/mag.c
+        dev/mag/mmc5983/mag_mmc5983.c
 )
