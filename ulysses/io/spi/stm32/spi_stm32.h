@@ -19,9 +19,9 @@ struct io_spi_stm32_config {
 /**
  * @brief Initializes an SPI device on an STM32
  *
- * @param device Device to initialize
+ * @param dev Device to initialize
  * @param config Wiring of the device, must stay valid while the device is used
  */
-void io_spi_stm32_init(io_spi_device_t *device, const struct io_spi_stm32_config *config);
+void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *config);
 
 #endif // ULYSSES_IO_SPI_STM32
