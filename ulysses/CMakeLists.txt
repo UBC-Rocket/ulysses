@@ -31,3 +31,4 @@ target_compile_features(ulysses_layer_interface
 
 add_subdirectory(lib)
 add_subdirectory(io)
+add_subdirectory(dev)
