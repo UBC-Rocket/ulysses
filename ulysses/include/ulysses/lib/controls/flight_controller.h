@@ -20,6 +20,6 @@ typedef struct fc_command {
 } fc_command_t;
 
 void flight_controller_init(const fc_config_t *config);
-void flight_controller_step(const eskf_state_t *state, const fc_ref_t *ref, fc_command_t *cmd_out, float dt_s);
+void flight_controller_step(const eskf_nominal_state_t *state, const fc_ref_t *ref, fc_command_t *cmd_out, float dt_s);
 
 #endif /* ULYSSES_LIB_CONTROLS_FLIGHT_CONTROLLER */
