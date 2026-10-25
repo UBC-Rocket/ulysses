@@ -47,7 +47,8 @@ struct io_i2c_bus {
 /**
  * @brief Dispatches a synchronous register read to the bus backend
  *
- * Address and length validation is left to the caller or backend.
+ * Preconditions are not re-checked here; the device layer validates the transfer and the backend
+ * init guarantees the operations are set.
  *
  * @param bus Non-NULL bus with a non-NULL mem_read operation
  * @param addr Unshifted 7-bit device address
@@ -64,7 +65,8 @@ enum io_status io_i2c_bus_mem_read(const io_i2c_bus_t *bus, uint8_t addr, uint8_
 /**
  * @brief Dispatches a synchronous register write to the bus backend
  *
- * Address and length validation is left to the caller or backend.
+ * Preconditions are not re-checked here; the device layer validates the transfer and the backend
+ * init guarantees the operations are set.
  *
  * @param bus Non-NULL bus with a non-NULL mem_write operation
  * @param addr Unshifted 7-bit device address
