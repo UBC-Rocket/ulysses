@@ -9,7 +9,7 @@
 
 /** @brief Wiring of an MMC5983MA magnetometer */
 struct dev_mag_mmc5983_config {
-    io_spi_device_t *spi; ///< SPI device the sensor is connected to
+    io_spi_dev_t *spi; ///< SPI device the sensor is connected to
 };
 
 /** @brief State of an MMC5983MA magnetometer, filled in by dev_mag_mmc5983_init() */

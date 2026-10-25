@@ -38,14 +38,14 @@
 #define MEAS_POLL_COUNT (10)
 #define RAW_LEN (7) // Xout0 to XYZout2
 
-static enum io_status write_reg(io_spi_device_t *spi, uint8_t reg, uint8_t value)
+static enum io_status write_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t value)
 {
     uint8_t tx_data[2] = {reg, value};
 
     return io_spi_transmit(spi, tx_data, sizeof(tx_data), SPI_TIMEOUT_MS);
 }
 
-static enum io_status read_reg(io_spi_device_t *spi, uint8_t reg, uint8_t *value)
+static enum io_status read_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t *value)
 {
     uint8_t tx_data[2] = {SPI_READ_BIT | reg, 0};
     uint8_t rx_data[2];
@@ -59,7 +59,7 @@ static enum io_status read_reg(io_spi_device_t *spi, uint8_t reg, uint8_t *value
     return IO_STATUS_OK;
 }
 
-static enum io_status read_raw(io_spi_device_t *spi, int32_t raw[3])
+static enum io_status read_raw(io_spi_dev_t *spi, int32_t raw[3])
 {
     uint8_t tx_data[1 + RAW_LEN] = {SPI_READ_BIT | REG_XOUT0};
     uint8_t rx_data[1 + RAW_LEN];
@@ -77,7 +77,7 @@ static enum io_status read_raw(io_spi_device_t *spi, int32_t raw[3])
     return IO_STATUS_OK;
 }
 
-static enum io_status measure(io_spi_device_t *spi, uint8_t pulse, int32_t raw[3])
+static enum io_status measure(io_spi_dev_t *spi, uint8_t pulse, int32_t raw[3])
 {
     enum io_status status = write_reg(spi, REG_CTRL0, pulse);
     if (status != IO_STATUS_OK) {
