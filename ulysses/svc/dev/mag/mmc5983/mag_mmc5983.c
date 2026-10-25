@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -11,15 +12,23 @@
 #define REG_STATUS (0x08)
 #define REG_CTRL0 (0x09)
 #define REG_CTRL1 (0x0A)
+#define REG_CTRL2 (0x0B)
 #define REG_PRODUCT_ID (0x2F)
 
 #define STATUS_MEAS_M_DONE (0x01)
 #define CTRL0_TM_M (0x01)
 #define CTRL0_SET (0x08)
 #define CTRL0_RESET (0x10)
+#define CTRL0_AUTO_SR_EN (0x20)
 #define CTRL1_BW_200HZ (0x01) // 4 ms per measurement
 #define CTRL1_SW_RST (0x80)
+#define CTRL2_CM_FREQ_100HZ (0x05)
+#define CTRL2_CMM_EN (0x08)
+#define CTRL2_PRD_SET_EVERY (0x00) // SET before every measurement
+#define CTRL2_EN_PRD_SET (0x80)
 #define PRODUCT_ID_VALUE (0x30)
+
+#define COUNTS_PER_GAUSS (16384.0f)
 
 #define SPI_READ_BIT (0x80)
 #define SPI_TIMEOUT_MS (10)
@@ -98,6 +107,35 @@ static enum io_status measure(io_spi_device_t *spi, uint8_t pulse, int32_t raw[3
     return IO_STATUS_TIMEOUT;
 }
 
+static enum io_status mmc5983_read(struct dev_mag *mag, struct dev_mag_sample *sample)
+{
+    const struct dev_mag_mmc5983_config *config = mag->config;
+    const struct dev_mag_mmc5983_data *data = mag->data;
+
+    int32_t raw[3];
+    enum io_status status = read_raw(config->spi, raw);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
+    sample->x = (float)(raw[0] - data->offset[0]) / COUNTS_PER_GAUSS;
+    sample->y = (float)(raw[1] - data->offset[1]) / COUNTS_PER_GAUSS;
+    sample->z = (float)(raw[2] - data->offset[2]) / COUNTS_PER_GAUSS;
+    return IO_STATUS_OK;
+}
+
+static bool mmc5983_is_data_ready(struct dev_mag *mag)
+{
+    const struct dev_mag_mmc5983_config *config = mag->config;
+
+    uint8_t device_status;
+    if (read_reg(config->spi, REG_STATUS, &device_status) != IO_STATUS_OK) {
+        return false;
+    }
+
+    return (device_status & STATUS_MEAS_M_DONE) != 0;
+}
+
 enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
                                     const struct dev_mag_mmc5983_config *config,
                                     struct dev_mag_mmc5983_data *data)
@@ -149,5 +187,19 @@ enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
     data->offset[0] = (set_raw[0] + reset_raw[0]) / 2;
     data->offset[1] = (set_raw[1] + reset_raw[1]) / 2;
     data->offset[2] = (set_raw[2] + reset_raw[2]) / 2;
+
+    status = write_reg(config->spi, REG_CTRL0, CTRL0_AUTO_SR_EN);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
+    status = write_reg(config->spi, REG_CTRL2,
+                       CTRL2_EN_PRD_SET | CTRL2_PRD_SET_EVERY | CTRL2_CMM_EN | CTRL2_CM_FREQ_100HZ);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
+    mag->read = mmc5983_read;
+    mag->is_data_ready = mmc5983_is_data_ready;
     return IO_STATUS_OK;
 }
