@@ -12,7 +12,7 @@ typedef struct io_spi_device io_spi_device_t;
  *
  * @param device Device to talk to
  * @param tx_data Bytes to send
- * @param rx_data Buffer for the received bytes
+ * @param[out] rx_data Buffer for the received bytes
  * @param len Number of bytes to send and receive
  * @param timeout_ms Timeout in milliseconds
  *
@@ -38,7 +38,7 @@ enum io_status io_spi_transmit(io_spi_device_t *device, const uint8_t *tx_data, 
  * @brief Receives bytes from an SPI device, blocking until done
  *
  * @param device Device to talk to
- * @param rx_data Buffer for the received bytes
+ * @param[out] rx_data Buffer for the received bytes
  * @param len Number of bytes to receive
  * @param timeout_ms Timeout in milliseconds
  *
