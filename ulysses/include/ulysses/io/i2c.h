@@ -12,6 +12,16 @@ typedef struct io_i2c_bus io_i2c_bus_t;
 typedef struct io_i2c_dev io_i2c_dev_t;
 
 /**
+ * @brief Completion callback for a non-blocking I2C transfer
+ *
+ * Runs in interrupt context.
+ *
+ * @param status Final transfer status
+ * @param user_data Data given when the transfer was started
+ */
+typedef void (*io_i2c_cb_t)(enum io_status status, void *user_data);
+
+/**
  * @brief Reads bytes starting at an 8-bit device register
  *
  * Blocks until the backend transfer completes or fails.
