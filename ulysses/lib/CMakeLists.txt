@@ -10,4 +10,8 @@ target_link_libraries(ulysses_lib
 target_sources(ulysses_lib
     PRIVATE
         assert/default_handler.c
+        eskf/eskf.c
+        eskf/predict.c
+        eskf/update.c
+        eskf/math.c
 )
