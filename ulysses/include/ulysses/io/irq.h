@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define IO_IRQ_HAL_HANDLE_TO_ID(handle_ptr) ((uint64_t)(handle_ptr))
+#define IO_IRQ_HAL_HANDLE_TO_ID(handle_ptr) ((uint64_t)(uintptr_t)(handle_ptr))
 
 enum io_irq_event {
     IO_IRQ_EVENT_TRIGGER,

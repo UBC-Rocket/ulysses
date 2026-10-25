@@ -127,7 +127,9 @@ is written like this).
 By default, the proper members will be requested to review the PR. However, you are free to add any
 other members to review as well, although their reviews won't affect your ability to merge the PR.
 
-> [!important] Keep your PR small
+> [!important]
+> Keep your PR small
+> 
 > For developers, you must keep your PR reviewable. A good guideline is that: If the change affects
 > a large portion of the codebase, it must be kept simple (e.g. renaming a structure across the
 > codebase). If the change is complex, it should be kept small.
