@@ -68,6 +68,8 @@ void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *conf
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(config != NULL, "SPI config must be non NULL");
     ULYSSES_ASSERT(config->hw_handle != NULL, "SPI hardware handle must be non NULL");
+    ULYSSES_ASSERT(config->hw_handle->State == HAL_SPI_STATE_READY,
+                   "SPI hardware handle must be initialized");
     ULYSSES_ASSERT(config->cs_port != NULL, "SPI chip-select port must be non NULL");
     ULYSSES_ASSERT(config->cs_pin != 0, "SPI chip-select pin must be non zero");
 
