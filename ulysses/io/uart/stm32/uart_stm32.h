@@ -16,6 +16,6 @@ struct uart_config {
     io_uart_receive_cb_t receive_cb;        ///< Callback for receive-complete events
 };
 
-void stm32_uart_init(io_uart_t *uart, const struct uart_config *uart_config);
+void stm32_uart_init(io_uart_dev_t *uart, const struct uart_config *uart_config);
 
 #endif // ULYSSES_IO_UART_STM32

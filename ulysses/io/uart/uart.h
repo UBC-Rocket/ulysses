@@ -14,18 +14,19 @@ enum io_uart_receive_mode {
 };
 
 struct io_uart_ops {
-    void (*set_transmit_cb)(const io_uart_t *uart, io_uart_transmit_cb_t cb);
-    void (*set_receive_cb)(const io_uart_t *uart, io_uart_receive_cb_t cb);
-    enum io_status (*transmit)(const io_uart_t *uart, const uint8_t *data, uint16_t length,
+    void (*set_transmit_cb)(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb);
+    void (*set_receive_cb)(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
+    enum io_status (*transmit)(const io_uart_dev_t *uart, const uint8_t *data, uint16_t length,
                                uint32_t timeout_ms);
-    enum io_status (*receive)(const io_uart_t *uart, uint8_t *data, uint16_t length,
+    enum io_status (*receive)(const io_uart_dev_t *uart, uint8_t *data, uint16_t length,
                               uint32_t timeout_ms);
-    enum io_status (*transmit_async)(const io_uart_t *uart, const uint8_t *data, uint16_t length);
-    enum io_status (*receive_async)(const io_uart_t *uart, uint8_t *data, uint16_t length);
-    enum io_status (*receive_continuous)(const io_uart_t *uart, uint8_t *data, uint16_t length);
+    enum io_status (*transmit_async)(const io_uart_dev_t *uart, const uint8_t *data,
+                                     uint16_t length);
+    enum io_status (*receive_async)(const io_uart_dev_t *uart, uint8_t *data, uint16_t length);
+    enum io_status (*receive_continuous)(const io_uart_dev_t *uart, uint8_t *data, uint16_t length);
 };
 
-struct io_uart {
+struct io_uart_dev {
     const void *config;            ///< Caller-provided backend configuration storage
     const struct io_uart_ops *ops; ///< Shared backend operation table
 };

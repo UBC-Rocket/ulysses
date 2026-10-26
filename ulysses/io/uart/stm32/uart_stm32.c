@@ -9,13 +9,13 @@
 
 #include "uart/stm32/uart_stm32.h"
 
-static void stm32_uart_set_transmit_cb(const io_uart_t *uart, io_uart_transmit_cb_t cb)
+static void stm32_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
     config->transmit_cb = cb;
 }
 
-static void stm32_uart_set_receive_cb(const io_uart_t *uart, io_uart_receive_cb_t cb)
+static void stm32_uart_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
     config->receive_cb = cb;
@@ -35,7 +35,7 @@ static enum io_status to_io_status(HAL_StatusTypeDef hal_status)
     }
 }
 
-static enum io_status stm32_uart_transmit_blocking(const io_uart_t *uart, const uint8_t *data,
+static enum io_status stm32_uart_transmit_blocking(const io_uart_dev_t *uart, const uint8_t *data,
                                                    uint16_t length, uint32_t timeout_ms)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
@@ -48,7 +48,7 @@ static enum io_status stm32_uart_transmit_blocking(const io_uart_t *uart, const 
     return to_io_status(HAL_UART_Transmit(config->huart, data, length, timeout_ms));
 }
 
-static enum io_status stm32_uart_receive_blocking(const io_uart_t *uart, uint8_t *data,
+static enum io_status stm32_uart_receive_blocking(const io_uart_dev_t *uart, uint8_t *data,
                                                   uint16_t length, uint32_t timeout_ms)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
@@ -62,7 +62,7 @@ static enum io_status stm32_uart_receive_blocking(const io_uart_t *uart, uint8_t
     return to_io_status(HAL_UART_Receive(config->huart, data, length, timeout_ms));
 }
 
-static enum io_status stm32_uart_transmit_dma(const io_uart_t *uart, const uint8_t *data,
+static enum io_status stm32_uart_transmit_dma(const io_uart_dev_t *uart, const uint8_t *data,
                                               uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
@@ -74,7 +74,8 @@ static enum io_status stm32_uart_transmit_dma(const io_uart_t *uart, const uint8
     return to_io_status(HAL_UART_Transmit_DMA(config->huart, data, length));
 }
 
-static enum io_status stm32_uart_receive_dma(const io_uart_t *uart, uint8_t *data, uint16_t length)
+static enum io_status stm32_uart_receive_dma(const io_uart_dev_t *uart, uint8_t *data,
+                                             uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->receive_mode == IO_UART_PACKET, "uart must be in packet receive mode");
@@ -89,7 +90,7 @@ static enum io_status stm32_uart_receive_dma(const io_uart_t *uart, uint8_t *dat
     return to_io_status(HAL_UART_Receive_DMA(config->huart, data, length));
 }
 
-static enum io_status stm32_uart_receive_continuous_dma(const io_uart_t *uart, uint8_t *data,
+static enum io_status stm32_uart_receive_continuous_dma(const io_uart_dev_t *uart, uint8_t *data,
                                                         uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
@@ -107,7 +108,7 @@ static enum io_status stm32_uart_receive_continuous_dma(const io_uart_t *uart, u
     return to_io_status(HAL_UART_Receive_DMA(config->huart, data, length));
 }
 
-static enum io_status stm32_uart_transmit_irq(const io_uart_t *uart, const uint8_t *data,
+static enum io_status stm32_uart_transmit_irq(const io_uart_dev_t *uart, const uint8_t *data,
                                               uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
@@ -119,7 +120,8 @@ static enum io_status stm32_uart_transmit_irq(const io_uart_t *uart, const uint8
     return to_io_status(HAL_UART_Transmit_IT(config->huart, data, length));
 }
 
-static enum io_status stm32_uart_receive_irq(const io_uart_t *uart, uint8_t *data, uint16_t length)
+static enum io_status stm32_uart_receive_irq(const io_uart_dev_t *uart, uint8_t *data,
+                                             uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->receive_mode == IO_UART_PACKET, "uart must be in packet receive mode");
@@ -131,7 +133,7 @@ static enum io_status stm32_uart_receive_irq(const io_uart_t *uart, uint8_t *dat
     return to_io_status(HAL_UART_Receive_IT(config->huart, data, length));
 }
 
-static enum io_status stm32_uart_receive_continuous_irq(const io_uart_t *uart, uint8_t *data,
+static enum io_status stm32_uart_receive_continuous_irq(const io_uart_dev_t *uart, uint8_t *data,
                                                         uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
@@ -164,7 +166,7 @@ static const struct io_uart_ops stm32_uart_irq_ops = {
 
 static void stm32_uart_event_error_handler(void *_uart)
 {
-    const io_uart_t *uart = (const io_uart_t *)_uart;
+    const io_uart_dev_t *uart = (const io_uart_dev_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
     const uint32_t errors = config->huart->ErrorCode;
@@ -198,7 +200,7 @@ static void stm32_uart_event_error_handler(void *_uart)
 
 static void stm32_uart_event_transmit_complete_handler(void *_uart)
 {
-    const io_uart_t *uart = (const io_uart_t *)_uart;
+    const io_uart_dev_t *uart = (const io_uart_dev_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
     if (config->transmit_cb != NULL) {
@@ -208,7 +210,7 @@ static void stm32_uart_event_transmit_complete_handler(void *_uart)
 
 static void stm32_uart_event_receive_complete_handler(void *_uart)
 {
-    const io_uart_t *uart = (const io_uart_t *)_uart;
+    const io_uart_dev_t *uart = (const io_uart_dev_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
     // TODO: Handle CM events
@@ -217,7 +219,7 @@ static void stm32_uart_event_receive_complete_handler(void *_uart)
     }
 }
 
-void stm32_uart_init(io_uart_t *uart, const struct uart_config *uart_config)
+void stm32_uart_init(io_uart_dev_t *uart, const struct uart_config *uart_config)
 {
     ULYSSES_ASSERT(uart != NULL, "uart object must not be NULL");
     ULYSSES_ASSERT(uart->config != NULL, "uart config must not be NULL");

@@ -8,17 +8,17 @@
 /**
  * @brief Opaque UART object
  */
-typedef struct io_uart io_uart_t;
+typedef struct io_uart_dev io_uart_dev_t;
 
 /**
  * @brief UART asynchronous transmit callback type
  */
-typedef void (*io_uart_transmit_cb_t)(enum io_status status, const io_uart_t *uart);
+typedef void (*io_uart_transmit_cb_t)(enum io_status status, const io_uart_dev_t *uart);
 
 /**
  * @brief UART asynchronous receive callback type
  */
-typedef void (*io_uart_receive_cb_t)(enum io_status status, const io_uart_t *uart);
+typedef void (*io_uart_receive_cb_t)(enum io_status status, const io_uart_dev_t *uart);
 
 /**
  * @brief Set or unset transmit callback
@@ -26,7 +26,7 @@ typedef void (*io_uart_receive_cb_t)(enum io_status status, const io_uart_t *uar
  * @param uart Initialized UART object
  * @param cb Callback function, or NULL to disable transmit callbacks
  */
-void io_uart_set_transmit_cb(const io_uart_t *uart, io_uart_receive_cb_t cb);
+void io_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
 
 /**
  * @brief Set or unset receive callback
@@ -34,7 +34,7 @@ void io_uart_set_transmit_cb(const io_uart_t *uart, io_uart_receive_cb_t cb);
  * @param uart Initialized UART object
  * @param cb Callback function, or NULL to disable receive callbacks
  */
-void io_uart_set_receive_cb(const io_uart_t *uart, io_uart_receive_cb_t cb);
+void io_uart_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
 
 /**
  * @brief Transmits data synchronously
@@ -49,7 +49,7 @@ void io_uart_set_receive_cb(const io_uart_t *uart, io_uart_receive_cb_t cb);
  * @retval IO_STATUS_TIMEOUT The operation timed out
  * @retval IO_STATUS_ERROR The backend reported a transfer error
  */
-enum io_status io_uart_transmit(const io_uart_t *uart, const uint8_t *data, uint16_t length,
+enum io_status io_uart_transmit(const io_uart_dev_t *uart, const uint8_t *data, uint16_t length,
                                 uint32_t timeout_ms);
 
 /**
@@ -67,7 +67,7 @@ enum io_status io_uart_transmit(const io_uart_t *uart, const uint8_t *data, uint
  * @retval IO_STATUS_TIMEOUT The operation timed out
  * @retval IO_STATUS_ERROR The backend reported a transfer error
  */
-enum io_status io_uart_receive(const io_uart_t *uart, uint8_t *data, uint16_t length,
+enum io_status io_uart_receive(const io_uart_dev_t *uart, uint8_t *data, uint16_t length,
                                uint32_t timeout_ms);
 
 /**
@@ -81,7 +81,8 @@ enum io_status io_uart_receive(const io_uart_t *uart, uint8_t *data, uint16_t le
  * @retval IO_STATUS_BUSY A transmit operation is already in progress
  * @retval IO_STATUS_ERROR The operation could not be started
  */
-enum io_status io_uart_transmit_async(const io_uart_t *uart, const uint8_t *data, uint16_t length);
+enum io_status io_uart_transmit_async(const io_uart_dev_t *uart, const uint8_t *data,
+                                      uint16_t length);
 
 /**
  * @brief Starts an asynchronous fixed-length receive operation
@@ -94,7 +95,7 @@ enum io_status io_uart_transmit_async(const io_uart_t *uart, const uint8_t *data
  * @retval IO_STATUS_BUSY A receive operation is already in progress
  * @retval IO_STATUS_ERROR The operation could not be started
  */
-enum io_status io_uart_receive_async(const io_uart_t *uart, uint8_t *data, uint16_t length);
+enum io_status io_uart_receive_async(const io_uart_dev_t *uart, uint8_t *data, uint16_t length);
 
 /**
  * @brief Starts continuous reception
@@ -107,6 +108,7 @@ enum io_status io_uart_receive_async(const io_uart_t *uart, uint8_t *data, uint1
  * @retval IO_STATUS_BUSY A receive operation is already in progress
  * @retval IO_STATUS_ERROR The operation could not be started
  */
-enum io_status io_uart_receive_continuous(const io_uart_t *uart, uint8_t *data, uint16_t length);
+enum io_status io_uart_receive_continuous(const io_uart_dev_t *uart, uint8_t *data,
+                                          uint16_t length);
 
 #endif // ULYSSES_IO_UART
