@@ -57,6 +57,12 @@ static enum io_status stm32_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_
     return to_io_status(hal_status);
 }
 
+static const struct io_spi_ops stm32_spi_ops = {
+    .transfer = stm32_transfer,
+    .transmit = stm32_transmit,
+    .receive = stm32_receive,
+};
+
 void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *config)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
@@ -66,9 +72,7 @@ void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *conf
     ULYSSES_ASSERT(config->cs_pin != 0, "SPI chip-select pin must be non zero");
 
     dev->config = config;
-    dev->transfer = stm32_transfer;
-    dev->transmit = stm32_transmit;
-    dev->receive = stm32_receive;
+    dev->ops = &stm32_spi_ops;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 }
