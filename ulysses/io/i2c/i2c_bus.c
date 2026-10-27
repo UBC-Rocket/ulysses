@@ -1,21 +1,11 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "cmsis_compiler.h" // IWYU pragma: keep
+#include "ulysses/io/status.h"
 
 #include "i2c/i2c_bus.h"
-
-enum io_status io_i2c_bus_mem_read(const io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
-                                   uint8_t *data, uint16_t len, uint32_t timeout_ms)
-{
-    return bus->ops->mem_read(bus->config, addr, reg, data, len, timeout_ms);
-}
-
-enum io_status io_i2c_bus_mem_write(const io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
-                                    const uint8_t *data, uint16_t len, uint32_t timeout_ms)
-{
-    return bus->ops->mem_write(bus->config, addr, reg, data, len, timeout_ms);
-}
 
 // Records cb before the transfer starts, since completion can interrupt the caller
 static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
@@ -37,7 +27,35 @@ static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
     return claimed;
 }
 
-enum io_status io_i2c_bus_mem_read_async(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+                                   uint8_t *data, uint16_t len, uint32_t timeout_ms)
+{
+    if (!claim(bus, NULL, NULL)) {
+        return IO_STATUS_BUSY;
+    }
+
+    enum io_status status = bus->ops->mem_read(bus->config, addr, reg, data, len, timeout_ms);
+
+    bus->busy = false;
+
+    return status;
+}
+
+enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+                                    const uint8_t *data, uint16_t len, uint32_t timeout_ms)
+{
+    if (!claim(bus, NULL, NULL)) {
+        return IO_STATUS_BUSY;
+    }
+
+    enum io_status status = bus->ops->mem_write(bus->config, addr, reg, data, len, timeout_ms);
+
+    bus->busy = false;
+
+    return status;
+}
+
+enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
                                          uint8_t *data, uint16_t len, io_i2c_cb_t cb,
                                          void *user_data)
 {
@@ -45,7 +63,7 @@ enum io_status io_i2c_bus_mem_read_async(io_i2c_bus_t *bus, uint8_t addr, uint8_
         return IO_STATUS_BUSY;
     }
 
-    enum io_status status = bus->ops->mem_read_async(bus->config, addr, reg, data, len);
+    enum io_status status = bus->ops->mem_read_it(bus->config, addr, reg, data, len);
 
     if (status != IO_STATUS_OK) {
         bus->busy = false;
@@ -54,7 +72,7 @@ enum io_status io_i2c_bus_mem_read_async(io_i2c_bus_t *bus, uint8_t addr, uint8_
     return status;
 }
 
-enum io_status io_i2c_bus_mem_write_async(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
                                           const uint8_t *data, uint16_t len, io_i2c_cb_t cb,
                                           void *user_data)
 {
@@ -62,7 +80,7 @@ enum io_status io_i2c_bus_mem_write_async(io_i2c_bus_t *bus, uint8_t addr, uint8
         return IO_STATUS_BUSY;
     }
 
-    enum io_status status = bus->ops->mem_write_async(bus->config, addr, reg, data, len);
+    enum io_status status = bus->ops->mem_write_it(bus->config, addr, reg, data, len);
 
     if (status != IO_STATUS_OK) {
         bus->busy = false;

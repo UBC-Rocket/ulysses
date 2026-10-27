@@ -56,7 +56,7 @@ enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint
  * @param cb Non-NULL completion callback
  * @param user_data Passed to cb
  */
-enum io_status io_i2c_mem_read_async(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data,
+enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data,
                                      uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 /**
@@ -69,7 +69,7 @@ enum io_status io_i2c_mem_read_async(const io_i2c_dev_t *dev, uint8_t reg, uint8
  * @param cb Non-NULL completion callback
  * @param user_data Passed to cb
  */
-enum io_status io_i2c_mem_write_async(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
+enum io_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
                                       uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 #endif // ULYSSES_IO_I2C

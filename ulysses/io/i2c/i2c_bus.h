@@ -39,11 +39,11 @@ struct io_i2c_bus_ops {
                                 uint16_t len, uint32_t timeout_ms);
 
     /** @brief Starts a register read; the backend calls io_i2c_bus_complete() when it ends */
-    enum io_status (*mem_read_async)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
+    enum io_status (*mem_read_it)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
                                      uint16_t len);
 
     /** @brief Starts a register write; the backend calls io_i2c_bus_complete() when it ends */
-    enum io_status (*mem_write_async)(const void *config, uint8_t addr, uint8_t reg,
+    enum io_status (*mem_write_it)(const void *config, uint8_t addr, uint8_t reg,
                                       const uint8_t *data, uint16_t len);
 };
 
@@ -70,7 +70,7 @@ struct io_i2c_bus {
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_read(const io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
                                    uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 /**
@@ -87,16 +87,16 @@ enum io_status io_i2c_bus_mem_read(const io_i2c_bus_t *bus, uint8_t addr, uint8_
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_write(const io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
                                     const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
-/** @brief Starts an async register read; see io_i2c_mem_read_async() */
-enum io_status io_i2c_bus_mem_read_async(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+/** @brief Starts an async register read; see io_i2c_mem_read_it() */
+enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
                                          uint8_t *data, uint16_t len, io_i2c_cb_t cb,
                                          void *user_data);
 
-/** @brief Starts an async register write; see io_i2c_mem_write_async() */
-enum io_status io_i2c_bus_mem_write_async(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+/** @brief Starts an async register write; see io_i2c_mem_write_it() */
+enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
                                           const uint8_t *data, uint16_t len, io_i2c_cb_t cb,
                                           void *user_data);
 
