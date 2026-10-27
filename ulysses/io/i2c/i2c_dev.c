@@ -36,8 +36,8 @@ enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint
     return io_i2c_bus_mem_write(dev->bus, dev->addr, reg, data, len, timeout_ms);
 }
 
-enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data,
-                                     uint16_t len, io_i2c_cb_t cb, void *user_data)
+enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
+                                  io_i2c_cb_t cb, void *user_data)
 {
     validate_transfer(dev, data, len);
     ULYSSES_ASSERT(cb != NULL, "I2C callback pointer is NULL");
@@ -45,7 +45,7 @@ enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t 
 }
 
 enum io_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
-                                      uint16_t len, io_i2c_cb_t cb, void *user_data)
+                                   uint16_t len, io_i2c_cb_t cb, void *user_data)
 {
     validate_transfer(dev, data, len);
     ULYSSES_ASSERT(cb != NULL, "I2C callback pointer is NULL");

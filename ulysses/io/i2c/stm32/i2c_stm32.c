@@ -67,7 +67,7 @@ static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint8_t 
 }
 
 static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_t reg,
-                                           uint8_t *data, uint16_t len)
+                                        uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -80,7 +80,7 @@ static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_
 }
 
 static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint8_t reg,
-                                            const uint8_t *data, uint16_t len)
+                                         const uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
