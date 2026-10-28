@@ -4,12 +4,13 @@
 #include <stdint.h>
 
 /**
- * @brief Blocks the caller for at least the given time
+ * @brief Busy-waits for at least the given time
  *
- * Inside a task, other tasks run while waiting. Must not be called from an interrupt.
+ * For code that runs before the scheduler starts, tasks should use osDelay() instead. Must not be
+ * called from an interrupt.
  *
  * @param ms Time to wait in milliseconds
  */
-void io_delay_ms(uint32_t ms);
+void io_spin_delay_ms(uint32_t ms);
 
 #endif // ULYSSES_IO_DELAY
