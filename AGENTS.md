@@ -20,7 +20,7 @@ ulysses/
   include/ulysses/<layer>/   Public headers for each layer
   lib/                       Hardware-independent code such as math helpers and algorithms (e.g. the Kalman filter)
   io/                        Peripheral abstraction over the STM32 HAL
-  svc/                       Higher-level (more abstract feature) that are buildt from lower layers (e.g. device drivers (sensors, ESCs, ...))
+  svc/                       Higher-level (more abstract feature) that are build from lower layers (e.g. device drivers (sensors, ESCs, ...))
   app/cm7/, app/cm4/         Per-core application code and RTOS tasks
   cfp/                       STM32CubeMX project: generated code, HAL, FreeRTOS, linker scripts
 docs/                        Setup, process, and style guides
