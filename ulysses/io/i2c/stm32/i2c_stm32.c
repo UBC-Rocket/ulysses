@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -6,6 +7,7 @@
 #include "i2c/i2c_bus.h"
 #include "i2c/stm32/i2c_stm32.h"
 
+#include "ulysses/io/irq.h"
 #include "ulysses/lib/assert.h"
 
 /**
@@ -64,9 +66,50 @@ static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint8_t 
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-/** @brief Shared blocking operations */
+static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_t reg,
+                                        uint8_t *data, uint16_t len)
+{
+    const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
+
+    I2C_HandleTypeDef *hi2c = cfg->hw_handle;
+
+    HAL_StatusTypeDef status =
+        HAL_I2C_Mem_Read_IT(hi2c, (uint16_t)(addr << 1U), reg, I2C_MEMADD_SIZE_8BIT, data, len);
+
+    return to_io_status(status, hi2c->ErrorCode);
+}
+
+static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint8_t reg,
+                                         const uint8_t *data, uint16_t len)
+{
+    const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
+
+    I2C_HandleTypeDef *hi2c = cfg->hw_handle;
+
+    HAL_StatusTypeDef status = HAL_I2C_Mem_Write_IT(hi2c, (uint16_t)(addr << 1U), reg,
+                                                    I2C_MEMADD_SIZE_8BIT, (uint8_t *)data, len);
+
+    return to_io_status(status, hi2c->ErrorCode);
+}
+
+/** @brief Shared operations */
 static const struct io_i2c_bus_ops stm32_i2c_ops = {.mem_read = stm32_mem_read,
-                                                    .mem_write = stm32_mem_write};
+                                                    .mem_write = stm32_mem_write,
+                                                    .mem_read_it = stm32_mem_read_it,
+                                                    .mem_write_it = stm32_mem_write_it};
+
+static void stm32_transfer_complete_handler(void *user_data)
+{
+    io_i2c_bus_complete((io_i2c_bus_t *)user_data, IO_STATUS_OK);
+}
+
+static void stm32_transfer_error_handler(void *user_data)
+{
+    io_i2c_bus_t *bus = (io_i2c_bus_t *)user_data;
+    const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)bus->config;
+
+    io_i2c_bus_complete(bus, to_io_status(HAL_ERROR, cfg->hw_handle->ErrorCode));
+}
 
 void io_i2c_stm32_init(io_i2c_bus_t *bus, const struct io_i2c_stm32_config *config)
 {
@@ -77,4 +120,13 @@ void io_i2c_stm32_init(io_i2c_bus_t *bus, const struct io_i2c_stm32_config *conf
 
     bus->config = config;
     bus->ops = &stm32_i2c_ops;
+    bus->cb = NULL;
+    bus->cb_user_data = NULL;
+    bus->busy = false;
+
+    uint64_t id = IO_IRQ_HAL_HANDLE_TO_ID(config->hw_handle);
+
+    io_irq_register(id, IO_IRQ_EVENT_TX_COMPLETE, stm32_transfer_complete_handler, bus);
+    io_irq_register(id, IO_IRQ_EVENT_RX_COMPLETE, stm32_transfer_complete_handler, bus);
+    io_irq_register(id, IO_IRQ_EVENT_ERROR, stm32_transfer_error_handler, bus);
 }
