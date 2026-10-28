@@ -1,4 +1,4 @@
-#include <string.h>
+#include <stddef.h>
 
 #include "ulysses/lib/assert.h"
 
@@ -11,7 +11,7 @@ static inline void assert_not_null(const io_uart_dev_t *uart)
     ULYSSES_ASSERT(uart->ops != NULL, "uart ops must not be NULL");
 }
 
-void io_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb)
+void io_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb)
 {
     assert_not_null(uart);
     uart->ops->set_transmit_cb(uart, cb);
