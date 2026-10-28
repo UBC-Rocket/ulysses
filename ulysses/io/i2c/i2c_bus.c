@@ -7,6 +7,8 @@
 
 #include "i2c/i2c_bus.h"
 
+// TODO: Change claim() and release() to atomic operations in the future to avoid disabling interrupts.
+
 // Records cb before the transfer starts, since completion can interrupt the caller
 static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
 {

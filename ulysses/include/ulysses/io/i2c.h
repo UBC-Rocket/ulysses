@@ -47,27 +47,43 @@ enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint
                                 uint16_t len, uint32_t timeout_ms);
 
 /**
- * @brief Like io_i2c_mem_read(), but returns once started and reports the result through cb
+ * @brief Starts a non-blocking I2C register read.
  *
- * cb is not called if this returns an error. Returns IO_STATUS_BUSY if the bus has a transfer in
- * flight.
+ * Returns once the transfer is started. Completion is
+ * reported through cb, which runs in interrupt context.
+ * cb is not called if the operation fails to start.
  *
- * @param[out] data Buffer that must stay valid until cb runs
+ * @param dev Non-NULL device on an initialized bus
+ * @param reg Starting 8-bit register address
+ * @param[out] data Output buffer with space for len bytes;
+ *                  must remain valid until completion
+ * @param len Number of bytes to read; must be > 0
  * @param cb Non-NULL completion callback
- * @param user_data Passed to cb
+ * @param user_data Context passed to cb
+ *
+ * @return IO_STATUS_OK if started, IO_STATUS_BUSY if
+ *         the bus is occupied, or another error status
  */
 enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
                                   io_i2c_cb_t cb, void *user_data);
 
 /**
- * @brief Like io_i2c_mem_write(), but returns once started and reports the result through cb
+ * @brief Starts a non-blocking I2C register write.
  *
- * cb is not called if this returns an error. Returns IO_STATUS_BUSY if the bus has a transfer in
- * flight.
+ * Returns once the transfer is started. Completion is
+ * reported through cb, which runs in interrupt context.
+ * cb is not called if the operation fails to start.
  *
- * @param data Buffer that must stay valid until cb runs
+ * @param dev Non-NULL device on an initialized bus
+ * @param reg Starting 8-bit register address
+ * @param data Input buffer containing len bytes;
+ *             must remain valid until completion
+ * @param len Number of bytes to write; must be > 0
  * @param cb Non-NULL completion callback
- * @param user_data Passed to cb
+ * @param user_data Context passed to cb
+ *
+ * @return IO_STATUS_OK if started, IO_STATUS_BUSY if
+ *         the bus is occupied, or another error status
  */
 enum io_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
                                    uint16_t len, io_i2c_cb_t cb, void *user_data);
