@@ -48,15 +48,14 @@ typedef struct {
 } eskf_t;
 
 // unit quat, covariance diagonal
-eskf_status_t eskf_init(eskf_t *filter, const eskf_config_t *config,
-                        const eskf_state_t *initial_state);
+void eskf_init(eskf_t *filter, const eskf_config_t *config);
 
-eskf_status_t eskf_reset(eskf_t *filter, const eskf_state_t *initial_state);
+void eskf_reset(eskf_t *filter);
 
 void eskf_get_state(const eskf_t *filter, eskf_state_t *state);
 
-eskf_status_t eskf_predict(eskf_t *filter, const eskf_imu_sample_t *imu, float dt);
+void eskf_predict(eskf_t *filter, const eskf_imu_sample_t *imu, float dt);
 
-eskf_status_t eskf_update_position(eskf_t *filter, const eskf_position_measurement_t *measurement);
+void eskf_update_position(eskf_t *filter, const eskf_position_measurement_t *measurement);
 
 #endif // ULYSSES_LIB_ESKF_ESKF_H
