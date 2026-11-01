@@ -31,4 +31,15 @@ struct io_spi_dev {
     void *cb_user_data;           // passed to cb
 };
 
+/**
+ * @brief Finishes the non-blocking transfer of a device and calls its callback
+ *
+ * Called by platform code from interrupt context. Does nothing if no non-blocking transfer is in
+ * progress.
+ *
+ * @param dev Device whose transfer finished
+ * @param status Result of the transfer
+ */
+void io_spi_complete(io_spi_dev_t *dev, enum io_status status);
+
 #endif // ULYSSES_IO_SPI_PRIVATE

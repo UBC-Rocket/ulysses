@@ -108,3 +108,17 @@ enum io_status io_spi_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uin
 
     return status;
 }
+
+void io_spi_complete(io_spi_dev_t *dev, enum io_status status)
+{
+    io_spi_cb_t cb = dev->cb;
+    void *user_data = dev->cb_user_data;
+
+    if (cb == NULL) {
+        return;
+    }
+
+    release(dev);
+
+    cb(status, user_data);
+}
