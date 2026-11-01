@@ -14,6 +14,7 @@ target_sources(ulysses_svc
         dev/baro/bmp585/baro_bmp585.c
         dev/gnss/gnss.c
         dev/lidar/lidar.c
+        dev/lidar/vl53l4cx/lidar_vl53l4cx.c
         dev/mag/mag.c
         dev/mag/mmc5983/mag_mmc5983.c
 )
