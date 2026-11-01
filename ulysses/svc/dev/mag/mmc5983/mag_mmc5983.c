@@ -83,7 +83,7 @@ static enum io_status measure(io_spi_dev_t *spi, uint8_t pulse, int32_t raw[3])
     if (status != IO_STATUS_OK) {
         return status;
     }
-    io_delay_ms(SET_RESET_TIME_MS);
+    io_spin_delay_ms(SET_RESET_TIME_MS);
 
     status = write_reg(spi, REG_CTRL0, CTRL0_TM_M);
     if (status != IO_STATUS_OK) {
@@ -91,7 +91,7 @@ static enum io_status measure(io_spi_dev_t *spi, uint8_t pulse, int32_t raw[3])
     }
 
     for (uint32_t i = 0; i < MEAS_POLL_COUNT; i++) {
-        io_delay_ms(MEAS_POLL_INTERVAL_MS);
+        io_spin_delay_ms(MEAS_POLL_INTERVAL_MS);
 
         uint8_t device_status;
         status = read_reg(spi, REG_STATUS, &device_status);
@@ -154,7 +154,7 @@ enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
     if (status != IO_STATUS_OK) {
         return status;
     }
-    io_delay_ms(SW_RST_TIME_MS);
+    io_spin_delay_ms(SW_RST_TIME_MS);
 
     uint8_t product_id;
     status = read_reg(config->spi, REG_PRODUCT_ID, &product_id);
