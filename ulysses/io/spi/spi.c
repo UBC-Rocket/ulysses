@@ -1,3 +1,5 @@
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -5,6 +7,19 @@
 #include "ulysses/io/spi.h"
 
 #include "spi/spi.h"
+
+static bool claim(io_spi_dev_t *dev)
+{
+    return !atomic_exchange(&dev->busy, true);
+}
+
+static void release(io_spi_dev_t *dev)
+{
+    dev->cb = NULL;
+    dev->cb_user_data = NULL;
+    // Cleared last, so a new owner's callback is never overwritten
+    atomic_store(&dev->busy, false);
+}
 
 enum io_status io_spi_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
                                uint16_t len, uint32_t timeout_ms)
@@ -16,7 +31,15 @@ enum io_status io_spi_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_
     ULYSSES_ASSERT(rx_data != NULL, "SPI rx buffer must be non NULL");
     ULYSSES_ASSERT(len != 0, "SPI transfer length must be non zero");
 
-    return dev->ops->transfer(dev, tx_data, rx_data, len, timeout_ms);
+    if (!claim(dev)) {
+        return IO_STATUS_BUSY;
+    }
+
+    enum io_status status = dev->ops->transfer(dev, tx_data, rx_data, len, timeout_ms);
+
+    release(dev);
+
+    return status;
 }
 
 enum io_status io_spi_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,

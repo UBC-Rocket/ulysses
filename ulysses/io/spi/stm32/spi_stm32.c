@@ -1,3 +1,5 @@
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -75,7 +77,7 @@ void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *conf
 
     dev->config = config;
     dev->ops = &stm32_spi_ops;
-    dev->busy = false;
+    atomic_init(&dev->busy, false);
     dev->cb = NULL;
     dev->cb_user_data = NULL;
 
