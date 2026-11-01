@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "gnss/gnss_priv.h"
+#include "dev/gnss/gnss_priv.h"
 #include "ulysses/lib/assert.h"
 #include "ulysses/svc/status.h"
 

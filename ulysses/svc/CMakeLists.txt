@@ -10,7 +10,7 @@ target_link_libraries(ulysses_svc
 
 target_sources(ulysses_svc
     PRIVATE
-        gnss/gnss.c
+        dev/gnss/gnss.c
 )
 
 # Private headers shared between svc sources

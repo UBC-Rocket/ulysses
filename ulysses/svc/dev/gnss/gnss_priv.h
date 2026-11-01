@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "ulysses/svc/status.h"
-#include "ulysses/svc/gnss.h"
+#include "ulysses/svc/dev/gnss.h"
 
 struct svc_gnss_ops {
     enum svc_status (*update)(const void *config, void *ctx);
