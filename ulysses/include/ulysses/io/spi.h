@@ -70,4 +70,22 @@ enum io_status io_spi_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
 enum io_status io_spi_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
                                   uint16_t len, io_spi_cb_t cb, void *user_data);
 
+/**
+ * @brief Starts sending bytes to an SPI device, without blocking
+ *
+ * cb runs in interrupt context when the transfer finishes. It is not called if the transfer fails
+ * to start.
+ *
+ * @param dev Device to talk to
+ * @param tx_data Bytes to send, must stay valid until cb is called
+ * @param len Number of bytes to send
+ * @param cb Called when the transfer finishes
+ * @param user_data Passed to cb
+ *
+ * @return IO_STATUS_OK if the transfer started, IO_STATUS_BUSY if the device is in use, otherwise
+ *         an IO_STATUS_* error code
+ */
+enum io_status io_spi_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
+                                  io_spi_cb_t cb, void *user_data);
+
 #endif // ULYSSES_IO_SPI

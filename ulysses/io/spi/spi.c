@@ -109,6 +109,32 @@ enum io_status io_spi_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uin
     return status;
 }
 
+enum io_status io_spi_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
+                                  io_spi_cb_t cb, void *user_data)
+{
+    ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
+    ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
+    ULYSSES_ASSERT(dev->ops->transmit_it != NULL, "SPI transmit_it function must be non NULL");
+    ULYSSES_ASSERT(tx_data != NULL, "SPI tx buffer must be non NULL");
+    ULYSSES_ASSERT(len != 0, "SPI transmit length must be non zero");
+    ULYSSES_ASSERT(cb != NULL, "SPI callback must be non NULL");
+
+    if (!claim(dev)) {
+        return IO_STATUS_BUSY;
+    }
+
+    dev->cb = cb;
+    dev->cb_user_data = user_data;
+
+    enum io_status status = dev->ops->transmit_it(dev, tx_data, len);
+
+    if (status != IO_STATUS_OK) {
+        release(dev);
+    }
+
+    return status;
+}
+
 void io_spi_complete(io_spi_dev_t *dev, enum io_status status)
 {
     io_spi_cb_t cb = dev->cb;
