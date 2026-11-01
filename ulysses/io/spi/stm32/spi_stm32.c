@@ -75,6 +75,9 @@ void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *conf
 
     dev->config = config;
     dev->ops = &stm32_spi_ops;
+    dev->busy = false;
+    dev->cb = NULL;
+    dev->cb_user_data = NULL;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 }

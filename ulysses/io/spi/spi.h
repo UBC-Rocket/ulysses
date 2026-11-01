@@ -1,6 +1,7 @@
 #ifndef ULYSSES_IO_SPI_PRIVATE
 #define ULYSSES_IO_SPI_PRIVATE
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "ulysses/io/spi.h"
@@ -22,6 +23,9 @@ struct io_spi_ops {
 struct io_spi_dev {
     const void *config;           // platform config
     const struct io_spi_ops *ops; // platform functions
+    bool busy;                    // a transfer is in progress
+    io_spi_cb_t cb;               // completion callback of the current non-blocking transfer
+    void *cb_user_data;           // passed to cb
 };
 
 #endif // ULYSSES_IO_SPI_PRIVATE
