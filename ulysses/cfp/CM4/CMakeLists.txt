@@ -75,6 +75,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
     ulysses_io
     ulysses_svc
+    ulysses_public_headers
 )
 
 # Remove wrong libob.a library dependency when using cpp files

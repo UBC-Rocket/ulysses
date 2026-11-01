@@ -29,7 +29,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ulysses/io/board.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -132,7 +132,7 @@ int main(void)
   MX_TIM3_Init();
   MX_SDMMC2_SD_Init();
   /* USER CODE BEGIN 2 */
-
+  io_board_init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
