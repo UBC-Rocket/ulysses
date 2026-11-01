@@ -17,6 +17,7 @@ typedef enum io_status (*io_spi_transfer_it_fn_t)(io_spi_dev_t *dev, const uint8
                                                   uint8_t *rx_data, uint16_t len);
 typedef enum io_status (*io_spi_transmit_it_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
                                                   uint16_t len);
+typedef enum io_status (*io_spi_receive_it_fn_t)(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len);
 
 struct io_spi_ops {
     io_spi_transfer_fn_t transfer;       // platform transfer function
@@ -24,6 +25,7 @@ struct io_spi_ops {
     io_spi_receive_fn_t receive;         // platform receive function
     io_spi_transfer_it_fn_t transfer_it; // platform non-blocking transfer function
     io_spi_transmit_it_fn_t transmit_it; // platform non-blocking transmit function
+    io_spi_receive_it_fn_t receive_it;   // platform non-blocking receive function
 };
 
 struct io_spi_dev {
