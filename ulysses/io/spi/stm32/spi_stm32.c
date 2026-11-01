@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "ulysses/lib/assert.h"
+#include "ulysses/io/irq.h"
 #include "ulysses/io/spi.h"
 
 #include "spi/stm32/spi_stm32.h"
@@ -81,6 +82,24 @@ static const struct io_spi_ops stm32_spi_ops = {
     .transfer_it = stm32_transfer_it,
 };
 
+static void stm32_complete_handler(void *user_data)
+{
+    io_spi_dev_t *dev = user_data;
+    const struct io_spi_stm32_config *config = dev->config;
+
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
+    io_spi_complete(dev, IO_STATUS_OK);
+}
+
+static void stm32_error_handler(void *user_data)
+{
+    io_spi_dev_t *dev = user_data;
+    const struct io_spi_stm32_config *config = dev->config;
+
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
+    io_spi_complete(dev, IO_STATUS_ERROR);
+}
+
 void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *config)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
@@ -98,4 +117,8 @@ void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *conf
     dev->cb_user_data = NULL;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
+
+    uint64_t id = IO_IRQ_HAL_HANDLE_TO_ID(config->hw_handle);
+    io_irq_register(id, IO_IRQ_EVENT_TX_RX_COMPLETE, stm32_complete_handler, dev);
+    io_irq_register(id, IO_IRQ_EVENT_ERROR, stm32_error_handler, dev);
 }
