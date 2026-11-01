@@ -8,6 +8,9 @@
 /** @brief SPI device identified by its peripheral and chip select pin */
 typedef struct io_spi_dev io_spi_dev_t;
 
+/** @brief Completion callback for a non-blocking transfer, runs in interrupt context */
+typedef void (*io_spi_cb_t)(enum io_status status, void *user_data);
+
 /**
  * @brief Sends and receives bytes with an SPI device at the same time, blocking until done
  *
