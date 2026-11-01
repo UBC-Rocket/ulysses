@@ -13,7 +13,7 @@
 #define BARO_BUS (&i2c1_bus)
 #define BARO_ADDR (0x76U)
 #define LIDAR_BUS (&i2c2_bus)
-#define LIDAR_ADDR (0x62U)
+#define LIDAR_ADDR (0x29U)
 
 // Devices below have no IO driver yet. Uncomment when their driver lands.
 
