@@ -15,6 +15,11 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
     io_irq_signal(IO_IRQ_HAL_HANDLE_TO_ID(hspi), IO_IRQ_EVENT_TX_COMPLETE);
 }
 
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    io_irq_signal(IO_IRQ_HAL_HANDLE_TO_ID(hspi), IO_IRQ_EVENT_RX_COMPLETE);
+}
+
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
     io_irq_signal(IO_IRQ_HAL_HANDLE_TO_ID(hspi), IO_IRQ_EVENT_ERROR);

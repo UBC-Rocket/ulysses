@@ -88,12 +88,26 @@ static enum io_status stm32_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_dat
     return to_io_status(hal_status);
 }
 
+static enum io_status stm32_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len)
+{
+    const struct io_spi_stm32_config *config = dev->config;
+
+    HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
+    HAL_StatusTypeDef hal_status = HAL_SPI_Receive_IT(config->hw_handle, rx_data, len);
+    if (hal_status != HAL_OK) {
+        HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
+    }
+
+    return to_io_status(hal_status);
+}
+
 static const struct io_spi_ops stm32_spi_ops = {
     .transfer = stm32_transfer,
     .transmit = stm32_transmit,
     .receive = stm32_receive,
     .transfer_it = stm32_transfer_it,
     .transmit_it = stm32_transmit_it,
+    .receive_it = stm32_receive_it,
 };
 
 static void stm32_complete_handler(void *user_data)
@@ -135,5 +149,6 @@ void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *conf
     uint64_t id = IO_IRQ_HAL_HANDLE_TO_ID(config->hw_handle);
     io_irq_register(id, IO_IRQ_EVENT_TX_RX_COMPLETE, stm32_complete_handler, dev);
     io_irq_register(id, IO_IRQ_EVENT_TX_COMPLETE, stm32_complete_handler, dev);
+    io_irq_register(id, IO_IRQ_EVENT_RX_COMPLETE, stm32_complete_handler, dev);
     io_irq_register(id, IO_IRQ_EVENT_ERROR, stm32_error_handler, dev);
 }
