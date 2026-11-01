@@ -40,7 +40,9 @@ releases. Click on the link for the release you want and expand the collapsible
 section for your host operating system (e.g. Windows, Linux, macOS). In the list
 of toolchains, choose the download for a `arm-none-eabi` target.
 
-> [!note] For Windows and macOS users
+> [!note]
+> For Windows and macOS users
+> 
 > You will have the option of downloading the cross-compiler toolchain in the
 > form of an installer (i.e. `.msi` for Windows, `.pkg` for macOS). If you
 > choose to use the installer, you must take note of the path where toolchain files
@@ -193,7 +195,9 @@ pyocd --version
 
 ### Fixing pyOCD USB permissions for Linux
 
-> [!note] This section is for Linux users only
+> [!note]
+> This section is for Linux users only
+> 
 > If you are not a Linux user, you can ignore this section.
 
 As a rule of thumb, **do not run pyOCD with sudo privileges**.
@@ -260,7 +264,9 @@ a purpose for certain situations.
 
 ### Installing STM32CubeMX
 
-> [!important] A third-party account is needed
+> [!important]
+> A third-party account is needed
+> 
 > You will need a myST account to download and install this tool.
 
 [STM32CubeMX][stm32cubemx] is a tool provided by ST for graphically configuring

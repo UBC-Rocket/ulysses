@@ -30,7 +30,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ulysses/io/board.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -165,7 +165,7 @@ Error_Handler();
   MX_UART5_Init();
   MX_UART7_Init();
   /* USER CODE BEGIN 2 */
-
+  io_board_init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
