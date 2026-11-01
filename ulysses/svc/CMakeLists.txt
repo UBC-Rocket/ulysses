@@ -11,6 +11,7 @@ target_link_libraries(ulysses_svc
 target_sources(ulysses_svc
     PRIVATE
         dev/lidar/lidar.c
+        dev/lidar/vl53l4cx/lidar_vl53l4cx.c
 )
 
 # Private headers shared between svc sources
