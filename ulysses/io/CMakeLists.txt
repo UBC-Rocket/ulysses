@@ -20,9 +20,10 @@ target_sources(ulysses_io
         i2c/stm32/i2c_stm32.c
         spi/spi.c
         spi/stm32/spi_stm32.c
+        uart/uart.c
+        uart/stm32/uart_stm32.c
 )
 
-# Private headers shared between io sources
 target_include_directories(ulysses_io
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
