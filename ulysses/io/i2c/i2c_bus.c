@@ -2,45 +2,38 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "cmsis_compiler.h" // IWYU pragma: keep
 #include "ulysses/io/status.h"
 
 #include "i2c/i2c_bus.h"
 
-// TODO: Change claim() and release() to atomic operations in the future to avoid disabling interrupts.
-
 // Records cb before the transfer starts, since completion can interrupt the caller
 static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
 {
-    bool claimed = false;
-    uint32_t primask = __get_PRIMASK();
+    bool expected = false; 
 
-    __disable_irq();
-
-    if (!bus->busy) {
-        bus->busy = true;
-        bus->cb = cb;
-        bus->cb_user_data = user_data;
-        claimed = true;
+    if (!__atomic_compare_exchange_n(
+        &bus->busy, 
+        &expected, 
+        true, 
+        false, 
+        __ATOMIC_ACQUIRE,
+        __ATOMIC_RELAXED)) {
+        return false;
     }
 
-    __set_PRIMASK(primask);
+    bus->cb = cb;
+    bus->cb_user_data = user_data;
 
-    return claimed;
+    return true;
 }
 
 /** @brief Releases a transfer without invoking its callback */
 static void release(io_i2c_bus_t *bus)
 {
-    uint32_t primask = __get_PRIMASK();
-
-    __disable_irq();
-
     bus->cb = NULL;
     bus->cb_user_data = NULL;
-    bus->busy = false;
-
-    __set_PRIMASK(primask);
+   
+    __atomic_store_n(&bus->busy, false, __ATOMIC_RELEASE);
 }
 
 enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
@@ -106,24 +99,15 @@ enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t 
 
 void io_i2c_bus_complete(io_i2c_bus_t *bus, enum io_status status)
 {
-    uint32_t primask = __get_PRIMASK();
-
-    __disable_irq();
-
     // A blocking transfer owns the bus without registering a callback.
-    if (!bus->busy || bus->cb == NULL) {
-        __set_PRIMASK(primask);
+    if (!__atomic_load_n(&bus->busy, __ATOMIC_ACQUIRE) || bus->cb == NULL) {
         return;
     }
 
     io_i2c_cb_t cb = bus->cb;
     void *user_data = bus->cb_user_data;
 
-    bus->cb = NULL;
-    bus->cb_user_data = NULL;
-    bus->busy = false;
-
-    __set_PRIMASK(primask);
+    release(bus);
 
     cb(status, user_data);
 }
