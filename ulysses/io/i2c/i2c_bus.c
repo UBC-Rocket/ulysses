@@ -9,15 +9,10 @@
 // Records cb before the transfer starts, since completion can interrupt the caller
 static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
 {
-    bool expected = false; 
+    bool expected = false;
 
-    if (!__atomic_compare_exchange_n(
-        &bus->busy, 
-        &expected, 
-        true, 
-        false, 
-        __ATOMIC_ACQUIRE,
-        __ATOMIC_RELAXED)) {
+    if (!__atomic_compare_exchange_n(&bus->busy, &expected, true, false, __ATOMIC_ACQUIRE,
+                                     __ATOMIC_RELAXED)) {
         return false;
     }
 
@@ -32,7 +27,7 @@ static void release(io_i2c_bus_t *bus)
 {
     bus->cb = NULL;
     bus->cb_user_data = NULL;
-   
+
     __atomic_store_n(&bus->busy, false, __ATOMIC_RELEASE);
 }
 
