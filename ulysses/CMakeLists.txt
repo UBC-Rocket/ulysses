@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
+option(ULYSSES_BUILD_NATIVE "Build for the current host" OFF)
+option(ULYSSES_BUILD_TESTS "Build unit tests" OFF)
+
 # Interface library to link against for accessing public headers
 add_library(ulysses_public_headers INTERFACE)
 
@@ -30,4 +33,11 @@ target_compile_features(ulysses_layer_interface
 )
 
 add_subdirectory(lib)
-add_subdirectory(io)
+
+if(NOT ULYSSES_BUILD_NATIVE)
+    add_subdirectory(io)
+endif()
+
+if(ULYSSES_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
