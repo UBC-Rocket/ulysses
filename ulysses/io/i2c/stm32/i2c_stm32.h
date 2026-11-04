@@ -3,8 +3,6 @@
 
 #include "stm32h7xx_hal.h"
 
-#include <stdatomic.h>
-
 #include "ulysses/io/i2c.h"
 
 /** @brief Configuration for the STM32 HAL I2C backend */
