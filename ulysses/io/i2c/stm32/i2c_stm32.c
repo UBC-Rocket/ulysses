@@ -122,7 +122,8 @@ void io_i2c_stm32_init(io_i2c_bus_t *bus, const struct io_i2c_stm32_config *conf
     bus->ops = &stm32_i2c_ops;
     bus->cb = NULL;
     bus->cb_user_data = NULL;
-    bus->busy = false;
+
+    atomic_init(&bus->busy, false);
 
     uint64_t id = IO_IRQ_HAL_HANDLE_TO_ID(config->hw_handle);
 

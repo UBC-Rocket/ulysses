@@ -1,3 +1,4 @@
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -11,8 +12,8 @@ static bool claim(io_i2c_bus_t *bus, io_i2c_cb_t cb, void *user_data)
 {
     bool expected = false;
 
-    if (!__atomic_compare_exchange_n(&bus->busy, &expected, true, false, __ATOMIC_ACQUIRE,
-                                     __ATOMIC_RELAXED)) {
+    if (!atomic_compare_exchange_strong_explicit(&bus->busy, &expected, true, memory_order_acquire,
+                                                 memory_order_relaxed)) {
         return false;
     }
 
@@ -28,7 +29,7 @@ static void release(io_i2c_bus_t *bus)
     bus->cb = NULL;
     bus->cb_user_data = NULL;
 
-    __atomic_store_n(&bus->busy, false, __ATOMIC_RELEASE);
+    atomic_store_explicit(&bus->busy, false, memory_order_release);
 }
 
 enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
@@ -95,7 +96,7 @@ enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t 
 void io_i2c_bus_complete(io_i2c_bus_t *bus, enum io_status status)
 {
     // A blocking transfer owns the bus without registering a callback.
-    if (!__atomic_load_n(&bus->busy, __ATOMIC_ACQUIRE) || bus->cb == NULL) {
+    if (!atomic_load_explicit(&bus->busy, memory_order_acquire) || bus->cb == NULL) {
         return;
     }
 

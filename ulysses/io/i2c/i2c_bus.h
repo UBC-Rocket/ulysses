@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <stdatomic.h>
+
 #include "ulysses/io/i2c.h"
 
 /** @brief Backend operations for I2C register transfers */
@@ -61,7 +63,7 @@ struct io_i2c_bus {
     const struct io_i2c_bus_ops *ops; ///< Non-NULL operations that must remain valid while in use
     io_i2c_cb_t cb;                   ///< Callback of the in-flight async transfer
     void *cb_user_data;               ///< Passed to cb
-    volatile bool busy;               ///< Set while a blocking or async transfer owns the bus
+    atomic_bool busy;                 ///< Set while a blocking or async transfer owns the bus
 };
 
 /**
