@@ -51,6 +51,25 @@ jobs:
           BUILD_RESULT: ${{ needs.build.result }}
         run: |
           test "$BUILD_RESULT" = "success"
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ulysses/cfp
+    steps:
+      - name: Checkout firmware
+        uses: actions/checkout@v7.0.1
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+      - name: Configure unit tests
+        run: cmake --preset TestNative
+      - name: Build unit tests
+        run: cmake --build --preset TestNative
+      - name: Run unit tests
+        run: ctest --preset TestNative --no-tests=error
   lint:
     name: Lint
     runs-on: ubuntu-latest
