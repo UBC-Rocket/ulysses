@@ -26,6 +26,19 @@ function(add_unity_test)
             ${arg_SOURCES}
     )
 
+    target_compile_options(${test_target}
+        PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Werror
+    )
+
+    target_compile_features(${test_target}
+        PRIVATE
+            c_std_11
+    )
+
     target_link_libraries(${test_target}
         PRIVATE
             unity::framework
