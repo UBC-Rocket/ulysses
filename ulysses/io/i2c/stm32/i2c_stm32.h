@@ -5,7 +5,7 @@
 
 #include "ulysses/io/i2c.h"
 
-/** @brief Configuration for the blocking STM32 HAL I2C backend */
+/** @brief Configuration for the STM32 HAL I2C backend */
 struct io_i2c_stm32_config {
     I2C_HandleTypeDef *hw_handle; ///< Non-NULL, initialized HAL handle; must outlive bus use
 };
@@ -14,6 +14,7 @@ struct io_i2c_stm32_config {
  * @brief Links an I2C bus to an already initialized STM32 HAL handle
  *
  * Stores config by reference; config and its HAL handle must remain valid while the bus is used.
+ * Call once per bus. Async transfers need the I2C event and error interrupts enabled.
  *
  * @param[out] bus Non-NULL bus to configure
  * @param config Non-NULL configuration whose HAL handle is in HAL_I2C_STATE_READY
