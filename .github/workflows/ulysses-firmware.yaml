@@ -2,6 +2,10 @@ name: Ulysses firmware
 
 on:
   pull_request:
+    paths:
+      - ".github/**"
+      - "ulysses/**"
+      - "tools/**"
   workflow_dispatch:
 
 permissions:
