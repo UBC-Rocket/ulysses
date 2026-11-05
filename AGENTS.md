@@ -83,7 +83,19 @@ Before finishing a change:
 2. Changed files pass `clang-format` with the repo's `.clang-format` (`cfp/` and `third_party/`
    are excluded). CI enforces this.
 
-There are no unit tests yet. Do not add a test framework.
+### Unit tests
+
+Unit tests use the Unity framework and live under `ulysses/tests/unit/`. From `ulysses/cfp`,
+configure, build, and run them with:
+
+```shell
+cmake --preset TestNative
+cmake --build --preset TestNative
+ctest --preset TestNative --output-on-failure --no-tests=error
+```
+
+Create new tests in the format of
+[`ulysses/tests/unit/example/test_example.c`](ulysses/tests/unit/example/test_example.c).
 
 Do not flash or debug hardware unless asked.
 
