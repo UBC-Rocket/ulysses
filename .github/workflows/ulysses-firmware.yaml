@@ -69,7 +69,7 @@ jobs:
       - name: Build unit tests
         run: cmake --build --preset TestNative
       - name: Run unit tests
-        run: ctest --preset TestNative --no-tests=error
+        run: ctest --preset TestNative --output-on-failure --no-tests=error
   lint:
     name: Lint
     runs-on: ubuntu-latest
