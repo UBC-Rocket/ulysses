@@ -1,3 +1,3 @@
 # Ulysses
 
-Firmware for UBC Rocket's experimental VTOL platform.
+Firmware for UBC Rocket's experimental VTOL platform. TEST
