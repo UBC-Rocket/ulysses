@@ -7,6 +7,8 @@
 #include "ulysses/io/status.h"
 #include "ulysses/svc/dev/mag.h"
 
+#include "dev/mag/mag.h"
+
 /** @brief Wiring of an MMC5983MA magnetometer */
 struct dev_mag_mmc5983_config {
     io_spi_dev_t *spi; ///< SPI device the sensor is connected to
@@ -27,8 +29,7 @@ struct dev_mag_mmc5983_data {
  * @return IO_STATUS_OK on success, IO_STATUS_ERROR if the sensor is not an MMC5983MA, otherwise an
  *         IO_STATUS_* error code
  */
-enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
-                                    const struct dev_mag_mmc5983_config *config,
+enum io_status dev_mag_mmc5983_init(dev_mag_t *mag, const struct dev_mag_mmc5983_config *config,
                                     struct dev_mag_mmc5983_data *data);
 
 #endif // ULYSSES_SVC_DEV_MAG_MMC5983

@@ -7,6 +7,7 @@
 #include "ulysses/io/spi.h"
 #include "ulysses/svc/dev/mag.h"
 
+#include "dev/mag/mag.h"
 #include "dev/mag/mmc5983/mag_mmc5983.h"
 
 #define REG_XOUT0 (0x00)
@@ -108,7 +109,7 @@ static enum io_status measure(io_spi_dev_t *spi, uint8_t pulse, int32_t raw[3])
     return IO_STATUS_TIMEOUT;
 }
 
-static enum io_status mmc5983_read(struct dev_mag *mag, struct dev_mag_sample *sample)
+static enum io_status mmc5983_read(dev_mag_t *mag, struct dev_mag_sample *sample)
 {
     const struct dev_mag_mmc5983_config *config = mag->config;
     const struct dev_mag_mmc5983_data *data = mag->data;
@@ -125,7 +126,7 @@ static enum io_status mmc5983_read(struct dev_mag *mag, struct dev_mag_sample *s
     return IO_STATUS_OK;
 }
 
-static bool mmc5983_is_data_ready(struct dev_mag *mag)
+static bool mmc5983_is_data_ready(dev_mag_t *mag)
 {
     const struct dev_mag_mmc5983_config *config = mag->config;
 
@@ -137,8 +138,12 @@ static bool mmc5983_is_data_ready(struct dev_mag *mag)
     return (device_status & STATUS_MEAS_M_DONE) != 0;
 }
 
-enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
-                                    const struct dev_mag_mmc5983_config *config,
+static const struct dev_mag_ops mmc5983_ops = {
+    .read = mmc5983_read,
+    .is_data_ready = mmc5983_is_data_ready,
+};
+
+enum io_status dev_mag_mmc5983_init(dev_mag_t *mag, const struct dev_mag_mmc5983_config *config,
                                     struct dev_mag_mmc5983_data *data)
 {
     ULYSSES_ASSERT(mag != NULL, "Magnetometer must be non NULL");
@@ -146,10 +151,9 @@ enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
     ULYSSES_ASSERT(config->spi != NULL, "MMC5983 SPI device must be non NULL");
     ULYSSES_ASSERT(data != NULL, "MMC5983 data must be non NULL");
 
-    mag->data = data;
     mag->config = config;
-    mag->read = NULL;
-    mag->is_data_ready = NULL;
+    mag->data = data;
+    mag->ops = NULL;
 
     enum io_status status = write_reg(config->spi, REG_CTRL1, CTRL1_SW_RST);
     if (status != IO_STATUS_OK) {
@@ -200,7 +204,6 @@ enum io_status dev_mag_mmc5983_init(struct dev_mag *mag,
         return status;
     }
 
-    mag->read = mmc5983_read;
-    mag->is_data_ready = mmc5983_is_data_ready;
+    mag->ops = &mmc5983_ops;
     return IO_STATUS_OK;
 }

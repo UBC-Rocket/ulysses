@@ -12,21 +12,8 @@ struct dev_mag_sample {
     float z; ///< Field along the Z axis in gauss
 };
 
-struct dev_mag;
-
-/** @brief Sensor-specific function, see dev_mag_read() */
-typedef enum io_status (*dev_mag_read_fn_t)(struct dev_mag *mag, struct dev_mag_sample *sample);
-
-/** @brief Sensor-specific function, see dev_mag_is_data_ready() */
-typedef bool (*dev_mag_is_data_ready_fn_t)(struct dev_mag *mag);
-
-/** @brief Magnetometer, filled in by a sensor-specific init function */
-struct dev_mag {
-    void *data;                               ///< Sensor-specific state
-    const void *config;                       ///< Sensor-specific configuration
-    dev_mag_read_fn_t read;                   ///< Sensor-specific read function
-    dev_mag_is_data_ready_fn_t is_data_ready; ///< Sensor-specific data ready function
-};
+/** @brief Magnetometer, initialized by a sensor-specific init function */
+typedef struct dev_mag dev_mag_t;
 
 /**
  * @brief Reads the latest magnetic field sample
@@ -36,7 +23,7 @@ struct dev_mag {
  *
  * @return IO_STATUS_OK on success, otherwise an IO_STATUS_* error code
  */
-enum io_status dev_mag_read(struct dev_mag *mag, struct dev_mag_sample *sample);
+enum io_status dev_mag_read(dev_mag_t *mag, struct dev_mag_sample *sample);
 
 /**
  * @brief Checks whether a new magnetic field sample is ready to read
@@ -45,6 +32,6 @@ enum io_status dev_mag_read(struct dev_mag *mag, struct dev_mag_sample *sample);
  *
  * @return true if a new sample is ready, false if not or if the check failed
  */
-bool dev_mag_is_data_ready(struct dev_mag *mag);
+bool dev_mag_is_data_ready(dev_mag_t *mag);
 
 #endif // ULYSSES_SVC_DEV_MAG
