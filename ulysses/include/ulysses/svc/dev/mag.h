@@ -16,6 +16,14 @@ struct dev_mag_sample {
 typedef struct dev_mag dev_mag_t;
 
 /**
+ * @brief Data ready callback for a non-blocking read, runs in interrupt context
+ *
+ * sample is NULL if status is not IO_STATUS_OK, and is only valid until the callback returns.
+ */
+typedef void (*dev_mag_cb_t)(enum io_status status, const struct dev_mag_sample *sample,
+                             void *user_data);
+
+/**
  * @brief Reads the latest magnetic field sample
  *
  * @param mag Magnetometer to read from
@@ -24,6 +32,21 @@ typedef struct dev_mag dev_mag_t;
  * @return IO_STATUS_OK on success, otherwise an IO_STATUS_* error code
  */
 enum io_status dev_mag_read(dev_mag_t *mag, struct dev_mag_sample *sample);
+
+/**
+ * @brief Starts reading the latest magnetic field sample, without blocking
+ *
+ * cb runs in interrupt context when the read finishes. It is not called if the read fails to
+ * start.
+ *
+ * @param mag Magnetometer to read from
+ * @param cb Called with the sample when the read finishes
+ * @param user_data Passed to cb
+ *
+ * @return IO_STATUS_OK if the read started, IO_STATUS_BUSY if a read is in progress, otherwise an
+ *         IO_STATUS_* error code
+ */
+enum io_status dev_mag_read_it(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data);
 
 /**
  * @brief Checks whether a new magnetic field sample is ready to read
