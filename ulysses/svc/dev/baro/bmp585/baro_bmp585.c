@@ -1,9 +1,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ulysses/dev/bmp585.h"
 #include "ulysses/io/delay.h"
+#include "ulysses/io/i2c.h"
 #include "ulysses/lib/assert.h"
+#include "ulysses/svc/dev/baro.h"
+
+#include "dev/baro/baro.h"
+#include "dev/baro/bmp585/baro_bmp585.h"
 
 // Register map, section numbers refer to BST-BMP585-DS003
 #define BMP585_REG_CHIP_ID (0x01U)
@@ -53,10 +57,23 @@ static int32_t to_int24(const uint8_t *b)
     return (int32_t)(raw << 8) >> 8;
 }
 
-enum io_status dev_bmp585_init(const io_i2c_dev_t *i2c)
+static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample *sample);
+
+static const struct dev_baro_ops bmp585_ops = {
+    .read = bmp585_read,
+};
+
+enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config)
 {
+    ULYSSES_ASSERT(baro != NULL, "Barometer must not be NULL");
+    ULYSSES_ASSERT(config != NULL, "BMP585 config must not be NULL");
+
+    const io_i2c_dev_t *i2c = config->i2c;
     enum io_status status;
     uint8_t val;
+
+    baro->config = config;
+    baro->ops = NULL;
 
     // The chip doesn't ACK a soft reset over I2C (section 8.36), so the status is ignored
     (void)write_reg(i2c, BMP585_REG_CMD, BMP585_CMD_SOFT_RESET);
@@ -114,23 +131,24 @@ enum io_status dev_bmp585_init(const io_i2c_dev_t *i2c)
         return IO_STATUS_ERROR;
     }
 
+    baro->ops = &bmp585_ops;
     return IO_STATUS_OK;
 }
 
-enum io_status dev_bmp585_read(const io_i2c_dev_t *i2c, struct dev_bmp585_sample *out)
+static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample *sample)
 {
-    ULYSSES_ASSERT(out != NULL, "Sample pointer is NULL");
+    const struct dev_baro_bmp585_config *config = baro->config;
 
     // One burst read so temperature and pressure come from the same measurement (section 4.5.1)
     uint8_t buf[6];
-    enum io_status status =
-        io_i2c_mem_read(i2c, BMP585_REG_TEMP_DATA_XLSB, buf, sizeof(buf), BMP585_TIMEOUT_MS);
+    enum io_status status = io_i2c_mem_read(config->i2c, BMP585_REG_TEMP_DATA_XLSB, buf,
+                                            sizeof(buf), BMP585_TIMEOUT_MS);
     if (status != IO_STATUS_OK) {
         return status;
     }
 
-    out->temp_c = (float)to_int24(&buf[0]) / 65536.0f;
-    out->pressure_pa = (float)to_int24(&buf[3]) / 64.0f;
+    sample->temp_c = (float)to_int24(&buf[0]) / 65536.0f;
+    sample->pressure_pa = (float)to_int24(&buf[3]) / 64.0f;
 
     return IO_STATUS_OK;
 }
