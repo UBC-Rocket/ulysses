@@ -13,3 +13,8 @@ target_sources(ulysses_svc
         dev/mag/mag.c
         dev/mag/mmc5983/mag_mmc5983.c
 )
+
+target_include_directories(ulysses_svc
+    PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+)

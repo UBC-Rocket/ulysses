@@ -6,7 +6,8 @@
 #include "ulysses/io/delay.h"
 #include "ulysses/io/spi.h"
 #include "ulysses/svc/dev/mag.h"
-#include "ulysses/svc/dev/mag_mmc5983.h"
+
+#include "dev/mag/mmc5983/mag_mmc5983.h"
 
 #define REG_XOUT0 (0x00)
 #define REG_STATUS (0x08)
