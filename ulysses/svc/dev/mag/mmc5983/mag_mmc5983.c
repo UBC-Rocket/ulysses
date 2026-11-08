@@ -1,3 +1,4 @@
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -39,6 +40,8 @@
 #define MEAS_POLL_INTERVAL_MS (1)
 #define MEAS_POLL_COUNT (10)
 #define RAW_LEN (7) // Xout0 to XYZout2
+
+static const uint8_t raw_tx_data[1 + RAW_LEN] = {SPI_READ_BIT | REG_XOUT0};
 
 static enum io_status write_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t value)
 {
@@ -136,6 +139,47 @@ static enum io_status mmc5983_read(dev_mag_t *mag, struct dev_mag_sample *sample
     return IO_STATUS_OK;
 }
 
+static void on_transfer_done(enum io_status status, void *user_data)
+{
+    dev_mag_t *mag = user_data;
+    struct dev_mag_mmc5983_data *data = mag->data;
+    dev_mag_cb_t cb = data->cb;
+    void *cb_user_data = data->cb_user_data;
+
+    struct dev_mag_sample sample;
+    if (status == IO_STATUS_OK) {
+        int32_t raw[3];
+        parse_raw(&data->rx_data[1], raw);
+        to_sample(data, raw, &sample);
+    }
+
+    // Released before cb, so cb can start the next read
+    atomic_store(&data->busy, false);
+
+    cb(status, status == IO_STATUS_OK ? &sample : NULL, cb_user_data);
+}
+
+static enum io_status mmc5983_read_it(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data)
+{
+    const struct dev_mag_mmc5983_config *config = mag->config;
+    struct dev_mag_mmc5983_data *data = mag->data;
+
+    if (atomic_exchange(&data->busy, true)) {
+        return IO_STATUS_BUSY;
+    }
+
+    data->cb = cb;
+    data->cb_user_data = user_data;
+
+    enum io_status status = io_spi_transfer_it(config->spi, raw_tx_data, data->rx_data,
+                                               sizeof(raw_tx_data), on_transfer_done, mag);
+    if (status != IO_STATUS_OK) {
+        atomic_store(&data->busy, false);
+    }
+
+    return status;
+}
+
 static bool mmc5983_is_data_ready(dev_mag_t *mag)
 {
     const struct dev_mag_mmc5983_config *config = mag->config;
@@ -150,6 +194,7 @@ static bool mmc5983_is_data_ready(dev_mag_t *mag)
 
 static const struct dev_mag_ops mmc5983_ops = {
     .read = mmc5983_read,
+    .read_it = mmc5983_read_it,
     .is_data_ready = mmc5983_is_data_ready,
 };
 
@@ -164,6 +209,7 @@ enum io_status dev_mag_mmc5983_init(dev_mag_t *mag, const struct dev_mag_mmc5983
     mag->config = config;
     mag->data = data;
     mag->ops = NULL;
+    atomic_init(&data->busy, false);
 
     enum io_status status = write_reg(config->spi, REG_CTRL1, CTRL1_SW_RST);
     if (status != IO_STATUS_OK) {
