@@ -8,18 +8,29 @@ include(ExternalProject)
 # User is free to modify the file as much as necessary
 #
 
-# In order to use CMake for cross-compiling
-set(CMAKE_CXX_COMPILER_FORCED "true")
+option(ULYSSES_BUILD_NATIVE "Build for the host computer" OFF)
+option(ULYSSES_BUILD_TESTS "Build unit tests" OFF)
 
 # Set the project name
 set(CMAKE_PROJECT_NAME ulysses)
 
 # Core project settings
-project(${CMAKE_PROJECT_NAME})
+project(${CMAKE_PROJECT_NAME} LANGUAGES C ASM)
 
-# Include external project file
-#
-# We are using our own version of the file, since the one generated
-# by STM32CubeMX has poorly named binaries, and unecessarily creates
-# a build folder for each core under a path different from PROJECT_BINARY_DIR.
-include("mx-generated-user.cmake")
+if(ULYSSES_BUILD_TESTS)
+    enable_testing()
+endif()
+
+if(ULYSSES_BUILD_NATIVE)
+    set(ULYSSES_BUILD_CONTEXT "NATIVE")
+    set(ULYSSES_ROOT ${CMAKE_CURRENT_LIST_DIR}/../)
+
+    add_subdirectory(${ULYSSES_ROOT} ${PROJECT_BINARY_DIR}/ulysses)
+else()
+    # Include external project file
+    #
+    # We are using our own version of the file, since the one generated
+    # by STM32CubeMX has poorly named binaries, and unecessarily creates
+    # a build folder for each core under a path different from PROJECT_BINARY_DIR.
+    include("mx-generated-user.cmake")
+endif()
