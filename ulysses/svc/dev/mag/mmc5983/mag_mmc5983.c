@@ -61,6 +61,22 @@ static enum io_status read_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t *value)
     return IO_STATUS_OK;
 }
 
+static void parse_raw(const uint8_t out[RAW_LEN], int32_t raw[3])
+{
+    // 18-bit value per axis: 8 bits in out0, 8 bits in out1, 2 bits in XYZout2
+    raw[0] = ((int32_t)out[0] << 10) | ((int32_t)out[1] << 2) | ((out[6] >> 6) & 0x3);
+    raw[1] = ((int32_t)out[2] << 10) | ((int32_t)out[3] << 2) | ((out[6] >> 4) & 0x3);
+    raw[2] = ((int32_t)out[4] << 10) | ((int32_t)out[5] << 2) | ((out[6] >> 2) & 0x3);
+}
+
+static void to_sample(const struct dev_mag_mmc5983_data *data, const int32_t raw[3],
+                      struct dev_mag_sample *sample)
+{
+    sample->x = (float)(raw[0] - data->offset[0]) / COUNTS_PER_GAUSS;
+    sample->y = (float)(raw[1] - data->offset[1]) / COUNTS_PER_GAUSS;
+    sample->z = (float)(raw[2] - data->offset[2]) / COUNTS_PER_GAUSS;
+}
+
 static enum io_status read_raw(io_spi_dev_t *spi, int32_t raw[3])
 {
     uint8_t tx_data[1 + RAW_LEN] = {SPI_READ_BIT | REG_XOUT0};
@@ -71,11 +87,7 @@ static enum io_status read_raw(io_spi_dev_t *spi, int32_t raw[3])
         return status;
     }
 
-    // 18-bit value per axis: 8 bits in out0, 8 bits in out1, 2 bits in XYZout2
-    const uint8_t *out = &rx_data[1];
-    raw[0] = ((int32_t)out[0] << 10) | ((int32_t)out[1] << 2) | ((out[6] >> 6) & 0x3);
-    raw[1] = ((int32_t)out[2] << 10) | ((int32_t)out[3] << 2) | ((out[6] >> 4) & 0x3);
-    raw[2] = ((int32_t)out[4] << 10) | ((int32_t)out[5] << 2) | ((out[6] >> 2) & 0x3);
+    parse_raw(&rx_data[1], raw);
     return IO_STATUS_OK;
 }
 
@@ -120,9 +132,7 @@ static enum io_status mmc5983_read(dev_mag_t *mag, struct dev_mag_sample *sample
         return status;
     }
 
-    sample->x = (float)(raw[0] - data->offset[0]) / COUNTS_PER_GAUSS;
-    sample->y = (float)(raw[1] - data->offset[1]) / COUNTS_PER_GAUSS;
-    sample->z = (float)(raw[2] - data->offset[2]) / COUNTS_PER_GAUSS;
+    to_sample(data, raw, sample);
     return IO_STATUS_OK;
 }
 
