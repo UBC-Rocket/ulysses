@@ -26,6 +26,16 @@ void test_bdshot_frame_decode_from_wire_reference(void)
     TEST_ASSERT_EQUAL(expected_frame, actual_frame);
 }
 
+void test_bdshot_frame_decode_from_wire_invalid_gcr(void)
+{
+    uint32_t wire_frame = 0x98F64;
+    uint16_t actual_frame = 0x0000;
+
+    bool is_success = bdshot_frame_decode_from_wire(&actual_frame, wire_frame);
+
+    TEST_ASSERT_FALSE(is_success);
+}
+
 void test_bdshot_frame_is_edt_should_be_true(void)
 {
     uint16_t frame = 0x82C6;
@@ -95,6 +105,7 @@ int main(void)
     UNITY_BEGIN();
 
     RUN_TEST(test_bdshot_frame_decode_from_wire_reference);
+    RUN_TEST(test_bdshot_frame_decode_from_wire_invalid_gcr);
     RUN_TEST(test_bdshot_frame_is_edt_should_be_true);
     RUN_TEST(test_bdshot_frame_is_edt_should_be_false);
     RUN_TEST(test_bdshot_frame_calculate_rpm);
