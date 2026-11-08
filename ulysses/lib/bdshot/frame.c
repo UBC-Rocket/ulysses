@@ -117,7 +117,8 @@ float bdshot_frame_calculate_rpm(uint16_t frame, uint8_t motor_pole_count)
     if (mantissa == 0) {
         // Avoid division by 0 in the general calculation
         erpm = 0;
-    } else if (exponent == UINT8_MAX && mantissa == UINT16_MAX) {
+    } else if (exponent == 0x7 && mantissa == 0x1FF) {
+        // All ones for eRPM data is equivalent to 0 eRPM
         erpm = 0;
     } else {
         uint32_t period_us = (uint32_t)mantissa << (uint32_t)exponent;
