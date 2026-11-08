@@ -3,6 +3,7 @@
 #include "ulysses/lib/bdshot/protocol.h"
 
 #include "ulysses/conversion.h"
+#include "ulysses/lib/assert.h"
 
 #define GCR_SYMBOL_MASK (0x1F)
 #define GCR_SYMBOL_BITS (5)
@@ -109,6 +110,8 @@ bool bdshot_frame_is_edt(uint16_t frame)
 
 float bdshot_frame_calculate_rpm(uint16_t frame, uint8_t motor_pole_count)
 {
+    ULYSSES_ASSERT(motor_pole_count != 0, "Cannot have a motor with 0 poles");
+
     uint8_t exponent = (frame & BDSHOT_ERPM_EXPONENT_MASK) >> BDSHOT_ERPM_EXPONENT_SHIFT;
     uint16_t mantissa = (frame & BDSHOT_ERPM_MANTISSA_MASK) >> BDSHOT_ERPM_MANTISSA_SHIFT;
 
