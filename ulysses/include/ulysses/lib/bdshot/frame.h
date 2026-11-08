@@ -7,7 +7,8 @@
 #include "ulysses/lib/bdshot/protocol.h"
 
 bool bdshot_frame_pack_throttle(uint16_t *frame, uint16_t throttle, bool request_telemetry);
-bool bdshot_frame_pack_command(uint16_t *frame, enum bdshot_command command, bool request_telemetry);
+bool bdshot_frame_pack_command(uint16_t *frame, enum bdshot_command command,
+                               bool request_telemetry);
 
 uint8_t bdshot_frame_checksum(uint16_t frame);
 
