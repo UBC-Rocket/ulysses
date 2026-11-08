@@ -13,6 +13,9 @@ Ulysses is the firmware for UBC Rocket's experimental VTOL platform (TVR, 2026-2
   during the CubeMX dual-core boot sync, then releases the CM4.
 - Team reference docs: <https://github.com/UBC-Rocket/docs/tree/main/docs/2026-27-TVR/firmware>
 
+All firmware architecture design information (layering, device driver structure) is found at
+<https://github.com/UBC-Rocket/docs/blob/main/docs/2026-27-TVR/firmware/design-documents/architecture.md>.
+
 ## Repository layout
 
 ```

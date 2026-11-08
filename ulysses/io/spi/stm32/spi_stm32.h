@@ -11,9 +11,9 @@
 
 // STM32 wiring of an SPI device
 struct io_spi_stm32_config {
-    SPI_HandleTypeDef *hw_handle; // HAL SPI handle
-    GPIO_TypeDef *cs_port;        // chip-select GPIO port
-    uint16_t cs_pin;              // chip-select GPIO pin
+    SPI_HandleTypeDef *hw_handle; ///< HAL SPI handle
+    GPIO_TypeDef *cs_port;        ///< Chip-select GPIO port
+    uint16_t cs_pin;              ///< Chip-select GPIO pin
 };
 
 /**
