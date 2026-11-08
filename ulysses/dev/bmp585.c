@@ -1,9 +1,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "stm32h7xx_hal.h"
-
 #include "ulysses/dev/bmp585.h"
+#include "ulysses/io/delay.h"
 #include "ulysses/lib/assert.h"
 
 // Register map, section numbers refer to BST-BMP585-DS003
@@ -61,7 +60,7 @@ enum io_status dev_bmp585_init(const io_i2c_dev_t *i2c)
 
     // The chip doesn't ACK a soft reset over I2C (section 8.36), so the status is ignored
     (void)write_reg(i2c, BMP585_REG_CMD, BMP585_CMD_SOFT_RESET);
-    HAL_Delay(BMP585_SOFT_RESET_MS);
+    io_spin_delay_ms(BMP585_SOFT_RESET_MS);
 
     // Post-power-up checks (section 4.3.9)
     status = read_reg(i2c, BMP585_REG_CHIP_ID, &val);
@@ -93,7 +92,7 @@ enum io_status dev_bmp585_init(const io_i2c_dev_t *i2c)
     if (status != IO_STATUS_OK) {
         return status;
     }
-    HAL_Delay(BMP585_STANDBY_MS);
+    io_spin_delay_ms(BMP585_STANDBY_MS);
 
     status = write_reg(i2c, BMP585_REG_OSR_CONFIG, BMP585_OSR_CONFIG);
     if (status != IO_STATUS_OK) {
@@ -104,7 +103,7 @@ enum io_status dev_bmp585_init(const io_i2c_dev_t *i2c)
     if (status != IO_STATUS_OK) {
         return status;
     }
-    HAL_Delay(BMP585_STARTUP_MS);
+    io_spin_delay_ms(BMP585_STARTUP_MS);
 
     // The OSR/ODR check only runs in normal mode (section 4.3.4)
     status = read_reg(i2c, BMP585_REG_OSR_EFF, &val);
