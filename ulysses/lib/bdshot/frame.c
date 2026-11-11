@@ -1,5 +1,7 @@
 #include "ulysses/lib/bdshot/frame.h"
 
+#include <stddef.h>
+
 #include "ulysses/lib/bdshot/protocol.h"
 
 #include "ulysses/conversion.h"
@@ -58,6 +60,8 @@ static uint16_t bdshot_frame_get_erpm_mantissa(uint16_t frame)
 
 bool bdshot_frame_pack_throttle(uint16_t *frame, uint16_t throttle, bool request_telemetry)
 {
+    ULYSSES_ASSERT(frame != NULL, "Must provide out pointer for packed frame");
+
     uint16_t frame_throttle = 0;
 
     if (!convert_to_frame_throttle(&frame_throttle, throttle)) {
@@ -71,6 +75,8 @@ bool bdshot_frame_pack_throttle(uint16_t *frame, uint16_t throttle, bool request
 
 bool bdshot_frame_pack_command(uint16_t *frame, enum bdshot_command command, bool request_telemetry)
 {
+    ULYSSES_ASSERT(frame != NULL, "Must provide out pointer for packed frame");
+
     bdshot_frame_pack(frame, command, request_telemetry);
 
     return true;
@@ -90,6 +96,8 @@ uint8_t bdshot_frame_checksum(uint16_t frame)
 bool bdshot_frame_decode_from_wire(uint16_t *frame, uint32_t wire_frame)
 {
     bool success = true;
+
+    ULYSSES_ASSERT(frame != NULL, "Must provide out pointer for decoded frame");
 
     uint32_t gcr_frame = (wire_frame ^ (wire_frame >> 1)) & BDSHOT_TELEMETRY_GCR_MASK;
 
