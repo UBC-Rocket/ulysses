@@ -13,6 +13,11 @@ enum io_uart_receive_mode {
     IO_UART_CONTINUOUS, ///< Continuous reception
 };
 
+enum io_uart_duplex_mode {
+    IO_UART_FULL_DUPLEX = 0, ///< Independent transmit and receive lines
+    IO_UART_HALF_DUPLEX,     ///< Shared transmit and receive line
+};
+
 struct io_uart_ops {
     void (*set_transmit_cb)(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb);
     void (*set_receive_cb)(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
