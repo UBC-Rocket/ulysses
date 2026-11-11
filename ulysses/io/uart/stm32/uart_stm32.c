@@ -51,9 +51,8 @@ static enum io_status prepare_transfer(const struct uart_config *config,
         return IO_STATUS_BUSY;
     }
 
-    HAL_StatusTypeDef status = direction == TX
-                                   ? HAL_HalfDuplex_EnableTransmitter(config->hw_handle)
-                                   : HAL_HalfDuplex_EnableReceiver(config->hw_handle);
+    HAL_StatusTypeDef status = direction == TX ? HAL_HalfDuplex_EnableTransmitter(config->hw_handle)
+                                               : HAL_HalfDuplex_EnableReceiver(config->hw_handle);
     return to_io_status(status);
 }
 
