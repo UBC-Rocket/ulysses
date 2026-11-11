@@ -21,6 +21,9 @@ static const uint8_t GCR_DECODE_TABLE[32] = {
 static bool convert_to_frame_throttle(uint16_t *frame_throttle, uint16_t throttle);
 static void bdshot_frame_pack(uint16_t *frame, uint16_t data, bool request_telemetry);
 
+static uint8_t bdshot_frame_get_erpm_exponent(uint16_t frame);
+static uint16_t bdshot_frame_get_erpm_mantissa(uint16_t frame);
+
 static bool convert_to_frame_throttle(uint16_t *frame_throttle, uint16_t throttle)
 {
     if (throttle >= (BDSHOT_MAX_THROTTLE - BDSHOT_MIN_THROTTLE + 1)) {
@@ -41,6 +44,16 @@ static void bdshot_frame_pack(uint16_t *frame, uint16_t data, bool request_telem
     *frame |= (data << BDSHOT_PAYLOAD_SHIFT) & BDSHOT_PAYLOAD_MASK;
     *frame |= (bdshot_telemetry << BDSHOT_TELEMETRY_SHIFT) & BDSHOT_TELEMETRY_MASK;
     *frame |= (bdshot_frame_checksum(*frame) << BDSHOT_CHECKSUM_SHIFT) & BDSHOT_CHECKSUM_MASK;
+}
+
+static uint8_t bdshot_frame_get_erpm_exponent(uint16_t frame)
+{
+    return (frame & BDSHOT_ERPM_EXPONENT_MASK) >> BDSHOT_ERPM_EXPONENT_SHIFT;
+}
+
+static uint16_t bdshot_frame_get_erpm_mantissa(uint16_t frame)
+{
+    return (frame & BDSHOT_ERPM_MANTISSA_MASK) >> BDSHOT_ERPM_MANTISSA_SHIFT;
 }
 
 bool bdshot_frame_pack_throttle(uint16_t *frame, uint16_t throttle, bool request_telemetry)
@@ -112,8 +125,8 @@ float bdshot_frame_calculate_rpm(uint16_t frame, uint8_t motor_pole_count)
 {
     ULYSSES_ASSERT(motor_pole_count != 0, "Cannot have a motor with 0 poles");
 
-    uint8_t exponent = (frame & BDSHOT_ERPM_EXPONENT_MASK) >> BDSHOT_ERPM_EXPONENT_SHIFT;
-    uint16_t mantissa = (frame & BDSHOT_ERPM_MANTISSA_MASK) >> BDSHOT_ERPM_MANTISSA_SHIFT;
+    uint8_t exponent = bdshot_frame_get_erpm_exponent(frame);
+    uint16_t mantissa = bdshot_frame_get_erpm_mantissa(frame);
 
     float erpm = 0;
 
