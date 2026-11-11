@@ -13,16 +13,15 @@ void tearDown(void)
 {
 }
 
-void test_bdshot_frame_decode_from_wire_reference(void)
+void test_bdshot_frame_decode_from_wire_valid(void)
 {
-    // Using example from https://betaflight.com/docs/development/API/Dshot#erpm-transmission
-    uint32_t wire_frame = 0x98D64;
-    uint16_t expected_frame = 0x82C6;
+    uint32_t wire_frame = 0x98D71;
+    uint16_t expected_frame = 0x82C9;
     uint16_t actual_frame = 0x0000;
 
-    bool is_success = bdshot_frame_decode_from_wire(&actual_frame, wire_frame);
+    enum bdshot_decode_status status = bdshot_frame_decode_from_wire(&actual_frame, wire_frame);
 
-    TEST_ASSERT_TRUE(is_success);
+    TEST_ASSERT_EQUAL(BDSHOT_DECODE_STATUS_OK, status);
     TEST_ASSERT_EQUAL(expected_frame, actual_frame);
 }
 
@@ -31,9 +30,20 @@ void test_bdshot_frame_decode_from_wire_invalid_gcr(void)
     uint32_t wire_frame = 0x98F64;
     uint16_t actual_frame = 0x0000;
 
-    bool is_success = bdshot_frame_decode_from_wire(&actual_frame, wire_frame);
+    enum bdshot_decode_status status = bdshot_frame_decode_from_wire(&actual_frame, wire_frame);
 
-    TEST_ASSERT_FALSE(is_success);
+    TEST_ASSERT_EQUAL(BDSHOT_DECODE_INVALID_WIRE, status);
+}
+
+void test_bdshot_frame_decode_from_wire_invalid_checksum(void)
+{
+    // Frame 0x82C8
+    uint32_t wire_frame = 0x98D6C;
+    uint16_t actual_frame = 0x0000;
+
+    enum bdshot_decode_status status = bdshot_frame_decode_from_wire(&actual_frame, wire_frame);
+
+    TEST_ASSERT_EQUAL(BDSHOT_DECODE_STATUS_CHECKSUM_MISMATCH, status);
 }
 
 void test_bdshot_frame_is_edt_should_be_true(void)
@@ -104,8 +114,9 @@ int main(void)
 {
     UNITY_BEGIN();
 
-    RUN_TEST(test_bdshot_frame_decode_from_wire_reference);
+    RUN_TEST(test_bdshot_frame_decode_from_wire_valid);
     RUN_TEST(test_bdshot_frame_decode_from_wire_invalid_gcr);
+    RUN_TEST(test_bdshot_frame_decode_from_wire_invalid_checksum);
     RUN_TEST(test_bdshot_frame_is_edt_should_be_true);
     RUN_TEST(test_bdshot_frame_is_edt_should_be_false);
     RUN_TEST(test_bdshot_frame_calculate_rpm);
