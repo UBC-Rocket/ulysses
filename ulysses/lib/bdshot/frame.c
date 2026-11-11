@@ -23,6 +23,7 @@ static const uint8_t GCR_DECODE_TABLE[32] = {
 static bool convert_to_frame_throttle(uint16_t *frame_throttle, uint16_t throttle);
 static void bdshot_frame_pack(uint16_t *frame, uint16_t data, bool request_telemetry);
 
+static uint8_t bdshot_frame_get_checksum(uint16_t frame);
 static uint8_t bdshot_frame_get_erpm_exponent(uint16_t frame);
 static uint16_t bdshot_frame_get_erpm_mantissa(uint16_t frame);
 
@@ -46,6 +47,11 @@ static void bdshot_frame_pack(uint16_t *frame, uint16_t data, bool request_telem
     *frame |= (data << BDSHOT_PAYLOAD_SHIFT) & BDSHOT_PAYLOAD_MASK;
     *frame |= (bdshot_telemetry << BDSHOT_TELEMETRY_SHIFT) & BDSHOT_TELEMETRY_MASK;
     *frame |= (bdshot_frame_checksum(*frame) << BDSHOT_CHECKSUM_SHIFT) & BDSHOT_CHECKSUM_MASK;
+}
+
+static uint8_t bdshot_frame_get_checksum(uint16_t frame)
+{
+    return (frame & BDSHOT_CHECKSUM_MASK) >> BDSHOT_CHECKSUM_SHIFT;
 }
 
 static uint8_t bdshot_frame_get_erpm_exponent(uint16_t frame)
@@ -93,11 +99,11 @@ uint8_t bdshot_frame_checksum(uint16_t frame)
     return (~checksum) & BDSHOT_CHECKSUM_MASK;
 }
 
-bool bdshot_frame_decode_from_wire(uint16_t *frame, uint32_t wire_frame)
+enum bdshot_decode_status bdshot_frame_decode_from_wire(uint16_t *frame, uint32_t wire_frame)
 {
-    bool success = true;
-
     ULYSSES_ASSERT(frame != NULL, "Must provide out pointer for decoded frame");
+
+    enum bdshot_decode_status status = BDSHOT_DECODE_STATUS_OK;
 
     uint32_t gcr_frame = (wire_frame ^ (wire_frame >> 1)) & BDSHOT_TELEMETRY_GCR_MASK;
 
@@ -115,12 +121,21 @@ bool bdshot_frame_decode_from_wire(uint16_t *frame, uint32_t wire_frame)
         if (nibble != GCR_NULL) {
             *frame = (*frame << 4) | nibble;
         } else {
-            success = false;
+            status = BDSHOT_DECODE_INVALID_WIRE;
             break;
         }
     }
 
-    return success;
+    if (status == BDSHOT_DECODE_STATUS_OK) {
+        uint8_t received_checksum = bdshot_frame_get_checksum(*frame);
+        uint8_t expected_checksum = bdshot_frame_checksum(*frame);
+
+        if (received_checksum != expected_checksum) {
+            status = BDSHOT_DECODE_STATUS_CHECKSUM_MISMATCH;
+        }
+    }
+
+    return status;
 }
 
 bool bdshot_frame_is_edt(uint16_t frame)
