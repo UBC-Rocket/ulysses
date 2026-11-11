@@ -9,6 +9,11 @@
 
 #include "uart/stm32/uart_stm32.h"
 
+enum transfer_direction {
+    TX,
+    RX,
+};
+
 static void stm32_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
@@ -35,16 +40,35 @@ static enum io_status to_io_status(HAL_StatusTypeDef hal_status)
     }
 }
 
+static enum io_status prepare_transfer(const struct uart_config *config,
+                                       enum transfer_direction direction)
+{
+    if (config->duplex_mode == IO_UART_FULL_DUPLEX) {
+        return IO_STATUS_OK;
+    }
+
+    if (HAL_UART_GetState(config->hw_handle) != HAL_UART_STATE_READY) {
+        return IO_STATUS_BUSY;
+    }
+
+    HAL_StatusTypeDef status = direction == TX ? HAL_HalfDuplex_EnableTransmitter(config->hw_handle)
+                                               : HAL_HalfDuplex_EnableReceiver(config->hw_handle);
+    return to_io_status(status);
+}
+
 static enum io_status stm32_uart_transmit_blocking(const io_uart_dev_t *uart, const uint8_t *data,
                                                    uint16_t length, uint32_t timeout_ms)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
-    ULYSSES_ASSERT(config->hw_handle != NULL, "uart handle must not be NULL");
 
     if (length == 0) {
         return IO_STATUS_OK;
     }
 
+    enum io_status status = prepare_transfer(config, TX);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
     return to_io_status(HAL_UART_Transmit(config->hw_handle, data, length, timeout_ms));
 }
 
@@ -53,12 +77,15 @@ static enum io_status stm32_uart_receive_blocking(const io_uart_dev_t *uart, uin
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->receive_mode == IO_UART_PACKET, "uart must be in packet receive mode");
-    ULYSSES_ASSERT(config->hw_handle != NULL, "uart handle must not be NULL");
 
     if (length == 0) {
         return IO_STATUS_OK;
     }
 
+    enum io_status status = prepare_transfer(config, RX);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
     return to_io_status(HAL_UART_Receive(config->hw_handle, data, length, timeout_ms));
 }
 
@@ -71,6 +98,10 @@ static enum io_status stm32_uart_transmit_dma(const io_uart_dev_t *uart, const u
         return IO_STATUS_OK;
     }
 
+    enum io_status status = prepare_transfer(config, TX);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
     return to_io_status(HAL_UART_Transmit_DMA(config->hw_handle, data, length));
 }
 
@@ -84,6 +115,11 @@ static enum io_status stm32_uart_receive_dma(const io_uart_dev_t *uart, uint8_t 
         return IO_STATUS_OK;
     }
 
+    enum io_status status = prepare_transfer(config, RX);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
     __HAL_DMA_ENABLE_IT(config->hw_handle->hdmarx, DMA_IT_HT | DMA_IT_TC);
     __HAL_UART_DISABLE_IT(config->hw_handle, UART_IT_CM);
 
@@ -94,6 +130,8 @@ static enum io_status stm32_uart_receive_continuous_dma(const io_uart_dev_t *uar
                                                         uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
+    ULYSSES_ASSERT(config->duplex_mode == IO_UART_FULL_DUPLEX,
+                   "continuous receive requires full duplex");
     ULYSSES_ASSERT(config->receive_mode == IO_UART_CONTINUOUS,
                    "uart must be in continuous receive mode");
 
@@ -117,6 +155,10 @@ static enum io_status stm32_uart_transmit_irq(const io_uart_dev_t *uart, const u
         return IO_STATUS_OK;
     }
 
+    enum io_status status = prepare_transfer(config, TX);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
     return to_io_status(HAL_UART_Transmit_IT(config->hw_handle, data, length));
 }
 
@@ -130,6 +172,10 @@ static enum io_status stm32_uart_receive_irq(const io_uart_dev_t *uart, uint8_t 
         return IO_STATUS_OK;
     }
 
+    enum io_status status = prepare_transfer(config, RX);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
     return to_io_status(HAL_UART_Receive_IT(config->hw_handle, data, length));
 }
 
@@ -137,6 +183,8 @@ static enum io_status stm32_uart_receive_continuous_irq(const io_uart_dev_t *uar
                                                         uint16_t length)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
+    ULYSSES_ASSERT(config->duplex_mode == IO_UART_FULL_DUPLEX,
+                   "continuous receive requires full duplex");
     ULYSSES_ASSERT(config->receive_mode == IO_UART_CONTINUOUS,
                    "uart must be in continuous receive mode");
 
@@ -225,9 +273,22 @@ void io_uart_stm32_init(io_uart_dev_t *uart, const struct uart_config *uart_conf
     ULYSSES_ASSERT(uart->config != NULL, "uart config must not be NULL");
     ULYSSES_ASSERT(uart_config != NULL, "uart initialization config must not be NULL");
     ULYSSES_ASSERT(uart_config->hw_handle != NULL, "uart handle must not be NULL");
+    ULYSSES_ASSERT(uart_config->duplex_mode == IO_UART_FULL_DUPLEX ||
+                       uart_config->duplex_mode == IO_UART_HALF_DUPLEX,
+                   "invalid uart duplex mode");
+    ULYSSES_ASSERT(HAL_UART_GetState(uart_config->hw_handle) == HAL_UART_STATE_READY,
+                   "uart handle must be initialized and idle");
 
     struct uart_config *config = (struct uart_config *)uart->config;
     memcpy(config, uart_config, sizeof(*config));
+
+    __HAL_UART_DISABLE(config->hw_handle);
+    if (config->duplex_mode == IO_UART_HALF_DUPLEX) {
+        SET_BIT(config->hw_handle->Instance->CR3, USART_CR3_HDSEL);
+    } else {
+        CLEAR_BIT(config->hw_handle->Instance->CR3, USART_CR3_HDSEL);
+    }
+    __HAL_UART_ENABLE(config->hw_handle);
 
     // TODO: Configure CM
 

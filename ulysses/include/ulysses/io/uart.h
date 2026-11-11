@@ -7,6 +7,8 @@
 
 /**
  * @brief Opaque UART object
+ *
+ * Callers must serialize calls that start transfers on the same UART.
  */
 typedef struct io_uart_dev io_uart_dev_t;
 
@@ -45,7 +47,7 @@ void io_uart_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
  * @param timeout_ms Timeout in milliseconds
  *
  * @retval IO_STATUS_OK The transfer completed, or length was zero
- * @retval IO_STATUS_BUSY A transmit operation is already in progress
+ * @retval IO_STATUS_BUSY A transmit operation, or a receive in half-duplex mode, is in progress
  * @retval IO_STATUS_TIMEOUT The operation timed out
  * @retval IO_STATUS_ERROR The backend reported a transfer error
  */
@@ -63,7 +65,7 @@ enum io_status io_uart_transmit(const io_uart_dev_t *uart, const uint8_t *data, 
  * @param timeout_ms Timeout in milliseconds
  *
  * @retval IO_STATUS_OK The transfer completed, or length was zero
- * @retval IO_STATUS_BUSY A receive operation is already in progress
+ * @retval IO_STATUS_BUSY A receive operation, or a transmit in half-duplex mode, is in progress
  * @retval IO_STATUS_TIMEOUT The operation timed out
  * @retval IO_STATUS_ERROR The backend reported a transfer error
  */
@@ -78,7 +80,7 @@ enum io_status io_uart_receive(const io_uart_dev_t *uart, uint8_t *data, uint16_
  * @param length Number of bytes to transmit
  *
  * @retval IO_STATUS_OK The transfer was started, or length was zero
- * @retval IO_STATUS_BUSY A transmit operation is already in progress
+ * @retval IO_STATUS_BUSY A transmit operation, or a receive in half-duplex mode, is in progress
  * @retval IO_STATUS_ERROR The operation could not be started
  */
 enum io_status io_uart_transmit_async(const io_uart_dev_t *uart, const uint8_t *data,
@@ -92,7 +94,7 @@ enum io_status io_uart_transmit_async(const io_uart_dev_t *uart, const uint8_t *
  * @param length Number of bytes to receive
  *
  * @retval IO_STATUS_OK The receive operation was started, or length was zero
- * @retval IO_STATUS_BUSY A receive operation is already in progress
+ * @retval IO_STATUS_BUSY A receive operation, or a transmit in half-duplex mode, is in progress
  * @retval IO_STATUS_ERROR The operation could not be started
  */
 enum io_status io_uart_receive_async(const io_uart_dev_t *uart, uint8_t *data, uint16_t length);
@@ -100,7 +102,7 @@ enum io_status io_uart_receive_async(const io_uart_dev_t *uart, uint8_t *data, u
 /**
  * @brief Starts continuous reception
  *
- * @param uart Initialized UART object in continuous receive mode
+ * @param uart Initialized full-duplex UART object in continuous receive mode
  * @param[out] data Buffer to store received data
  * @param length Buffer capacity in bytes
  *
