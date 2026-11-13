@@ -52,3 +52,4 @@ function(add_unity_test)
 endfunction()
 
 add_subdirectory(example)
+add_subdirectory(lib)
