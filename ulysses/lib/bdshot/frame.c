@@ -111,7 +111,7 @@ enum bdshot_decode_status bdshot_frame_decode_from_wire(uint16_t *frame, uint32_
 
     // Decode the GCR frame by mapping each 5-bit symbol in the 20-bit encoded
     // frame to its corresponding 4-bit nibble
-    for (uint8_t i = 0; i < BYTES_TO_NIBBLES(sizeof(*frame)); i++) {
+    for (uint8_t i = 0; i < sizeof(uint16_t) * 2; i++) {
         // Iterate from MSb to LSb in groups of 5 bits
         uint8_t shift = 15 - (i * GCR_SYMBOL_BITS);
 
@@ -162,7 +162,7 @@ float bdshot_frame_calculate_rpm(uint16_t frame, uint8_t motor_pole_count)
     } else {
         uint32_t period_us = (uint32_t)mantissa << (uint32_t)exponent;
 
-        erpm = MINUTES_TO_US(1.0f) / (float)period_us;
+        erpm = minutes_to_us(1.0f) / (float)period_us;
     }
 
     return (erpm / motor_pole_count) * 2.0f;

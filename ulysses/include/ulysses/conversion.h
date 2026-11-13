@@ -1,8 +1,18 @@
 #ifndef ULYSSES_CONVERSION
 #define ULYSSES_CONVERSION
 
-#define MINUTES_TO_US(minutes) ((minutes) * 60 * 1000000)
+#include <stddef.h>
 
-#define BYTES_TO_NIBBLES(bytes) (bytes * 2)
+/**
+ * @brief Converts minutes to microseconds
+ * 
+ * @param minutes Minutes to convert
+ *
+ * @return Time in microseconds
+ */
+static inline float minutes_to_us(float minutes)
+{
+    return minutes * 60 * 1000000;
+}
 
 #endif // ULYSSES_CONVERSION
