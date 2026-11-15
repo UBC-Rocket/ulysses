@@ -25,6 +25,6 @@ struct dev_lidar_sample {
  *
  * @return Status returned by the backend
  */
-enum io_status dev_lidar_read(dev_lidar_t *lidar, struct dev_lidar_sample *sample);
+enum io_status dev_lidar_read(const dev_lidar_t *lidar, struct dev_lidar_sample *sample);
 
 #endif // ULYSSES_SVC_DEV_LIDAR

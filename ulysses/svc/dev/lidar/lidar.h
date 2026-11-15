@@ -7,7 +7,7 @@
 /** @brief Vendor-specific operations behind the generic LiDAR API */
 struct dev_lidar_ops {
     /** @brief Like dev_lidar_read(), with arguments already checked */
-    enum io_status (*read)(dev_lidar_t *lidar, struct dev_lidar_sample *sample);
+    enum io_status (*read)(const dev_lidar_t *lidar, struct dev_lidar_sample *sample);
 };
 
 /** @brief LiDAR retaining references to its backend configuration and operations */
