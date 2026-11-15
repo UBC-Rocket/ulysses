@@ -66,14 +66,6 @@ static void parse_result(const struct vl53l4cx_result *result, struct dev_lidar_
     }
 }
 
-/** @brief Stub */
-static enum io_status vl53l4cx_is_data_ready(ULYSSES_UNUSED dev_lidar_t *lidar, bool *is_ready)
-{
-    *is_ready = false;
-
-    return IO_STATUS_ERROR;
-}
-
 static enum io_status vl53l4cx_read(dev_lidar_t *lidar, struct dev_lidar_sample *sample)
 {
     const struct dev_lidar_vl53l4cx_config *cfg =
@@ -90,8 +82,7 @@ static enum io_status vl53l4cx_read(dev_lidar_t *lidar, struct dev_lidar_sample 
     return IO_STATUS_OK;
 }
 
-static const struct dev_lidar_ops vl53l4cx_ops = {.is_data_ready = vl53l4cx_is_data_ready,
-                                                  .read = vl53l4cx_read};
+static const struct dev_lidar_ops vl53l4cx_ops = {.read = vl53l4cx_read};
 
 void dev_lidar_vl53l4cx_init(dev_lidar_t *lidar, const struct dev_lidar_vl53l4cx_config *config)
 {
@@ -99,8 +90,6 @@ void dev_lidar_vl53l4cx_init(dev_lidar_t *lidar, const struct dev_lidar_vl53l4cx
     ULYSSES_ASSERT(config != NULL, "LiDAR config pointer is NULL");
     ULYSSES_ASSERT(config->i2c != NULL, "LiDAR I2C device pointer is NULL");
 
-    // ST's driver state goes here when we add it
-    lidar->data = NULL;
     lidar->config = config;
     lidar->ops = &vl53l4cx_ops;
 }

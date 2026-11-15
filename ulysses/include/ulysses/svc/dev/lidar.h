@@ -15,16 +15,6 @@ struct dev_lidar_sample {
 };
 
 /**
- * @brief Checks whether a new measurement is ready to be read
- *
- * @param lidar Non-NULL lidar initialized by a vendor backend
- * @param[out] is_ready Non-NULL flag set to true if a new measurement is ready
- *
- * @return Status returned by the backend
- */
-enum io_status dev_lidar_is_data_ready(dev_lidar_t *lidar, bool *is_ready);
-
-/**
  * @brief Reads the latest measurement
  *
  * A failed transfer is reported through the return value. A completed transfer without a usable
