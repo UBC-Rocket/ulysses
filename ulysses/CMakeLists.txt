@@ -33,6 +33,7 @@ target_compile_features(ulysses_layer_interface
 )
 
 add_subdirectory(lib)
+add_subdirectory(svc)
 
 if(NOT ULYSSES_BUILD_NATIVE)
     add_subdirectory(io)
