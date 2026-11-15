@@ -14,7 +14,6 @@ target_sources(ulysses_svc
         dev/lidar/vl53l4cx/lidar_vl53l4cx.c
 )
 
-# Private headers shared between svc sources
 target_include_directories(ulysses_svc
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
