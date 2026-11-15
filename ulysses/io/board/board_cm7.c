@@ -12,8 +12,6 @@
 // I2C bus and 7-bit address
 #define BARO_BUS (&i2c1_bus)
 #define BARO_ADDR (0x76U)
-#define LIDAR_BUS (&i2c2_bus)
-#define LIDAR_ADDR (0x62U)
 
 // Devices below have no IO driver yet. Uncomment when their driver lands.
 
@@ -80,15 +78,11 @@
 // #define GATE_DRIVER2_EN_PIN (GATE_DRIVER2_EN_Pin)
 
 static struct io_i2c_bus i2c1_bus;
-static struct io_i2c_bus i2c2_bus;
 static const struct io_i2c_stm32_config i2c1_config = {.hw_handle = &hi2c1};
-static const struct io_i2c_stm32_config i2c2_config = {.hw_handle = &hi2c2};
 
 const io_i2c_dev_t IO_BARO = {.bus = BARO_BUS, .addr = BARO_ADDR};
-const io_i2c_dev_t IO_LIDAR = {.bus = LIDAR_BUS, .addr = LIDAR_ADDR};
 
 void io_board_init(void)
 {
     io_i2c_stm32_init(&i2c1_bus, &i2c1_config);
-    io_i2c_stm32_init(&i2c2_bus, &i2c2_config);
 }
