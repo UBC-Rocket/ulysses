@@ -5,19 +5,18 @@
 #include "ulysses/io/status.h"
 #include "ulysses/svc/dev/lidar.h"
 
-/** @brief Configuration for vendor-specific code (VL53L4CX) */
+/** @brief Wiring of a VL53L4CX lidar */
 struct dev_lidar_vl53l4cx_config {
-    const io_i2c_dev_t *i2c; ///< Non-NULL device from the board wiring
+    const io_i2c_dev_t *i2c; ///< I2C device the sensor is connected to
 };
 
 /**
  * @brief Links a lidar to the VL53L4CX backend
  *
- * Stores config by reference; config must remain valid while the lidar is used. No
- * communication with the sensor.
+ * Doesn't communicate with the sensor yet.
  *
- * @param[out] lidar Non-NULL lidar to configure
- * @param config Non-NULL configuration
+ * @param[out] lidar Lidar to initialize
+ * @param config Wiring of the sensor, must stay valid while the lidar is used
  *
  * @return IO_STATUS_OK
  */
