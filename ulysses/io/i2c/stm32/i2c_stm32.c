@@ -78,8 +78,8 @@ static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint16_t
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint16_t reg,
-                                        uint8_t reg_size, uint8_t *data, uint16_t len)
+static enum io_status stm32_mem_read_async(const void *config, uint8_t addr, uint16_t reg,
+                                           uint8_t reg_size, uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -91,8 +91,8 @@ static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint16
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint16_t reg,
-                                         uint8_t reg_size, const uint8_t *data, uint16_t len)
+static enum io_status stm32_mem_write_async(const void *config, uint8_t addr, uint16_t reg,
+                                            uint8_t reg_size, const uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -107,8 +107,8 @@ static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint1
 /** @brief Shared operations */
 static const struct io_i2c_bus_ops stm32_i2c_ops = {.mem_read = stm32_mem_read,
                                                     .mem_write = stm32_mem_write,
-                                                    .mem_read_it = stm32_mem_read_it,
-                                                    .mem_write_it = stm32_mem_write_it};
+                                                    .mem_read_async = stm32_mem_read_async,
+                                                    .mem_write_async = stm32_mem_write_async};
 
 static void stm32_transfer_complete_handler(void *user_data)
 {
