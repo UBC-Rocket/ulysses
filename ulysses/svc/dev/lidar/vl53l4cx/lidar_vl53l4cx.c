@@ -66,7 +66,7 @@ static void parse_result(const struct vl53l4cx_result *result, struct dev_lidar_
     }
 }
 
-static enum io_status vl53l4cx_read(dev_lidar_t *lidar, struct dev_lidar_sample *sample)
+static enum io_status vl53l4cx_read(const dev_lidar_t *lidar, struct dev_lidar_sample *sample)
 {
     const struct dev_lidar_vl53l4cx_config *cfg =
         (const struct dev_lidar_vl53l4cx_config *)lidar->config;

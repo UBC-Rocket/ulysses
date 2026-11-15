@@ -4,7 +4,7 @@
 
 #include "ulysses/lib/assert.h"
 
-enum io_status dev_lidar_read(dev_lidar_t *lidar, struct dev_lidar_sample *sample)
+enum io_status dev_lidar_read(const dev_lidar_t *lidar, struct dev_lidar_sample *sample)
 {
     ULYSSES_ASSERT(lidar != NULL, "Lidar pointer is NULL");
     ULYSSES_ASSERT(lidar->ops != NULL, "Lidar operations are NULL");
