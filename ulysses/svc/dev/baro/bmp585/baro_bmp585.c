@@ -57,7 +57,23 @@ static int32_t to_int24(const uint8_t *b)
     return (int32_t)(raw << 8) >> 8;
 }
 
-static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample *sample);
+static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample *sample)
+{
+    const struct dev_baro_bmp585_config *config = baro->config;
+
+    // One burst read so temperature and pressure come from the same measurement (section 4.5.1)
+    uint8_t buf[6];
+    enum io_status status = io_i2c_mem_read(config->i2c, BMP585_REG_TEMP_DATA_XLSB, buf,
+                                            sizeof(buf), BMP585_TIMEOUT_MS);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
+    sample->temp_c = (float)to_int24(&buf[0]) / 65536.0f;
+    sample->pressure_pa = (float)to_int24(&buf[3]) / 64.0f;
+
+    return IO_STATUS_OK;
+}
 
 static const struct dev_baro_ops bmp585_ops = {
     .read = bmp585_read,
@@ -132,23 +148,5 @@ enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp5
     }
 
     baro->ops = &bmp585_ops;
-    return IO_STATUS_OK;
-}
-
-static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample *sample)
-{
-    const struct dev_baro_bmp585_config *config = baro->config;
-
-    // One burst read so temperature and pressure come from the same measurement (section 4.5.1)
-    uint8_t buf[6];
-    enum io_status status = io_i2c_mem_read(config->i2c, BMP585_REG_TEMP_DATA_XLSB, buf,
-                                            sizeof(buf), BMP585_TIMEOUT_MS);
-    if (status != IO_STATUS_OK) {
-        return status;
-    }
-
-    sample->temp_c = (float)to_int24(&buf[0]) / 65536.0f;
-    sample->pressure_pa = (float)to_int24(&buf[3]) / 64.0f;
-
     return IO_STATUS_OK;
 }
