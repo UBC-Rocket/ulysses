@@ -13,6 +13,7 @@ target_sources(ulysses_io
     PRIVATE
         assert/handler.c
         delay/delay.c
+        gpio/gpio.c
         irq/irq.c
         irq/isr_hooks.c
         i2c/i2c_dev.c
