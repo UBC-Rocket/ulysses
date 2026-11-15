@@ -104,4 +104,20 @@ enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t 
 enum io_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
                                    uint16_t len, io_i2c_cb_t cb, void *user_data);
 
+/**
+ * @brief Like io_i2c_mem_read_it(), but with a 16-bit register address
+ *
+ * The register address is sent most significant byte first.
+ */
+enum io_status io_i2c_mem16_read_it(const io_i2c_dev_t *dev, uint16_t reg, uint8_t *data,
+                                    uint16_t len, io_i2c_cb_t cb, void *user_data);
+
+/**
+ * @brief Like io_i2c_mem_write_it(), but with a 16-bit register address
+ *
+ * The register address is sent most significant byte first.
+ */
+enum io_status io_i2c_mem16_write_it(const io_i2c_dev_t *dev, uint16_t reg, const uint8_t *data,
+                                     uint16_t len, io_i2c_cb_t cb, void *user_data);
+
 #endif // ULYSSES_IO_I2C

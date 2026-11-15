@@ -62,14 +62,15 @@ enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint16_t re
     return status;
 }
 
-enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
-                                      uint16_t len, io_i2c_cb_t cb, void *user_data)
+enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg,
+                                      uint8_t reg_size, uint8_t *data, uint16_t len, io_i2c_cb_t cb,
+                                      void *user_data)
 {
     if (!claim(bus, cb, user_data)) {
         return IO_STATUS_BUSY;
     }
 
-    enum io_status status = bus->ops->mem_read_it(bus->config, addr, reg, data, len);
+    enum io_status status = bus->ops->mem_read_it(bus->config, addr, reg, reg_size, data, len);
 
     if (status != IO_STATUS_OK) {
         release(bus);
@@ -78,15 +79,15 @@ enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t r
     return status;
 }
 
-enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
-                                       const uint8_t *data, uint16_t len, io_i2c_cb_t cb,
-                                       void *user_data)
+enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg,
+                                       uint8_t reg_size, const uint8_t *data, uint16_t len,
+                                       io_i2c_cb_t cb, void *user_data)
 {
     if (!claim(bus, cb, user_data)) {
         return IO_STATUS_BUSY;
     }
 
-    enum io_status status = bus->ops->mem_write_it(bus->config, addr, reg, data, len);
+    enum io_status status = bus->ops->mem_write_it(bus->config, addr, reg, reg_size, data, len);
 
     if (status != IO_STATUS_OK) {
         release(bus);
