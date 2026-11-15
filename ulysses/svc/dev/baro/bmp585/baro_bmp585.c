@@ -1,3 +1,5 @@
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -57,6 +59,13 @@ static int32_t to_int24(const uint8_t *b)
     return (int32_t)(raw << 8) >> 8;
 }
 
+/** @brief Converts the 6 data bytes starting at TEMP_DATA_XLSB */
+static void to_sample(const uint8_t *raw, struct dev_baro_sample *sample)
+{
+    sample->temp_c = (float)to_int24(&raw[0]) / 65536.0f;
+    sample->pressure_pa = (float)to_int24(&raw[3]) / 64.0f;
+}
+
 static enum io_status bmp585_read_blocking(dev_baro_t *baro, struct dev_baro_sample *sample)
 {
     const struct dev_baro_bmp585_config *config = baro->config;
@@ -69,27 +78,71 @@ static enum io_status bmp585_read_blocking(dev_baro_t *baro, struct dev_baro_sam
         return status;
     }
 
-    sample->temp_c = (float)to_int24(&buf[0]) / 65536.0f;
-    sample->pressure_pa = (float)to_int24(&buf[3]) / 64.0f;
-
+    to_sample(buf, sample);
     return IO_STATUS_OK;
+}
+
+static void on_read_done(enum io_status status, void *user_data)
+{
+    dev_baro_t *baro = user_data;
+    struct dev_baro_bmp585_data *data = baro->data;
+    dev_baro_cb_t cb = data->cb;
+    void *cb_user_data = data->cb_user_data;
+
+    struct dev_baro_sample sample;
+    if (status == IO_STATUS_OK) {
+        to_sample(data->rx_data, &sample);
+    }
+
+    // Released before cb, so cb can start the next read
+    atomic_store(&data->busy, false);
+
+    cb(status, status == IO_STATUS_OK ? &sample : NULL, cb_user_data);
+}
+
+static enum io_status bmp585_read_async(dev_baro_t *baro, dev_baro_cb_t cb, void *user_data)
+{
+    const struct dev_baro_bmp585_config *config = baro->config;
+    struct dev_baro_bmp585_data *data = baro->data;
+
+    if (atomic_exchange(&data->busy, true)) {
+        return IO_STATUS_BUSY;
+    }
+
+    data->cb = cb;
+    data->cb_user_data = user_data;
+
+    // Same burst read as bmp585_read_blocking()
+    enum io_status status =
+        io_i2c_mem_read_it(config->i2c, BMP585_REG_TEMP_DATA_XLSB, data->rx_data,
+                           sizeof(data->rx_data), on_read_done, baro);
+    if (status != IO_STATUS_OK) {
+        atomic_store(&data->busy, false);
+    }
+
+    return status;
 }
 
 static const struct dev_baro_ops bmp585_ops = {
     .read_blocking = bmp585_read_blocking,
+    .read_async = bmp585_read_async,
 };
 
-enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config)
+enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config,
+                                    struct dev_baro_bmp585_data *data)
 {
     ULYSSES_ASSERT(baro != NULL, "Barometer must not be NULL");
     ULYSSES_ASSERT(config != NULL, "BMP585 config must not be NULL");
+    ULYSSES_ASSERT(data != NULL, "BMP585 data must not be NULL");
 
     const io_i2c_dev_t *i2c = config->i2c;
     enum io_status status;
     uint8_t val;
 
     baro->config = config;
+    baro->data = data;
     baro->ops = NULL;
+    atomic_init(&data->busy, false);
 
     // The chip doesn't ACK a soft reset over I2C (section 8.36), so the status is ignored
     (void)write_reg(i2c, BMP585_REG_CMD, BMP585_CMD_SOFT_RESET);
