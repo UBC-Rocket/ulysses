@@ -84,7 +84,8 @@ static enum io_status vl53l4cx_read(const dev_lidar_t *lidar, struct dev_lidar_s
 
 static const struct dev_lidar_ops vl53l4cx_ops = {.read = vl53l4cx_read};
 
-void dev_lidar_vl53l4cx_init(dev_lidar_t *lidar, const struct dev_lidar_vl53l4cx_config *config)
+enum io_status dev_lidar_vl53l4cx_init(dev_lidar_t *lidar,
+                                       const struct dev_lidar_vl53l4cx_config *config)
 {
     ULYSSES_ASSERT(lidar != NULL, "LiDAR pointer is NULL");
     ULYSSES_ASSERT(config != NULL, "LiDAR config pointer is NULL");
@@ -92,4 +93,5 @@ void dev_lidar_vl53l4cx_init(dev_lidar_t *lidar, const struct dev_lidar_vl53l4cx
 
     lidar->config = config;
     lidar->ops = &vl53l4cx_ops;
+    return IO_STATUS_OK;
 }
