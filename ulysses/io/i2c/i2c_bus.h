@@ -104,12 +104,12 @@ enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg
 enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg, uint8_t reg_size,
                                     const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
-/** @brief Starts an async register read; see io_i2c_mem_read_it() */
+/** @brief Starts an async register read; see io_i2c_mem8_read_it() */
 enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg,
                                       uint8_t reg_size, uint8_t *data, uint16_t len, io_i2c_cb_t cb,
                                       void *user_data);
 
-/** @brief Starts an async register write; see io_i2c_mem_write_it() */
+/** @brief Starts an async register write; see io_i2c_mem8_write_it() */
 enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg,
                                        uint8_t reg_size, const uint8_t *data, uint16_t len,
                                        io_i2c_cb_t cb, void *user_data);

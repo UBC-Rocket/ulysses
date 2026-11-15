@@ -27,8 +27,8 @@ typedef void (*io_i2c_cb_t)(enum io_status status, void *user_data);
  *
  * @return Status returned by the bus backend
  */
-enum io_status io_i2c_mem_read(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
-                               uint32_t timeout_ms);
+enum io_status io_i2c_mem8_read(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
+                                uint32_t timeout_ms);
 
 /**
  * @brief Writes bytes starting at an 8-bit device register
@@ -43,11 +43,11 @@ enum io_status io_i2c_mem_read(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *da
  *
  * @return Status returned by the bus backend
  */
-enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
-                                uint16_t len, uint32_t timeout_ms);
+enum io_status io_i2c_mem8_write(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
+                                 uint16_t len, uint32_t timeout_ms);
 
 /**
- * @brief Like io_i2c_mem_read(), but with a 16-bit register address
+ * @brief Like io_i2c_mem8_read(), but with a 16-bit register address
  *
  * The register address is sent most significant byte first.
  */
@@ -55,7 +55,7 @@ enum io_status io_i2c_mem16_read(const io_i2c_dev_t *dev, uint16_t reg, uint8_t 
                                  uint32_t timeout_ms);
 
 /**
- * @brief Like io_i2c_mem_write(), but with a 16-bit register address
+ * @brief Like io_i2c_mem8_write(), but with a 16-bit register address
  *
  * The register address is sent most significant byte first.
  */
@@ -80,8 +80,8 @@ enum io_status io_i2c_mem16_write(const io_i2c_dev_t *dev, uint16_t reg, const u
  * @return IO_STATUS_OK if started, IO_STATUS_BUSY if
  *         the bus is occupied, or another error status
  */
-enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
-                                  io_i2c_cb_t cb, void *user_data);
+enum io_status io_i2c_mem8_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data,
+                                   uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 /**
  * @brief Starts a non-blocking I2C register write.
@@ -101,11 +101,11 @@ enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t 
  * @return IO_STATUS_OK if started, IO_STATUS_BUSY if
  *         the bus is occupied, or another error status
  */
-enum io_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
-                                   uint16_t len, io_i2c_cb_t cb, void *user_data);
+enum io_status io_i2c_mem8_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
+                                    uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 /**
- * @brief Like io_i2c_mem_read_it(), but with a 16-bit register address
+ * @brief Like io_i2c_mem8_read_it(), but with a 16-bit register address
  *
  * The register address is sent most significant byte first.
  */
@@ -113,7 +113,7 @@ enum io_status io_i2c_mem16_read_it(const io_i2c_dev_t *dev, uint16_t reg, uint8
                                     uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 /**
- * @brief Like io_i2c_mem_write_it(), but with a 16-bit register address
+ * @brief Like io_i2c_mem8_write_it(), but with a 16-bit register address
  *
  * The register address is sent most significant byte first.
  */
