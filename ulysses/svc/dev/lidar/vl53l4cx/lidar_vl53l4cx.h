@@ -2,6 +2,7 @@
 #define ULYSSES_SVC_DEV_LIDAR_VL53L4CX_LIDAR_VL53L4CX_H
 
 #include "ulysses/io/i2c.h"
+#include "ulysses/io/status.h"
 #include "ulysses/svc/dev/lidar.h"
 
 /** @brief Configuration for vendor-specific code (VL53L4CX) */
@@ -17,7 +18,10 @@ struct dev_lidar_vl53l4cx_config {
  *
  * @param[out] lidar Non-NULL lidar to configure
  * @param config Non-NULL configuration
+ *
+ * @return IO_STATUS_OK
  */
-void dev_lidar_vl53l4cx_init(dev_lidar_t *lidar, const struct dev_lidar_vl53l4cx_config *config);
+enum io_status dev_lidar_vl53l4cx_init(dev_lidar_t *lidar,
+                                       const struct dev_lidar_vl53l4cx_config *config);
 
 #endif // ULYSSES_SVC_DEV_LIDAR_VL53L4CX_LIDAR_VL53L4CX_H
