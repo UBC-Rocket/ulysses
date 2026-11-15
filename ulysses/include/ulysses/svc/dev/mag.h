@@ -46,7 +46,7 @@ enum io_status dev_mag_read(dev_mag_t *mag, struct dev_mag_sample *sample);
  * @return IO_STATUS_OK if the read started, IO_STATUS_BUSY if a read is in progress, otherwise an
  *         IO_STATUS_* error code
  */
-enum io_status dev_mag_read_it(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data);
+enum io_status dev_mag_read_async(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data);
 
 /**
  * @brief Checks whether a new magnetic field sample is ready to read

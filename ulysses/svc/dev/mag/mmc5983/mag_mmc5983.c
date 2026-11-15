@@ -159,7 +159,7 @@ static void on_transfer_done(enum io_status status, void *user_data)
     cb(status, status == IO_STATUS_OK ? &sample : NULL, cb_user_data);
 }
 
-static enum io_status mmc5983_read_it(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data)
+static enum io_status mmc5983_read_async(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data)
 {
     const struct dev_mag_mmc5983_config *config = mag->config;
     struct dev_mag_mmc5983_data *data = mag->data;
@@ -194,7 +194,7 @@ static bool mmc5983_is_data_ready(dev_mag_t *mag)
 
 static const struct dev_mag_ops mmc5983_ops = {
     .read = mmc5983_read,
-    .read_it = mmc5983_read_it,
+    .read_async = mmc5983_read_async,
     .is_data_ready = mmc5983_is_data_ready,
 };
 
