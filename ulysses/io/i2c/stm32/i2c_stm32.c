@@ -44,6 +44,8 @@ static enum io_status to_io_status(HAL_StatusTypeDef status, uint32_t hal_error)
 /** @brief Maps a register address size in bytes to the HAL constant */
 static uint16_t to_hal_reg_size(uint8_t reg_size)
 {
+    ULYSSES_ASSERT(reg_size == 1U || reg_size == 2U, "I2C register size must be 1 or 2 bytes");
+
     return reg_size == 2U ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT;
 }
 
