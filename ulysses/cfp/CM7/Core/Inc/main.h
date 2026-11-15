@@ -61,6 +61,7 @@ void Error_Handler(void);
 #define MAG_SCK_GPIO_Port GPIOE
 #define BARO_INT_Pin GPIO_PIN_3
 #define BARO_INT_GPIO_Port GPIOE
+#define BARO_INT_EXTI_IRQn EXTI3_IRQn
 #define MAG_NSS_Pin GPIO_PIN_4
 #define MAG_NSS_GPIO_Port GPIOE
 #define MAG_MISO_Pin GPIO_PIN_5
@@ -85,12 +86,15 @@ void Error_Handler(void);
 #define IMU1_MOSI_GPIO_Port GPIOA
 #define IMU2_INT2_Pin GPIO_PIN_4
 #define IMU2_INT2_GPIO_Port GPIOC
+#define IMU2_INT2_EXTI_IRQn EXTI4_IRQn
 #define IMU1_INT1_Pin GPIO_PIN_5
 #define IMU1_INT1_GPIO_Port GPIOC
+#define IMU1_INT1_EXTI_IRQn EXTI9_5_IRQn
 #define LiDAR_EN_Pin GPIO_PIN_0
 #define LiDAR_EN_GPIO_Port GPIOB
 #define LiDAR_INT_Pin GPIO_PIN_1
 #define LiDAR_INT_GPIO_Port GPIOB
+#define LiDAR_INT_EXTI_IRQn EXTI1_IRQn
 #define IMU3_MOSI_Pin GPIO_PIN_2
 #define IMU3_MOSI_GPIO_Port GPIOB
 #define TTL_RX_Pin GPIO_PIN_7
@@ -107,6 +111,7 @@ void Error_Handler(void);
 #define TTL_TX_EN_GPIO_Port GPIOE
 #define MAG_INT_Pin GPIO_PIN_15
 #define MAG_INT_GPIO_Port GPIOE
+#define MAG_INT_EXTI_IRQn EXTI15_10_IRQn
 #define LiDAR_SCL_Pin GPIO_PIN_10
 #define LiDAR_SCL_GPIO_Port GPIOB
 #define LiDAR_SDA_Pin GPIO_PIN_11
@@ -121,10 +126,12 @@ void Error_Handler(void);
 #define GATE_DRIVER2_EN_GPIO_Port GPIOD
 #define IMU2_INT1_Pin GPIO_PIN_14
 #define IMU2_INT1_GPIO_Port GPIOD
+#define IMU2_INT1_EXTI_IRQn EXTI15_10_IRQn
 #define IMU3_INT2_Pin GPIO_PIN_15
 #define IMU3_INT2_GPIO_Port GPIOD
 #define IMU3_INT1_Pin GPIO_PIN_8
 #define IMU3_INT1_GPIO_Port GPIOC
+#define IMU3_INT1_EXTI_IRQn EXTI9_5_IRQn
 #define LIN_ACTUATOR1_PWM_Pin GPIO_PIN_15
 #define LIN_ACTUATOR1_PWM_GPIO_Port GPIOA
 #define IMU3_SCK_Pin GPIO_PIN_10

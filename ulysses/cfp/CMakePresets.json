@@ -11,6 +11,16 @@
             }
         },
         {
+            "name": "native",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "ULYSSES_BUILD_NATIVE": "ON"
+            }
+        },
+        {
             "name": "Debug",
             "inherits": "default",
             "cacheVariables": {
@@ -23,6 +33,14 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
+        },
+        {
+            "name": "TestNative",
+            "inherits": "native",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ULYSSES_BUILD_TESTS": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -33,6 +51,19 @@
         {
             "name": "Release",
             "configurePreset": "Release"
+        },
+        {
+            "name": "TestNative",
+            "configurePreset": "TestNative"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "TestNative",
+            "configurePreset": "TestNative",
+            "output": {
+                "outputOnFailure": true
+            }
         }
     ]
 }
