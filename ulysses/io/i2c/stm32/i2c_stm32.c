@@ -41,28 +41,37 @@ static enum io_status to_io_status(HAL_StatusTypeDef status, uint32_t hal_error)
     return IO_STATUS_ERROR;
 }
 
-static enum io_status stm32_mem_read(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
-                                     uint16_t len, uint32_t timeout_ms)
+/** @brief Maps a register address size in bytes to the HAL constant */
+static uint16_t to_hal_reg_size(uint8_t reg_size)
+{
+    return reg_size == 2U ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT;
+}
+
+static enum io_status stm32_mem_read(const void *config, uint8_t addr, uint16_t reg,
+                                     uint8_t reg_size, uint8_t *data, uint16_t len,
+                                     uint32_t timeout_ms)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
     I2C_HandleTypeDef *hi2c = cfg->hw_handle;
 
     HAL_StatusTypeDef status = HAL_I2C_Mem_Read(hi2c, (uint16_t)(addr << 1U), reg,
-                                                I2C_MEMADD_SIZE_8BIT, data, len, timeout_ms);
+                                                to_hal_reg_size(reg_size), data, len, timeout_ms);
 
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint8_t reg,
-                                      const uint8_t *data, uint16_t len, uint32_t timeout_ms)
+static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint16_t reg,
+                                      uint8_t reg_size, const uint8_t *data, uint16_t len,
+                                      uint32_t timeout_ms)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
     I2C_HandleTypeDef *hi2c = cfg->hw_handle;
 
-    HAL_StatusTypeDef status = HAL_I2C_Mem_Write(
-        hi2c, (uint16_t)(addr << 1U), reg, I2C_MEMADD_SIZE_8BIT, (uint8_t *)data, len, timeout_ms);
+    HAL_StatusTypeDef status =
+        HAL_I2C_Mem_Write(hi2c, (uint16_t)(addr << 1U), reg, to_hal_reg_size(reg_size),
+                          (uint8_t *)data, len, timeout_ms);
 
     return to_io_status(status, hi2c->ErrorCode);
 }

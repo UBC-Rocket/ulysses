@@ -15,30 +15,32 @@ struct io_i2c_bus_ops {
      *
      * @param config Backend-specific configuration
      * @param addr Unshifted 7-bit device address
-     * @param reg Starting 8-bit register address
+     * @param reg Starting register address
+     * @param reg_size Register address size in bytes, 1 or 2
      * @param[out] data Non-NULL output buffer with space for at least len bytes
      * @param len Number of bytes to read
      * @param timeout_ms Backend timeout in milliseconds
      *
      * @return Transfer status
      */
-    enum io_status (*mem_read)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
-                               uint16_t len, uint32_t timeout_ms);
+    enum io_status (*mem_read)(const void *config, uint8_t addr, uint16_t reg, uint8_t reg_size,
+                               uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
     /**
      * @brief Writes device registers through the backend
      *
      * @param config Backend-specific configuration
      * @param addr Unshifted 7-bit device address
-     * @param reg Starting 8-bit register address
+     * @param reg Starting register address
+     * @param reg_size Register address size in bytes, 1 or 2
      * @param data Non-NULL input buffer containing at least len bytes
      * @param len Number of bytes to write
      * @param timeout_ms Backend timeout in milliseconds
      *
      * @return Transfer status
      */
-    enum io_status (*mem_write)(const void *config, uint8_t addr, uint8_t reg, const uint8_t *data,
-                                uint16_t len, uint32_t timeout_ms);
+    enum io_status (*mem_write)(const void *config, uint8_t addr, uint16_t reg, uint8_t reg_size,
+                                const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
     /**
      * @brief Starts a register read; the backend calls io_i2c_bus_complete() when it ends
@@ -73,15 +75,16 @@ struct io_i2c_bus {
  *
  * @param bus Non-NULL bus with a non-NULL mem_read operation
  * @param addr Unshifted 7-bit device address
- * @param reg Starting 8-bit register address
+ * @param reg Starting register address
+ * @param reg_size Register address size in bytes, 1 or 2
  * @param[out] data Non-NULL output buffer with space for at least len bytes
  * @param len Number of bytes to read
  * @param timeout_ms Backend timeout in milliseconds
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
-                                   uint16_t len, uint32_t timeout_ms);
+enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg, uint8_t reg_size,
+                                   uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 /**
  * @brief Dispatches a synchronous register write to the bus backend
@@ -90,14 +93,15 @@ enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
  *
  * @param bus Non-NULL bus with a non-NULL mem_write operation
  * @param addr Unshifted 7-bit device address
- * @param reg Starting 8-bit register address
+ * @param reg Starting register address
+ * @param reg_size Register address size in bytes, 1 or 2
  * @param data Non-NULL input buffer containing at least len bytes
  * @param len Number of bytes to write
  * @param timeout_ms Backend timeout in milliseconds
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint16_t reg, uint8_t reg_size,
                                     const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 /** @brief Starts an async register read; see io_i2c_mem_read_it() */
