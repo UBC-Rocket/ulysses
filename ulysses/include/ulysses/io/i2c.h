@@ -47,6 +47,22 @@ enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint
                                 uint16_t len, uint32_t timeout_ms);
 
 /**
+ * @brief Like io_i2c_mem_read(), but with a 16-bit register address
+ *
+ * The register address is sent most significant byte first.
+ */
+enum io_status io_i2c_mem16_read(const io_i2c_dev_t *dev, uint16_t reg, uint8_t *data, uint16_t len,
+                                 uint32_t timeout_ms);
+
+/**
+ * @brief Like io_i2c_mem_write(), but with a 16-bit register address
+ *
+ * The register address is sent most significant byte first.
+ */
+enum io_status io_i2c_mem16_write(const io_i2c_dev_t *dev, uint16_t reg, const uint8_t *data,
+                                  uint16_t len, uint32_t timeout_ms);
+
+/**
  * @brief Starts a non-blocking I2C register read.
  *
  * Returns once the transfer is started. Completion is
