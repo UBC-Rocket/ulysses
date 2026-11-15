@@ -14,6 +14,7 @@ target_sources(ulysses_io
         assert/handler.c
         delay/delay.c
         gpio/gpio.c
+        gpio/stm32/gpio_stm32.c
         irq/irq.c
         irq/isr_hooks.c
         i2c/i2c_dev.c
