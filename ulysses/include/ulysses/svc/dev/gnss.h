@@ -13,41 +13,46 @@ typedef struct svc_gnss svc_gnss_t;
 /**
  * @brief Quality of the position solution
  *
- * Derived from the receiver's fix type, fix valid flag and carrier solution state
+ * Mapped from the GGA fix quality field, forced to NONE when RMC reports invalid
  */
-enum svc_gnss_fix_type {
-    SVC_GNSS_FIX_NONE,      ///< No usable position
-    SVC_GNSS_FIX_2D,        ///< Position without a valid altitude
-    SVC_GNSS_FIX_3D,        ///< Standalone 3D position
-    SVC_GNSS_FIX_RTK_FLOAT, ///< 3D position with a floating ambiguity RTK Solution
-    SVC_GNSS_FIX_RTK_FIXED, ///< 3D position with a fixeed amviguity RTK solution
+enum svc_gnss_fix {
+    SVC_GNSS_FIX_NONE,       ///< No usable position (GGA 0 or 6, or RMC status V)
+    SVC_GNSS_FIX_STANDALONE, ///< Autonomous GNSS fix (GGA 1)
+    SVC_GNSS_FIX_DGPS,       ///< Differential fix (GGA 2)
+    SVC_GNSS_FIX_RTK_FLOAT,  ///< RTK with floating ambiguities (GGA 5)
+    SVC_GNSS_FIX_RTK_FIXED,  ///< RTK with fixed ambiguities (GGA 4)
 };
 
 /**
- * @brief Latest navigation solution from the receiver (NAV-PVT)
- *
- * TODO: Member set, types and units are under review, UTC time with validity flags is not yet included.
- *
- * Fields keep the receiver's native units for now
+ * @brief UTC time of the solution, as reported by the receiver
+ */
+struct svc_gnss_utc {
+    uint16_t year;  ///< Full year, e.g. 2026
+    uint8_t month;  ///< 1 to 12
+    uint8_t day;    ///< 1 to 31
+    uint8_t hour;   ///< 0 to 23
+    uint8_t minute; ///< 0 to 59
+    uint8_t second; ///< 0 to 60, whole seconds only
+    bool valid;     ///< True if both time and date were reported
+};
+
+/**
+ * @brief Latest navigation solution from the receiver (NMEA GGA + RMC)
  */
 struct svc_gnss_data {
-    int32_t latitude;           ///< WGS84 latitude in 1e-7 degrees, positive north
-    int32_t longitude;          ///< WGS84 longitude in 1e-7 degrees, positive east
-    int32_t altitude_ellipsoid; ///< Height above the WGS84 ellipsoid in mm
-    int32_t altitude_msl;       ///< Height above mean sea level in mm
+    double latitude;        ///< WGS84 latitude in degrees, positive north
+    double longitude;       ///< WGS84 longitude in degrees, positive east
+    float altitude_msl;     ///< Height above mean sea level in m
+    float geoid_separation; ///< Ellipsoid minus geoid in m; ellipsoid height = msl + this
 
-    uint32_t horizontal_accuracy; ///< Estimated horizontal accuracy in mm
-    uint32_t vertical_accuracy;   ///< Estimated vertical accruracy in mm
+    float ground_speed; ///< Horizontal speed over ground in m/s
+    float course;       ///< Course over ground in degrees from true north
 
-    int32_t velocity_north; ///< North velocity in mm per s
-    int32_t velocity_east;  ///< East velocity in mm per s
-    int32_t velocity_down;  ///< Down velocity in mm per s
+    enum svc_gnss_fix fix;   ///< Quality of the position solution
+    uint8_t satellite_count; ///< Satellites used in the solution
+    float correction_age;    ///< Age of differential corrections in s, 0 if none
 
-    uint32_t speed_accuracy; ///< Estimated speed accuracy in mm per s
-
-    uint32_t time_of_week;      ///< GPS time of week of the solution in ms
-    enum svc_gnss_fix_type fix; ///< Quality of the position solution
-    uint32_t satellite_count;   ///< Number of satellites used in the solution
+    struct svc_gnss_utc utc; ///< Receiver UTC time of the solution
 };
 
 /**
