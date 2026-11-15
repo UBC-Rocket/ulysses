@@ -20,6 +20,7 @@ target_sources(ulysses_io
         i2c/i2c_dev.c
         i2c/i2c_bus.c
         i2c/stm32/i2c_stm32.c
+        pwm/pwm.c
         spi/spi.c
         spi/stm32/spi_stm32.c
         uart/uart.c
