@@ -9,7 +9,10 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
+AllowShortRecordOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
+BreakAfterOpenBracketBracedList: true
+BreakBeforeCloseBracketBracedList: true
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: true
