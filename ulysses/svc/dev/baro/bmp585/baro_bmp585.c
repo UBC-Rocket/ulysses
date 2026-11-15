@@ -57,7 +57,7 @@ static int32_t to_int24(const uint8_t *b)
     return (int32_t)(raw << 8) >> 8;
 }
 
-static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample *sample)
+static enum io_status bmp585_read_blocking(dev_baro_t *baro, struct dev_baro_sample *sample)
 {
     const struct dev_baro_bmp585_config *config = baro->config;
 
@@ -76,7 +76,7 @@ static enum io_status bmp585_read(const dev_baro_t *baro, struct dev_baro_sample
 }
 
 static const struct dev_baro_ops bmp585_ops = {
-    .read = bmp585_read,
+    .read_blocking = bmp585_read_blocking,
 };
 
 enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config)

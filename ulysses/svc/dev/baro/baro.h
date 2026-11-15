@@ -5,7 +5,7 @@
 #include "ulysses/svc/dev/baro.h"
 
 struct dev_baro_ops {
-    enum io_status (*read)(const dev_baro_t *baro, struct dev_baro_sample *sample);
+    enum io_status (*read_blocking)(dev_baro_t *baro, struct dev_baro_sample *sample);
 };
 
 struct dev_baro {
