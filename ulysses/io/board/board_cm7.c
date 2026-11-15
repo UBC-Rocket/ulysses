@@ -1,6 +1,9 @@
-// CubeMX handles
+// CubeMX handles and pin labels
 #include "i2c.h"
+#include "main.h"
 
+#include "gpio/gpio.h"
+#include "gpio/stm32/gpio_stm32.h"
 #include "i2c/i2c_bus.h"
 #include "i2c/i2c_dev.h"
 #include "i2c/stm32/i2c_stm32.h"
@@ -12,6 +15,10 @@
 // I2C bus and 7-bit address
 #define BARO_BUS (&i2c1_bus)
 #define BARO_ADDR (0x46U) // BMP585 with SDO low, 0x47 with SDO high (datasheet section 5.6)
+
+// GPIO port and pin
+#define LIDAR_EN_PORT (LiDAR_EN_GPIO_Port)
+#define LIDAR_EN_PIN (LiDAR_EN_Pin)
 
 // Devices below have no IO driver yet. Uncomment when their driver lands.
 
@@ -50,8 +57,6 @@
 // GPIO port and pin
 // #define BARO_INT_PORT (BARO_INT_GPIO_Port)
 // #define BARO_INT_PIN (BARO_INT_Pin)
-// #define LIDAR_EN_PORT (LiDAR_EN_GPIO_Port)
-// #define LIDAR_EN_PIN (LiDAR_EN_Pin)
 // #define LIDAR_INT_PORT (LiDAR_INT_GPIO_Port)
 // #define LIDAR_INT_PIN (LiDAR_INT_Pin)
 // #define IMU1_INT1_PORT (IMU1_INT1_GPIO_Port)
@@ -82,7 +87,13 @@ static const struct io_i2c_stm32_config i2c1_config = {.hw_handle = &hi2c1};
 
 const io_i2c_dev_t IO_BARO = {.bus = BARO_BUS, .addr = BARO_ADDR};
 
+static const struct io_gpio_stm32_config lidar_en_config = {.port = LIDAR_EN_PORT,
+                                                            .pin = LIDAR_EN_PIN};
+
+io_gpio_dev_t IO_LIDAR_EN;
+
 void io_board_init(void)
 {
     io_i2c_stm32_init(&i2c1_bus, &i2c1_config);
+    io_gpio_stm32_init(&IO_LIDAR_EN, &lidar_en_config);
 }

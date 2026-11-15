@@ -1,12 +1,16 @@
 #ifndef ULYSSES_IO_BOARD
 #define ULYSSES_IO_BOARD
 
+#include "ulysses/io/gpio.h"
 #include "ulysses/io/i2c.h"
 
 // Each core only defines the devices wired to it, so using one from the other core fails to link.
 
 /** @brief Barometer (CM7) */
 extern const io_i2c_dev_t IO_BARO;
+
+/** @brief LiDAR enable (XSHUT) pin, low holds the sensor in shutdown (CM7) */
+extern io_gpio_dev_t IO_LIDAR_EN;
 
 /** @brief Fuel gauge (CM4) */
 extern const io_i2c_dev_t IO_FUEL_GAUGE;
@@ -15,7 +19,7 @@ extern const io_i2c_dev_t IO_FUEL_GAUGE;
 extern const io_i2c_dev_t IO_BMS;
 
 /**
- * @brief Links this core's buses to their CubeMX handles
+ * @brief Links this core's buses and pins to their CubeMX handles
  *
  * Call once after the CubeMX MX_*_Init() calls and before any device is used.
  */
