@@ -10,6 +10,8 @@ target_link_libraries(ulysses_svc
 
 target_sources(ulysses_svc
     PRIVATE
+        dev/baro/baro.c
+        dev/baro/bmp585/baro_bmp585.c
         dev/mag/mag.c
         dev/mag/mmc5983/mag_mmc5983.c
 )
