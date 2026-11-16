@@ -10,10 +10,13 @@ target_link_libraries(ulysses_svc
 
 target_sources(ulysses_svc
     PRIVATE
+        dev/baro/baro.c
+        dev/baro/bmp585/baro_bmp585.c
         dev/gnss/gnss.c
+        dev/mag/mag.c
+        dev/mag/mmc5983/mag_mmc5983.c
 )
 
-# Private headers shared between svc sources
 target_include_directories(ulysses_svc
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
