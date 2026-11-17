@@ -24,3 +24,12 @@ add_unity_test(
         ulysses_lib
         ulysses_public_headers
 )
+
+add_unity_test(
+    NAME "checksum_crc16"
+    SOURCES
+        checksum/test_crc16.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)
