@@ -39,7 +39,7 @@ struct dev_gnss_utc {
 /**
  * @brief Latest navigation solution from the receiver (NMEA GGA + RMC)
  */
-struct dev_gnss_data {
+struct dev_gnss_sample {
     double latitude;        ///< WGS84 latitude in degrees, positive north
     double longitude;       ///< WGS84 longitude in degrees, positive east
     float altitude_msl;     ///< Height above mean sea level in m
@@ -60,7 +60,7 @@ struct dev_gnss_data {
  *
  * Reads available receiver bytes and runs the driver state machine
  *
- * Call periodically from the same task that calls dev_gnss_get_data(),
+ * Call periodically from the same task that calls dev_gnss_get_sample(),
  * and never from an interrupt. The driver is not safe for concurrent use
  *
  * @param gnss Non-NULL gnss intialized receiver
@@ -77,32 +77,32 @@ enum io_status dev_gnss_update(dev_gnss_t *gnss);
  * @retval true A new solution is available
  * @retval false A new solution is NOT available
  */
-bool dev_gnss_is_data_ready(const dev_gnss_t *gnss);
+bool dev_gnss_is_sample_ready(const dev_gnss_t *gnss);
 
 /**
- * @brief Copies out the latest solution and clears the data ready state
+ * @brief Copies out the latest solution and clears the sample data ready state
  *
  * Call from the same task as dev_gnss_update()
  *
  * @param gnss Non-NULL intialized receiver
- * @param[out] user_data Non-NULL output for the latest solution, unchanged if no data is available
+ * @param[out] sample Non-NULL output for the latest solution, unchanged if no sample data is available
  *
- * @retval IO_STATUS_OK data was written
- * @retval IO_STATUS_ERROR no solution is newer than the last call; data is unchanged
+ * @retval IO_STATUS_OK sample data was written
+ * @retval IO_STATUS_ERROR no solution is newer than the last call; sample data is unchanged
  */
-enum io_status dev_gnss_get_data(dev_gnss_t *gnss, struct dev_gnss_data *user_data);
+enum io_status dev_gnss_get_sample(dev_gnss_t *gnss, struct dev_gnss_sample *sample);
 
 /**
  * @brief Forwards RTCM correction bytes to the receiver
  *
  * @param gnss Non-NULL intialized receiver
- * @param user_data Non-NULL input buffer containing at least len bytes
+ * @param corrections Non-NULL input buffer containing at least len bytes
  * @param len Number of bytes to send; must be greater than 0
  *
  * @retval IO_STATUS_ERROR The backend does not support corrections
  * @return Status returned by the backend otherwise
  */
-enum io_status dev_gnss_send_corrections(dev_gnss_t *gnss, const uint8_t *user_data, size_t len);
+enum io_status dev_gnss_send_corrections(dev_gnss_t *gnss, const uint8_t *corrections, size_t len);
 
 /**
  * @brief Resets the receiver
