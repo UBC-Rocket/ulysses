@@ -63,20 +63,21 @@ static inline bool is_valid_instruction(uint8_t instruction)
     }
 }
 
-enum dynamixel_protocol2_status
-dynamixel_protocol2_encode_request(uint8_t id, uint8_t instruction, const uint8_t *parameters,
-                                   uint16_t parameters_length, uint8_t *packet, uint32_t capacity,
-                                   uint32_t *packet_size)
+enum dynamixel_protocol2_status dynamixel_protocol2_encode_request(
+    uint8_t id, uint8_t instruction, const uint8_t *restrict parameters, uint16_t parameters_length,
+    uint8_t *restrict packet, uint32_t capacity, uint32_t *packet_size)
 {
     ULYSSES_ASSERT(id <= MAX_DEVICE_ID || id == DYNAMIXEL_PROTOCOL2_BROADCAST_ID,
                    "invalid dynamixel instruction ID");
     ULYSSES_ASSERT(is_valid_instruction(instruction), "invalid dynamixel instruction");
+    ULYSSES_ASSERT(parameters_length <= DYNAMIXEL_PROTOCOL2_MAX_PARAMETERS_COUNT,
+                   "dynamixel parameters exceed the supported limit");
     ULYSSES_ASSERT(parameters != NULL || parameters_length == 0,
                    "dynamixel parameters must not be NULL for nonzero length");
     ULYSSES_ASSERT(packet != NULL, "dynamixel packet output must not be NULL");
     ULYSSES_ASSERT(packet_size != NULL, "dynamixel packet size output must not be NULL");
 
-    if (capacity < PACKET_PREFIX_SIZE + 1 + CRC_LENGTH) {
+    if (capacity < dynamixel_protocol2_required_packet_capacity(parameters_length)) {
         return DYNAMIXEL_PROTOCOL2_NO_SPACE;
     }
 
@@ -86,25 +87,14 @@ dynamixel_protocol2_encode_request(uint8_t id, uint8_t instruction, const uint8_
 
     uint32_t ptr = 8;
     for (uint32_t i = 0; i < parameters_length; i++) {
-        if (ptr + CRC_LENGTH >= capacity) {
-            return DYNAMIXEL_PROTOCOL2_NO_SPACE;
-        }
         packet[ptr++] = parameters[i];
 
         if (i >= 2 && is_header(&parameters[i - 2])) {
-            if (ptr + CRC_LENGTH >= capacity) {
-                return DYNAMIXEL_PROTOCOL2_NO_SPACE;
-            }
             packet[ptr++] = 0xFD;
         }
     }
 
-    uint32_t length = ptr - PACKET_PREFIX_SIZE + CRC_LENGTH;
-    if (length > UINT16_MAX) {
-        return DYNAMIXEL_PROTOCOL2_NO_SPACE;
-    }
-
-    write_u16le(&packet[5], length);
+    write_u16le(&packet[5], ptr - PACKET_PREFIX_SIZE + CRC_LENGTH);
     write_u16le(&packet[ptr], crc16_umts(packet, ptr));
     *packet_size = ptr + CRC_LENGTH;
 
@@ -112,9 +102,9 @@ dynamixel_protocol2_encode_request(uint8_t id, uint8_t instruction, const uint8_
 }
 
 enum dynamixel_protocol2_status
-dynamixel_protocol2_decode_response(const uint8_t *packet, uint32_t packet_size, uint8_t *id,
-                                    uint8_t *error, uint8_t *parameters, uint16_t capacity,
-                                    uint16_t *parameters_length)
+dynamixel_protocol2_decode_response(const uint8_t *restrict packet, uint32_t packet_size,
+                                    uint8_t *id, uint8_t *error, uint8_t *restrict parameters,
+                                    uint16_t capacity, uint16_t *parameters_length)
 {
     ULYSSES_ASSERT(packet != NULL, "dynamixel packet must not be NULL");
     ULYSSES_ASSERT(id != NULL, "dynamixel ID output must not be NULL");
@@ -123,6 +113,10 @@ dynamixel_protocol2_decode_response(const uint8_t *packet, uint32_t packet_size,
                    "dynamixel parameters output must not be NULL for nonzero capacity");
     ULYSSES_ASSERT(parameters_length != NULL,
                    "dynamixel parameters length output must not be NULL");
+
+    if (capacity < packet_size) {
+        return DYNAMIXEL_PROTOCOL2_NO_SPACE;
+    }
 
     if (packet_size < STATUS_PARAMETERS_OFFSET + CRC_LENGTH ||
         memcmp(packet, header, sizeof(header)) != 0 || packet[4] > MAX_DEVICE_ID ||
@@ -138,9 +132,6 @@ dynamixel_protocol2_decode_response(const uint8_t *packet, uint32_t packet_size,
 
     uint16_t length = 0;
     for (uint32_t i = STATUS_PARAMETERS_OFFSET; i < crc_offset; i++) {
-        if (length >= capacity) {
-            return DYNAMIXEL_PROTOCOL2_NO_SPACE;
-        }
         parameters[length++] = packet[i];
 
         if (is_header(&packet[i - 2])) {
