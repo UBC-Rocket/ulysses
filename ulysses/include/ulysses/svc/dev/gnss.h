@@ -85,24 +85,24 @@ bool dev_gnss_is_data_ready(const dev_gnss_t *gnss);
  * Call from the same task as dev_gnss_update()
  *
  * @param gnss Non-NULL intialized receiver
- * @param[out] data Non-NULL output for the latest solution, unchanged if no data is available
+ * @param[out] user_data Non-NULL output for the latest solution, unchanged if no data is available
  *
  * @retval IO_STATUS_OK data was written
  * @retval IO_STATUS_ERROR no solution is newer than the last call; data is unchanged
  */
-enum io_status dev_gnss_get_data(dev_gnss_t *gnss, struct dev_gnss_data *data);
+enum io_status dev_gnss_get_data(dev_gnss_t *gnss, struct dev_gnss_data *user_data);
 
 /**
  * @brief Forwards RTCM correction bytes to the receiver
  *
  * @param gnss Non-NULL intialized receiver
- * @param data Non-NULL input buffer containing at least len bytes
+ * @param user_data Non-NULL input buffer containing at least len bytes
  * @param len Number of bytes to send; must be greater than 0
  *
  * @retval IO_STATUS_ERROR The backend does not support corrections
  * @return Status returned by the backend otherwise
  */
-enum io_status dev_gnss_send_corrections(dev_gnss_t *gnss, const uint8_t *data, size_t len);
+enum io_status dev_gnss_send_corrections(dev_gnss_t *gnss, const uint8_t *user_data, size_t len);
 
 /**
  * @brief Resets the receiver

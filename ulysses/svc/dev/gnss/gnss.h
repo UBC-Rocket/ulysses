@@ -9,17 +9,17 @@
 #include "ulysses/svc/dev/gnss.h"
 
 struct dev_gnss_ops {
-    enum io_status (*update)(const void *config, void *ctx);
-    bool (*is_data_ready)(const void *ctx);
-    enum io_status (*get_data)(void *ctx, struct dev_gnss_data *data);
-    enum io_status (*send_corrections)(const void *config, void *ctx, const uint8_t *data,
+    enum io_status (*update)(const void *config, void *data);
+    bool (*is_data_ready)(const void *data);
+    enum io_status (*get_data)(void *data, struct dev_gnss_data *user_data);
+    enum io_status (*send_corrections)(const void *config, void *data, const uint8_t *user_data,
                                        size_t len);
-    enum io_status (*reset)(const void *config, void *ctx);
+    enum io_status (*reset)(const void *config, void *data);
 };
 
 struct dev_gnss {
     const void *config;
-    void *ctx;
+    void *data;
     const struct dev_gnss_ops *ops;
 };
 
