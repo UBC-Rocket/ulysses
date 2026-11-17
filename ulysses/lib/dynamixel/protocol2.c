@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ulysses/lib/assert.h"
+#include "ulysses/lib/checksum.h"
 
 // Packet format: https://emanual.robotis.com/docs/en/dxl/protocol2/
 // SDK reference: https://github.com/ROBOTIS-GIT/DynamixelSDK/blob/main/c/src/dynamixel_sdk/protocol2_packet_handler.c
@@ -16,38 +17,28 @@
 
 static const uint8_t header[] = {0xFF, 0xFF, 0xFD, 0x00};
 
-// TODO: this should be in a separate library, also should probably
-// switch between HW and SW CRC based on data length if we're really optimizing
-static uint16_t crc16_umts(const uint8_t *data, uint32_t length)
+static inline uint16_t crc16_umts(const uint8_t *data, uint32_t length)
 {
-    uint16_t crc = 0;
-    for (uint32_t i = 0; i < length; i++) {
-        crc ^= data[i] << 8;
-        for (uint32_t bit = 0; bit < 8; bit++) {
-            uint32_t mask = -(uint32_t)(crc >> 15);
-            crc = (crc << 1) ^ (mask & 0x8005);
-        }
-    }
-    return crc;
+    return checksum_crc16(data, length, 0x8005, 0x0000, false, false, 0x0000);
 }
 
-static uint16_t read_u16le(const uint8_t *data)
+static inline uint16_t read_u16le(const uint8_t *data)
 {
     return data[0] | (data[1] << 8);
 }
 
-static void write_u16le(uint8_t *data, uint16_t value)
+static inline void write_u16le(uint8_t *data, uint16_t value)
 {
     data[0] = value;
     data[1] = value >> 8;
 }
 
-static bool is_header(const uint8_t *data)
+static inline bool is_header(const uint8_t *data)
 {
     return data[0] == 0xFF && data[1] == 0xFF && data[2] == 0xFD;
 }
 
-static bool is_valid_instruction(uint8_t instruction)
+static inline bool is_valid_instruction(uint8_t instruction)
 {
     switch (instruction) {
     case DYNAMIXEL_PROTOCOL2_INST_PING:
