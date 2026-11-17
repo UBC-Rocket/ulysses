@@ -19,7 +19,8 @@ bool dev_gnss_is_sample_ready(const dev_gnss_t *gnss)
 {
     ULYSSES_ASSERT(gnss != NULL, "GNSS must not be null");
     ULYSSES_ASSERT(gnss->ops != NULL, "GNSS must be intialized");
-    ULYSSES_ASSERT(gnss->ops->is_sample_ready != NULL, "GNSS is_sample_ready func must not be null");
+    ULYSSES_ASSERT(gnss->ops->is_sample_ready != NULL,
+                   "GNSS is_sample_ready func must not be null");
 
     return gnss->ops->is_sample_ready(gnss->data);
 }
