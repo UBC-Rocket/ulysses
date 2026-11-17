@@ -13,7 +13,7 @@ struct dev_gnss_ops {
     bool (*is_data_ready)(const void *ctx);
     enum io_status (*get_data)(void *ctx, struct dev_gnss_data *data);
     enum io_status (*send_corrections)(const void *config, void *ctx, const uint8_t *data,
-                                        size_t len);
+                                       size_t len);
     enum io_status (*reset)(const void *config, void *ctx);
 };
 
