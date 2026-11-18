@@ -15,6 +15,7 @@ target_sources(ulysses_svc
         dev/gnss/gnss.c
         dev/mag/mag.c
         dev/mag/mmc5983/mag_mmc5983.c
+        dev/servo/servo.c
 )
 
 target_include_directories(ulysses_svc
