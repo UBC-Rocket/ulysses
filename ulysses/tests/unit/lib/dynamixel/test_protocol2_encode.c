@@ -50,8 +50,7 @@ static void assert_ok(uint8_t id, enum dynamixel_protocol2_instruction instructi
 static void assert_no_space(uint8_t id, enum dynamixel_protocol2_instruction instruction,
                             const uint8_t *parameters, uint16_t parameters_length)
 {
-    uint32_t required_capacity =
-        dynamixel_protocol2_required_packet_capacity(parameters_length);
+    uint32_t required_capacity = dynamixel_protocol2_required_packet_capacity(parameters_length);
     uint8_t packet[2 * required_capacity];
     memset(packet, 0xAA, sizeof(packet));
     uint32_t packet_size = 0;
@@ -124,8 +123,7 @@ void test_protocol2_encode_short_buffers(void)
     const uint8_t stuffed_parameters[] = {0x74, 0x00, 0xFF, 0xFF, 0xFD};
 
     assert_no_space(1, DYNAMIXEL_PROTOCOL2_INST_PING, NULL, 0);
-    assert_no_space(1, DYNAMIXEL_PROTOCOL2_INST_WRITE, write_parameters,
-                    sizeof(write_parameters));
+    assert_no_space(1, DYNAMIXEL_PROTOCOL2_INST_WRITE, write_parameters, sizeof(write_parameters));
     assert_no_space(1, DYNAMIXEL_PROTOCOL2_INST_WRITE, stuffed_parameters,
                     sizeof(stuffed_parameters));
 }
