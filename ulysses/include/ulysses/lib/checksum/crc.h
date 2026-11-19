@@ -1,5 +1,5 @@
-#ifndef ULYSSES_LIB_CHECKSUM
-#define ULYSSES_LIB_CHECKSUM
+#ifndef ULYSSES_LIB_CHECKSUM_CRC
+#define ULYSSES_LIB_CHECKSUM_CRC
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -20,4 +20,14 @@
 uint16_t checksum_crc16(const uint8_t *data, uint32_t length, uint16_t poly, uint16_t init,
                         bool ref_in, bool ref_out, uint16_t xor_out);
 
-#endif // ULYSSES_LIB_CHECKSUM
+/**
+ * @brief Computes a CRC-16 UMTS checksum.
+ *
+ * @param data Input bytes; may be NULL when length is zero.
+ * @param length Number of input bytes.
+ *
+ * @return Calculated checksum.
+ */
+uint16_t checksum_crc16_umts(const uint8_t *data, uint32_t length);
+
+#endif // ULYSSES_LIB_CHECKSUM_CRC
