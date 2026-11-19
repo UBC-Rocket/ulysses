@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 include(ExternalProject)
 
+if(POLICY CMP0225)
+    cmake_policy(SET CMP0225 OLD)
+endif()
+
 #
 # This file is generated only once,
 # and is not re-generated if converter is called multiple times.
