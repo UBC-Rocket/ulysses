@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "ulysses/lib/assert.h"
-#include "ulysses/lib/checksum.h"
+#include "ulysses/lib/checksum/crc.h"
 
 // Packet format: https://emanual.robotis.com/docs/en/dxl/protocol2/
 // SDK reference: https://github.com/ROBOTIS-GIT/DynamixelSDK/blob/main/c/src/dynamixel_sdk/protocol2_packet_handler.c
@@ -16,11 +16,6 @@
 #define MAX_DEVICE_ID (0xFC)
 
 static const uint8_t header[] = {0xFF, 0xFF, 0xFD, 0x00};
-
-static inline uint16_t crc16_umts(const uint8_t *data, uint32_t length)
-{
-    return checksum_crc16(data, length, 0x8005, 0x0000, false, false, 0x0000);
-}
 
 static inline uint16_t read_u16le(const uint8_t *data)
 {
@@ -95,7 +90,7 @@ enum dynamixel_protocol2_status dynamixel_protocol2_encode_request(
     }
 
     write_u16le(&packet[5], ptr - PACKET_PREFIX_SIZE + CRC_LENGTH);
-    write_u16le(&packet[ptr], crc16_umts(packet, ptr));
+    write_u16le(&packet[ptr], checksum_crc16_umts(packet, ptr));
     *packet_size = ptr + CRC_LENGTH;
 
     return DYNAMIXEL_PROTOCOL2_OK;
@@ -126,7 +121,7 @@ dynamixel_protocol2_decode_response(const uint8_t *restrict packet, uint32_t pac
     }
 
     uint32_t crc_offset = packet_size - CRC_LENGTH;
-    if (crc16_umts(packet, crc_offset) != read_u16le(&packet[crc_offset])) {
+    if (checksum_crc16_umts(packet, crc_offset) != read_u16le(&packet[crc_offset])) {
         return DYNAMIXEL_PROTOCOL2_INVALID_PACKET;
     }
 

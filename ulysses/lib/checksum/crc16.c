@@ -1,4 +1,4 @@
-#include "ulysses/lib/checksum.h"
+#include "ulysses/lib/checksum/crc.h"
 
 #include <stddef.h>
 
@@ -54,4 +54,23 @@ uint16_t checksum_crc16(const uint8_t *data, uint32_t length, uint16_t poly, uin
     }
 
     return crc ^ xor_out;
+}
+
+uint16_t checksum_crc16_umts(const uint8_t *data, uint32_t length)
+{
+    ULYSSES_ASSERT(data != NULL || length == 0, "Data must be non NULL when length is nonzero");
+
+    uint16_t crc = 0;
+
+    while (length--) {
+        uint32_t feedback = (crc >> 8) ^ *data++;
+
+        feedback ^= feedback >> 1;
+        feedback ^= feedback >> 2;
+        feedback ^= feedback >> 4;
+
+        crc = (crc << 8) ^ (feedback << 15) ^ (feedback << 2) ^ feedback;
+    }
+
+    return crc;
 }

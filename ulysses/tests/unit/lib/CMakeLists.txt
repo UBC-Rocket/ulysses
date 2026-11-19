@@ -35,6 +35,15 @@ add_unity_test(
 )
 
 add_unity_test(
+    NAME "checksum_crc16_special"
+    SOURCES
+        checksum/test_crc16_special.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)
+
+add_unity_test(
     NAME "dynamixel_protocol2_encode"
     SOURCES
         dynamixel/test_protocol2_encode.c

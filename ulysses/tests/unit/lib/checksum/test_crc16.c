@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ulysses/lib/checksum.h"
+#include "ulysses/lib/checksum/crc.h"
 
 // Standard check values: https://reveng.sourceforge.io/crc-catalogue/16.htm
 static const uint8_t CHECK_DATA[] = "123456789";
