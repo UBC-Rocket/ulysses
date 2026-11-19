@@ -11,4 +11,6 @@ target_sources(ulysses_lib
     PRIVATE
         assert/default_handler.c
         bdshot/frame.c
+        checksum/crc16.c
+        dynamixel/protocol2.c
 )
