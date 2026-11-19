@@ -14,20 +14,18 @@ enum io_status io_uart_stm32_transmit_dma(const io_uart_dev_t *uart, const uint8
 
     ULYSSES_ASSERT(config->hw_handle->hdmatx != NULL, "uart transmit DMA handle must not be NULL");
 
-    const uint32_t interrupt_mask = __get_PRIMASK();
-    __disable_irq();
-
     enum io_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_TRANSMIT);
     if (status == IO_STATUS_OK) {
+        config->transmit_pending = true;
         HAL_StatusTypeDef hal_status = HAL_UART_Transmit_DMA(config->hw_handle, data, length);
         if (hal_status == HAL_OK) {
-            config->pending |= UART_STM32_TRANSMIT;
             __HAL_DMA_DISABLE_IT(config->hw_handle->hdmatx, DMA_IT_HT);
+        } else {
+            config->transmit_pending = false;
         }
         status = io_uart_stm32_to_io_status(hal_status);
     }
 
-    __set_PRIMASK(interrupt_mask);
     return status;
 }
 
@@ -36,23 +34,21 @@ static enum io_status start_receive_dma(const io_uart_dev_t *uart, uint8_t *data
     struct uart_config *config = (struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->hw_handle->hdmarx != NULL, "uart receive DMA handle must not be NULL");
 
-    const uint32_t interrupt_mask = __get_PRIMASK();
-    __disable_irq();
-
     enum io_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_RECEIVE);
     if (status == IO_STATUS_OK) {
+        config->receive_pending = true;
         HAL_StatusTypeDef hal_status = HAL_UART_Receive_DMA(config->hw_handle, data, length);
         if (hal_status == HAL_OK) {
-            config->pending |= UART_STM32_RECEIVE;
             __HAL_DMA_DISABLE_IT(config->hw_handle->hdmarx, DMA_IT_HT);
             if (config->receive_mode == IO_UART_CONTINUOUS) {
                 __HAL_UART_ENABLE_IT(config->hw_handle, UART_IT_CM);
             }
+        } else {
+            config->receive_pending = false;
         }
         status = io_uart_stm32_to_io_status(hal_status);
     }
 
-    __set_PRIMASK(interrupt_mask);
     return status;
 }
 
@@ -82,7 +78,7 @@ void io_uart_stm32_transmit_complete_dma(void *_uart)
     const io_uart_dev_t *uart = (const io_uart_dev_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
-    if (!(config->pending & UART_STM32_TRANSMIT)) {
+    if (!config->transmit_pending) {
         return;
     }
 
@@ -98,7 +94,7 @@ void io_uart_stm32_receive_complete_dma(void *_uart)
     const io_uart_dev_t *uart = (const io_uart_dev_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
-    if (!(config->pending & UART_STM32_RECEIVE)) {
+    if (!config->receive_pending) {
         return;
     }
 

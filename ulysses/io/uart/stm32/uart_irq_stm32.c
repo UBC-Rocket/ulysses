@@ -12,19 +12,16 @@ enum io_status io_uart_stm32_transmit_irq(const io_uart_dev_t *uart, const uint8
         return IO_STATUS_OK;
     }
 
-    const uint32_t interrupt_mask = __get_PRIMASK();
-    __disable_irq();
-
     enum io_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_TRANSMIT);
     if (status == IO_STATUS_OK) {
+        config->transmit_pending = true;
         HAL_StatusTypeDef hal_status = HAL_UART_Transmit_IT(config->hw_handle, data, length);
-        if (hal_status == HAL_OK) {
-            config->pending |= UART_STM32_TRANSMIT;
+        if (hal_status != HAL_OK) {
+            config->transmit_pending = false;
         }
         status = io_uart_stm32_to_io_status(hal_status);
     }
 
-    __set_PRIMASK(interrupt_mask);
     return status;
 }
 
@@ -32,19 +29,16 @@ static enum io_status start_receive_irq(const io_uart_dev_t *uart, uint8_t *data
 {
     struct uart_config *config = (struct uart_config *)uart->config;
 
-    const uint32_t interrupt_mask = __get_PRIMASK();
-    __disable_irq();
-
     enum io_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_RECEIVE);
     if (status == IO_STATUS_OK) {
+        config->receive_pending = true;
         HAL_StatusTypeDef hal_status = HAL_UART_Receive_IT(config->hw_handle, data, length);
-        if (hal_status == HAL_OK) {
-            config->pending |= UART_STM32_RECEIVE;
+        if (hal_status != HAL_OK) {
+            config->receive_pending = false;
         }
         status = io_uart_stm32_to_io_status(hal_status);
     }
 
-    __set_PRIMASK(interrupt_mask);
     return status;
 }
 
@@ -75,7 +69,7 @@ void io_uart_stm32_transmit_complete_irq(void *_uart)
     const io_uart_dev_t *uart = (const io_uart_dev_t *)_uart;
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
-    if (config->pending & UART_STM32_TRANSMIT) {
+    if (config->transmit_pending) {
         io_uart_stm32_finish_transmit(uart, IO_STATUS_OK);
     }
 }
@@ -86,8 +80,7 @@ void io_uart_stm32_receive_complete_irq(void *_uart)
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
     // on error, defer notification until abort completes
-    if (config->pending & UART_STM32_RECEIVE &&
-        config->hw_handle->ErrorCode == HAL_UART_ERROR_NONE) {
+    if (config->receive_pending && config->hw_handle->ErrorCode == HAL_UART_ERROR_NONE) {
         io_uart_stm32_finish_receive(uart, IO_STATUS_OK);
     }
 }

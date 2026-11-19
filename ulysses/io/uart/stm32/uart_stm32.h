@@ -8,8 +8,8 @@
 #include "uart/uart.h"
 
 enum io_uart_stm32_transfer_direction {
-    UART_STM32_TRANSMIT = (1U << 0),
-    UART_STM32_RECEIVE = (1U << 1),
+    UART_STM32_TRANSMIT,
+    UART_STM32_RECEIVE,
 };
 
 /**
@@ -21,7 +21,8 @@ struct uart_config {
     enum io_uart_receive_mode receive_mode;     ///< Requested receive mode
     volatile io_uart_transmit_cb_t transmit_cb; ///< Callback for transmit-complete events
     volatile io_uart_receive_cb_t receive_cb;   ///< Callback for receive-complete events
-    volatile uint8_t pending;                   ///< Async directions awaiting completion
+    volatile bool transmit_pending;             ///< Async transmit awaiting completion
+    volatile bool receive_pending;              ///< Async receive awaiting completion
 };
 
 /**
@@ -29,6 +30,10 @@ struct uart_config {
  *
  * The HAL UART must already be initialized.
  * Fixed-length DMA transfers require an initialized DMA handle in normal mode for that direction.
+ *
+ * Error handling is "best-effort" - there are some races which can occur due to preempting,
+ * but the chance of an error being recoverable isn't great already, so we are fine with the
+ * additional tiny race windows. What's more important is that IRQs actually go through on time.
  *
  * @param uart UART object with caller-provided configuration storage
  * @param uart_config Initialization settings

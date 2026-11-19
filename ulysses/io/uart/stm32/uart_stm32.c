@@ -46,7 +46,9 @@ enum io_status io_uart_stm32_to_io_status(HAL_StatusTypeDef hal_status)
 enum io_status io_uart_stm32_prepare_transfer(const struct uart_config *config,
                                               enum io_uart_stm32_transfer_direction direction)
 {
-    if ((config->pending & direction) || io_uart_stm32_dma_abort_pending(config)) {
+    const bool pending =
+        direction == UART_STM32_TRANSMIT ? config->transmit_pending : config->receive_pending;
+    if (pending || io_uart_stm32_dma_abort_pending(config)) {
         return IO_STATUS_BUSY;
     }
 
@@ -111,7 +113,7 @@ static const struct io_uart_ops stm32_irq_ops = {
 void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum io_status status)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
-    config->pending &= ~UART_STM32_TRANSMIT;
+    config->transmit_pending = false;
 
     if (config->transmit_cb != NULL) {
         config->transmit_cb(status, uart);
@@ -121,7 +123,7 @@ void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum io_status sta
 void io_uart_stm32_finish_receive(const io_uart_dev_t *uart, enum io_status status)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
-    config->pending &= ~UART_STM32_RECEIVE;
+    config->receive_pending = false;
 
     // TODO: handle CM events
 
@@ -152,11 +154,12 @@ static void stm32_abort_complete_handler(void *_uart)
     }
 
     // snapshot pending transfers before the transmit callback can start another receive
-    const uint8_t pending = config->pending;
-    if (pending & UART_STM32_TRANSMIT) {
+    const bool transmit_pending = config->transmit_pending;
+    const bool receive_pending = config->receive_pending;
+    if (transmit_pending) {
         io_uart_stm32_finish_transmit(uart, IO_STATUS_ERROR);
     }
-    if (pending & UART_STM32_RECEIVE) {
+    if (receive_pending) {
         io_uart_stm32_finish_receive(uart, IO_STATUS_ERROR);
     }
 }
@@ -170,7 +173,8 @@ void io_uart_stm32_init(io_uart_dev_t *uart, const struct uart_config *uart_conf
 
     struct uart_config *config = (struct uart_config *)uart->config;
     memcpy(config, uart_config, sizeof(*config));
-    config->pending = 0;
+    config->transmit_pending = false;
+    config->receive_pending = false;
 
     // TODO: configure CM
 
