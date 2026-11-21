@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 include(ExternalProject)
 
+# Explicitly sets CMP0225 to suppress a warning on cmake version 4.5+
 if(POLICY CMP0225)
     cmake_policy(SET CMP0225 OLD)
 endif()
