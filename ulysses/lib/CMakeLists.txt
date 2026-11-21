@@ -10,4 +10,6 @@ target_link_libraries(ulysses_lib
 target_sources(ulysses_lib
     PRIVATE
         assert/default_handler.c
+        bdshot/frame.c
+        checksum/crc16.c
 )

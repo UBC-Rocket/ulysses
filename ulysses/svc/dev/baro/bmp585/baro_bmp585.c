@@ -1,0 +1,205 @@
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "ulysses/io/delay.h"
+#include "ulysses/io/i2c.h"
+#include "ulysses/lib/assert.h"
+#include "ulysses/svc/dev/baro.h"
+
+#include "dev/baro/baro.h"
+#include "dev/baro/bmp585/baro_bmp585.h"
+
+// Register map, section numbers refer to BST-BMP585-DS003
+#define BMP585_REG_CHIP_ID (0x01U)
+#define BMP585_REG_TEMP_DATA_XLSB (0x1DU)
+#define BMP585_REG_INT_STATUS (0x27U)
+#define BMP585_REG_STATUS (0x28U)
+#define BMP585_REG_OSR_CONFIG (0x36U)
+#define BMP585_REG_ODR_CONFIG (0x37U)
+#define BMP585_REG_OSR_EFF (0x38U)
+#define BMP585_REG_CMD (0x7EU)
+
+#define BMP585_CHIP_ID (0x51U)
+#define BMP585_CMD_SOFT_RESET (0xB6U)
+#define BMP585_INT_STATUS_POR (0x10U)
+#define BMP585_STATUS_NVM_RDY (1U << 1)
+#define BMP585_STATUS_NVM_ERR (1U << 2)
+#define BMP585_OSR_EFF_ODR_IS_VALID (1U << 7)
+
+// Pressure enabled, pressure x16, temperature x1. Table 7 allows up to 80 Hz.
+#define BMP585_OSR_CONFIG ((1U << 6) | (0x4U << 3) | 0x0U)
+// Deep standby disabled, 50 Hz. Power mode goes in bits [1:0].
+#define BMP585_ODR_CONFIG ((1U << 7) | (0x0FU << 2))
+#define BMP585_PWR_MODE_STANDBY (0x0U)
+#define BMP585_PWR_MODE_NORMAL (0x1U)
+
+// Delays rounded up to whole milliseconds (section 2)
+#define BMP585_SOFT_RESET_MS (2U)
+#define BMP585_STANDBY_MS (3U)
+#define BMP585_STARTUP_MS (3U)
+
+#define BMP585_TIMEOUT_MS (10U)
+
+static enum io_status read_reg(const io_i2c_dev_t *i2c, uint8_t reg, uint8_t *val)
+{
+    return io_i2c_mem_read(i2c, reg, val, 1U, BMP585_TIMEOUT_MS);
+}
+
+static enum io_status write_reg(const io_i2c_dev_t *i2c, uint8_t reg, uint8_t val)
+{
+    return io_i2c_mem_write(i2c, reg, &val, 1U, BMP585_TIMEOUT_MS);
+}
+
+/** @brief Sign-extends a little-endian 24-bit value */
+static int32_t to_int24(const uint8_t *b)
+{
+    uint32_t raw = (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16);
+    return (int32_t)(raw << 8) >> 8;
+}
+
+/** @brief Converts the 6 data bytes starting at TEMP_DATA_XLSB */
+static void to_sample(const uint8_t *raw, struct dev_baro_sample *sample)
+{
+    sample->temp_c = (float)to_int24(&raw[0]) / 65536.0f;
+    sample->pressure_pa = (float)to_int24(&raw[3]) / 64.0f;
+}
+
+static enum io_status bmp585_read_blocking(dev_baro_t *baro, struct dev_baro_sample *sample)
+{
+    const struct dev_baro_bmp585_config *config = baro->config;
+
+    // One burst read so temperature and pressure come from the same measurement (section 4.5.1)
+    uint8_t buf[6];
+    enum io_status status = io_i2c_mem_read(config->i2c, BMP585_REG_TEMP_DATA_XLSB, buf,
+                                            sizeof(buf), BMP585_TIMEOUT_MS);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
+    to_sample(buf, sample);
+    return IO_STATUS_OK;
+}
+
+static void on_read_done(enum io_status status, void *user_data)
+{
+    dev_baro_t *baro = user_data;
+    struct dev_baro_bmp585_data *data = baro->data;
+    dev_baro_cb_t cb = data->cb;
+    void *cb_user_data = data->cb_user_data;
+
+    struct dev_baro_sample sample;
+    if (status == IO_STATUS_OK) {
+        to_sample(data->rx_data, &sample);
+    }
+
+    // Released before cb, so cb can start the next read
+    atomic_store(&data->busy, false);
+
+    cb(status, status == IO_STATUS_OK ? &sample : NULL, cb_user_data);
+}
+
+static enum io_status bmp585_read_async(dev_baro_t *baro, dev_baro_cb_t cb, void *user_data)
+{
+    const struct dev_baro_bmp585_config *config = baro->config;
+    struct dev_baro_bmp585_data *data = baro->data;
+
+    if (atomic_exchange(&data->busy, true)) {
+        return IO_STATUS_BUSY;
+    }
+
+    data->cb = cb;
+    data->cb_user_data = user_data;
+
+    // Same burst read as bmp585_read_blocking()
+    enum io_status status =
+        io_i2c_mem_read_it(config->i2c, BMP585_REG_TEMP_DATA_XLSB, data->rx_data,
+                           sizeof(data->rx_data), on_read_done, baro);
+    if (status != IO_STATUS_OK) {
+        atomic_store(&data->busy, false);
+    }
+
+    return status;
+}
+
+static const struct dev_baro_ops bmp585_ops = {
+    .read_blocking = bmp585_read_blocking,
+    .read_async = bmp585_read_async,
+};
+
+enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config,
+                                    struct dev_baro_bmp585_data *data)
+{
+    ULYSSES_ASSERT(baro != NULL, "Barometer must not be NULL");
+    ULYSSES_ASSERT(config != NULL, "BMP585 config must not be NULL");
+    ULYSSES_ASSERT(data != NULL, "BMP585 data must not be NULL");
+
+    const io_i2c_dev_t *i2c = config->i2c;
+    enum io_status status;
+    uint8_t val;
+
+    baro->config = config;
+    baro->data = data;
+    baro->ops = NULL;
+    atomic_init(&data->busy, false);
+
+    // The chip doesn't ACK a soft reset over I2C (section 8.36), so the status is ignored
+    (void)write_reg(i2c, BMP585_REG_CMD, BMP585_CMD_SOFT_RESET);
+    io_spin_delay_ms(BMP585_SOFT_RESET_MS);
+
+    // Post-power-up checks (section 4.3.9)
+    status = read_reg(i2c, BMP585_REG_CHIP_ID, &val);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+    if (val != BMP585_CHIP_ID) {
+        return IO_STATUS_ERROR;
+    }
+
+    status = read_reg(i2c, BMP585_REG_STATUS, &val);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+    if ((val & BMP585_STATUS_NVM_RDY) == 0U || (val & BMP585_STATUS_NVM_ERR) != 0U) {
+        return IO_STATUS_ERROR;
+    }
+
+    status = read_reg(i2c, BMP585_REG_INT_STATUS, &val);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+    if (val != BMP585_INT_STATUS_POR) {
+        return IO_STATUS_ERROR;
+    }
+
+    // Reset leaves the chip in deep standby, and modes only change from standby (section 4.3.7)
+    status = write_reg(i2c, BMP585_REG_ODR_CONFIG, BMP585_ODR_CONFIG | BMP585_PWR_MODE_STANDBY);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+    io_spin_delay_ms(BMP585_STANDBY_MS);
+
+    status = write_reg(i2c, BMP585_REG_OSR_CONFIG, BMP585_OSR_CONFIG);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+
+    status = write_reg(i2c, BMP585_REG_ODR_CONFIG, BMP585_ODR_CONFIG | BMP585_PWR_MODE_NORMAL);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+    io_spin_delay_ms(BMP585_STARTUP_MS);
+
+    // The OSR/ODR check only runs in normal mode (section 4.3.4)
+    status = read_reg(i2c, BMP585_REG_OSR_EFF, &val);
+    if (status != IO_STATUS_OK) {
+        return status;
+    }
+    if ((val & BMP585_OSR_EFF_ODR_IS_VALID) == 0U) {
+        return IO_STATUS_ERROR;
+    }
+
+    baro->ops = &bmp585_ops;
+    return IO_STATUS_OK;
+}

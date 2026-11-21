@@ -11,7 +11,7 @@
 
 // I2C bus and 7-bit address
 #define BARO_BUS (&i2c1_bus)
-#define BARO_ADDR (0x76U)
+#define BARO_ADDR (0x46U) // BMP585 with SDO low, 0x47 with SDO high (datasheet section 5.6)
 #define LIDAR_BUS (&i2c2_bus)
 #define LIDAR_ADDR (0x62U)
 
