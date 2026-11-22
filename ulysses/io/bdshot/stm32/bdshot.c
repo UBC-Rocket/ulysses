@@ -405,7 +405,7 @@ static enum io_status transceive_stop(const io_bdshot_t *bdshot)
     return status;
 }
 
-static const struct io_bdshot_ops stm32_bdshot_ops = {
+static const struct io_bdshot_ops BDSHOT_STM32_OPS = {
     .set_frame = set_frame,
     .set_response = set_response,
     .set_active = set_active,
@@ -456,7 +456,7 @@ void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_conf
 
     bdshot->data = data;
     bdshot->config = config;
-    bdshot->ops = &stm32_bdshot_ops;
+    bdshot->ops = &BDSHOT_STM32_OPS;
 
     // Default to inactive for all channels
     for (uint8_t i = 0; i < config->channel_count; i++) {
