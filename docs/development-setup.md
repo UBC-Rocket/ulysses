@@ -15,6 +15,7 @@ building the Ulysses firmware.
     - [Installing ARM GNU Toolchain](#installing-arm-gnu-toolchain)
     - [Installing Ninja](#installing-ninja)
     - [Installing CMake](#installing-cmake)
+  - [Regenerating controls code](#regenerating-controls-code)
   - [Setting up VS Code](#setting-up-vs-code)
     - [Installing VS Code](#installing-vs-code)
     - [Installing extensions](#installing-extensions)
@@ -117,6 +118,16 @@ cmake --version
 ```
 
 [cmake]: https://cmake.org
+
+## Regenerating controls code
+
+Install [uv][uv_package_manager] and run the command for the component you changed from
+the repository root.
+
+```shell
+uv run --locked --directory ulysses/lib/eskf python -m codegen.generate
+uv run --locked --directory ulysses/lib/flight_controller python -m codegen.generate
+```
 
 ## Setting up VS Code
 
