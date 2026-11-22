@@ -8,9 +8,6 @@
 /** @brief Barometer (CM7) */
 extern const io_i2c_dev_t IO_BARO;
 
-/** @brief LiDAR (CM7) */
-extern const io_i2c_dev_t IO_LIDAR;
-
 /** @brief Fuel gauge (CM4) */
 extern const io_i2c_dev_t IO_FUEL_GAUGE;
 
