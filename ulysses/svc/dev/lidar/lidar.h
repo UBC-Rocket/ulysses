@@ -10,6 +10,7 @@ struct dev_lidar_ops {
 
 struct dev_lidar {
     const void *config;              ///< Sensor-specific configuration
+    void *data;                      ///< Sensor-specific state
     const struct dev_lidar_ops *ops; ///< Sensor-specific functions, NULL until initialized
 };
 

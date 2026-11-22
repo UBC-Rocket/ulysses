@@ -8,7 +8,7 @@
 /** @brief One distance measurement */
 struct dev_lidar_sample {
     float distance_m; ///< Distance to the nearest target in metres, only meaningful if is_valid
-    bool is_valid;    ///< Whether the sensor found a target
+    bool is_valid;    ///< Whether a new measurement found a target
 };
 
 /** @brief Lidar, initialized by a sensor-specific init function */
@@ -17,7 +17,8 @@ typedef struct dev_lidar dev_lidar_t;
 /**
  * @brief Reads the latest measurement
  *
- * A completed transfer without a usable target is reported through the sample's is_valid flag.
+ * If no new measurement is ready yet, or it has no usable target, the sample's is_valid flag is
+ * false and the status is still IO_STATUS_OK.
  *
  * @param lidar Non-NULL initialized lidar
  * @param[out] sample Non-NULL sample to fill
