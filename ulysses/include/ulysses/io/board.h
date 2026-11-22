@@ -1,6 +1,9 @@
 #ifndef ULYSSES_IO_BOARD
 #define ULYSSES_IO_BOARD
 
+// ST's VL53L4CX driver
+#include "vl53l4cx.h"
+
 #include "ulysses/io/gpio.h"
 #include "ulysses/io/i2c.h"
 
@@ -8,6 +11,9 @@
 
 /** @brief Barometer (CM7) */
 extern const io_i2c_dev_t IO_BARO;
+
+/** @brief LiDAR bus functions for ST's VL53L4CX driver, using ST's CubeMX I2C2 helpers (CM7) */
+extern VL53L4CX_IO_t IO_LIDAR;
 
 /** @brief LiDAR enable (XSHUT) pin, low holds the sensor in shutdown (CM7) */
 extern io_gpio_dev_t IO_LIDAR_EN;

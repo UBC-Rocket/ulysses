@@ -35,6 +35,20 @@ target_compile_features(ulysses_layer_interface
 add_subdirectory(lib)
 
 if(NOT ULYSSES_BUILD_NATIVE)
+    # ST's VL53L4CX lidar driver headers, from CubeMX's X-CUBE-TOF1. SYSTEM so the layer warning
+    # flags don't apply to them.
+    set(VL53L4CX_DIR ${CMAKE_CURRENT_LIST_DIR}/cfp/Drivers/BSP/Components/vl53l4cx)
+    add_library(vl53l4cx_headers INTERFACE)
+    target_include_directories(vl53l4cx_headers
+        SYSTEM INTERFACE
+            ${VL53L4CX_DIR}
+            ${VL53L4CX_DIR}/modules
+            ${VL53L4CX_DIR}/porting
+    )
+
+    # board.h exposes the lidar's ST bus functions
+    target_link_libraries(ulysses_public_headers INTERFACE vl53l4cx_headers)
+
     add_subdirectory(io)
     add_subdirectory(svc)
 endif()

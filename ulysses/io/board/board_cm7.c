@@ -1,4 +1,5 @@
 // CubeMX handles and pin labels
+#include "custom_tof_conf.h"
 #include "i2c.h"
 #include "main.h"
 
@@ -86,6 +87,15 @@ static struct io_i2c_bus i2c1_bus;
 static const struct io_i2c_stm32_config i2c1_config = {.hw_handle = &hi2c1};
 
 const io_i2c_dev_t IO_BARO = {.bus = BARO_BUS, .addr = BARO_ADDR};
+
+VL53L4CX_IO_t IO_LIDAR = {
+    .Init = CUSTOM_VL53L4CX_I2C_INIT,
+    .DeInit = CUSTOM_VL53L4CX_I2C_DEINIT,
+    .Address = VL53L4CX_DEVICE_ADDRESS,
+    .WriteReg = CUSTOM_VL53L4CX_I2C_WRITEREG,
+    .ReadReg = CUSTOM_VL53L4CX_I2C_READREG,
+    .GetTick = BSP_GetTick,
+};
 
 static const struct io_gpio_stm32_config lidar_en_config = {.port = LIDAR_EN_PORT,
                                                             .pin = LIDAR_EN_PIN};
