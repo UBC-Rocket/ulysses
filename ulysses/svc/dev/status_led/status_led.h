@@ -1,7 +1,7 @@
 #ifndef ULYSSES_SVC_DEV_STATUS_LED_STATUS_LED_H
 #define ULYSSES_SVC_DEV_STATUS_LED_STATUS_LED_H
 
-#include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "ulysses/svc/dev/status_led.h"
@@ -19,8 +19,8 @@ struct dev_status_led {
     const void *config;                   ///< Implementation-specific configuration
     const struct dev_status_led_ops *ops; ///< Implementation-specific functions
     enum dev_status_led_pattern pattern;  ///< Current pattern
-    size_t step;                          ///< Index of the current step in the pattern
-    uint32_t step_start_ms;               ///< Time the current step started
+    bool on;                              ///< LED is on
+    uint32_t change_ms;                   ///< Time the LED last turned on or off
 };
 
 #endif // ULYSSES_SVC_DEV_STATUS_LED_STATUS_LED_H

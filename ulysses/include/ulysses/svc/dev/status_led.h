@@ -14,7 +14,7 @@ enum dev_status_led_pattern {
 };
 
 /**
- * @brief Starts showing a blink pattern from its first step
+ * @brief Starts showing a blink pattern from the beginning
  *
  * @param led Non-NULL initialized LED
  * @param pattern Pattern to show

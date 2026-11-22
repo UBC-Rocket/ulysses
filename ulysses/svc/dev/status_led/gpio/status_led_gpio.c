@@ -35,4 +35,5 @@ void dev_status_led_gpio_init(dev_status_led_t *led,
 
     led->config = config;
     led->ops = &gpio_ops;
+    dev_status_led_set_pattern(led, DEV_STATUS_LED_PATTERN_OFF, 0);
 }

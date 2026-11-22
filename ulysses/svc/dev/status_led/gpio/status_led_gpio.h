@@ -12,7 +12,7 @@ struct dev_status_led_gpio_config {
 /**
  * @brief Initializes a status LED driven by a GPIO pin
  *
- * The LED is on when the pin is high.
+ * The LED is on when the pin is high. It starts with DEV_STATUS_LED_PATTERN_OFF.
  *
  * @param[out] led LED to initialize
  * @param config Wiring of the LED, must stay valid while the LED is used
