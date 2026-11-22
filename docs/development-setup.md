@@ -121,8 +121,9 @@ cmake --version
 
 ## Regenerating controls code
 
-Install [uv][uv_package_manager] and run the command for the component you changed from
-the repository root.
+Install [uv][uv_package_manager] and make sure it is on your PATH before configuring
+the build. CMake runs both generators on every firmware and native build. To run a
+single generator, use its command from the repository root.
 
 ```shell
 uv run --locked --directory ulysses/lib/eskf python -m codegen.generate
