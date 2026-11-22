@@ -5,11 +5,13 @@
 
 #include "ulysses/io/pwm.h"
 
-// Platform function, see io_pwm_set()
-typedef void (*io_pwm_set_fn_t)(const io_pwm_dev_t *dev, uint32_t freq_hz, uint8_t duty_pct);
+// Platform functions, see the matching io_pwm_*() functions
+typedef void (*io_pwm_start_fn_t)(const io_pwm_dev_t *dev, uint32_t freq_hz, uint8_t duty_pct);
+typedef void (*io_pwm_stop_fn_t)(const io_pwm_dev_t *dev);
 
 struct io_pwm_ops {
-    io_pwm_set_fn_t set; ///< Platform set function
+    io_pwm_start_fn_t start; ///< Platform start function
+    io_pwm_stop_fn_t stop;   ///< Platform stop function
 };
 
 struct io_pwm_dev {

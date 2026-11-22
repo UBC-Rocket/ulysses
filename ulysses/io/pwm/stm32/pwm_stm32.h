@@ -17,9 +17,10 @@ struct io_pwm_stm32_config {
 };
 
 /**
- * @brief Initializes a PWM output on an STM32 and starts it with the output low
+ * @brief Initializes a PWM output on an STM32
  *
- * The timer channel must already be configured for PWM with a duty cycle of 0.
+ * The timer channel must already be configured for PWM. The output stays stopped until
+ * io_pwm_start() is called.
  *
  * @param dev Output to initialize
  * @param config Wiring of the output, must stay valid while the output is used
