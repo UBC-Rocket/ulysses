@@ -50,7 +50,7 @@ struct io_bdshot_stm32_config {
 
 struct io_bdshot_stm32_data {
     struct io_bdshot_stm32_channel_data *channels;
-    uint32_t active_dma_sources; // TODO: document what this is for
+    uint32_t active_dma_mask; //< DMA channels for the timer that are active
 };
 
 void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_config *config,

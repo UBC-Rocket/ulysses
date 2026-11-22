@@ -296,10 +296,10 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
 
     // Prevent the timer from trigger DMA in case there were channels that had a failed
     // transaction and never disabled itself
-    __HAL_TIM_DISABLE_DMA(timer, data->active_dma_sources);
+    __HAL_TIM_DISABLE_DMA(timer, data->active_dma_mask);
 
     // Rebuild active DMA sources since the some channels may no longer be active
-    data->active_dma_sources = 0;
+    data->active_dma_mask = 0;
 
     for (uint8_t i = 0; i < config->channel_count; i++) {
         struct io_bdshot_stm32_channel_data *channel_data = &data->channels[i];
@@ -331,13 +331,13 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
         (void)HAL_DMA_Start_IT(channel_config->dma, (uint32_t)channel_config->tx_buffer,
                                (uint32_t)ccrx, TX_FRAME_SIZE);
 
-        data->active_dma_sources |= hal_get_tim_channel_dma_src(channel_config->timer_channel);
+        data->active_dma_mask |= hal_get_tim_channel_dma_src(channel_config->timer_channel);
     }
 
     // Enable DMA transfers from the timers.
     // Do this separately from the DMA controller configuration
     // to ensure that transmissions on the same TIM instance are synchronized.
-    if (status == IO_STATUS_OK && data->active_dma_sources != 0) {
+    if (status == IO_STATUS_OK && data->active_dma_mask != 0) {
         // Restore the free running timer ARR used for telemetry RX to a value for TX.
         // Must disable ARR preload here since the free running timer used for RX will
         // never have a UEV.
@@ -348,7 +348,7 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
         LL_TIM_SetCounter(timer->Instance, 0);
 
         // Enable DMA requests from the timer peripheral
-        __HAL_TIM_ENABLE_DMA(timer, data->active_dma_sources);
+        __HAL_TIM_ENABLE_DMA(timer, data->active_dma_mask);
     }
 
     return status;
@@ -425,7 +425,7 @@ void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_conf
     ULYSSES_ASSERT(config->channel_count > 0, "Must provide at least 1 channel");
     ULYSSES_ASSERT(config->channel_count <= IO_BDSHOT_STM32_MAX_CHANNELS, "Too many channels");
 
-    data->active_dma_sources = 0;
+    data->active_dma_mask = 0;
 
     for (uint8_t i = 0; i < config->channel_count; i++) {
         const struct io_bdshot_stm32_channel_config *channel_config = &config->channels[i];
@@ -447,7 +447,7 @@ void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_conf
         channel_data->direction = IO_BDSHOT_STM32_CHANNEL_DIRECTION_OUTPUT;
         channel_data->original_gpio_af = ll_gpio_get_af(channel_config->gpio, ll_gpio_pin);
 
-        data->active_dma_sources |= hal_get_tim_channel_dma_src(channel_config->timer_channel);
+        data->active_dma_mask |= hal_get_tim_channel_dma_src(channel_config->timer_channel);
 
         io_irq_register(IO_IRQ_HAL_HANDLE_TO_ID(channel_config->dma),
                         IO_IRQ_EVENT_TRANSFER_COMPLETE, on_dma_transfer_complete_isr,
