@@ -41,54 +41,65 @@ static enum io_status to_io_status(HAL_StatusTypeDef status, uint32_t hal_error)
     return IO_STATUS_ERROR;
 }
 
-static enum io_status stm32_mem_read(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
-                                     uint16_t len, uint32_t timeout_ms)
+/** @brief Maps a register address size in bytes to the HAL constant */
+static uint16_t to_hal_reg_size(uint8_t reg_size)
+{
+    ULYSSES_ASSERT(reg_size == 1U || reg_size == 2U, "I2C register size must be 1 or 2 bytes");
+
+    return reg_size == 2U ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT;
+}
+
+static enum io_status stm32_mem_read(const void *config, uint8_t addr, uint16_t reg,
+                                     uint8_t reg_size, uint8_t *data, uint16_t len,
+                                     uint32_t timeout_ms)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
     I2C_HandleTypeDef *hi2c = cfg->hw_handle;
 
     HAL_StatusTypeDef status = HAL_I2C_Mem_Read(hi2c, (uint16_t)(addr << 1U), reg,
-                                                I2C_MEMADD_SIZE_8BIT, data, len, timeout_ms);
+                                                to_hal_reg_size(reg_size), data, len, timeout_ms);
 
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint8_t reg,
-                                      const uint8_t *data, uint16_t len, uint32_t timeout_ms)
-{
-    const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
-
-    I2C_HandleTypeDef *hi2c = cfg->hw_handle;
-
-    HAL_StatusTypeDef status = HAL_I2C_Mem_Write(
-        hi2c, (uint16_t)(addr << 1U), reg, I2C_MEMADD_SIZE_8BIT, (uint8_t *)data, len, timeout_ms);
-
-    return to_io_status(status, hi2c->ErrorCode);
-}
-
-static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_t reg,
-                                        uint8_t *data, uint16_t len)
+static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint16_t reg,
+                                      uint8_t reg_size, const uint8_t *data, uint16_t len,
+                                      uint32_t timeout_ms)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
     I2C_HandleTypeDef *hi2c = cfg->hw_handle;
 
     HAL_StatusTypeDef status =
-        HAL_I2C_Mem_Read_IT(hi2c, (uint16_t)(addr << 1U), reg, I2C_MEMADD_SIZE_8BIT, data, len);
+        HAL_I2C_Mem_Write(hi2c, (uint16_t)(addr << 1U), reg, to_hal_reg_size(reg_size),
+                          (uint8_t *)data, len, timeout_ms);
 
     return to_io_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint8_t reg,
-                                         const uint8_t *data, uint16_t len)
+static enum io_status stm32_mem_read_async(const void *config, uint8_t addr, uint16_t reg,
+                                           uint8_t reg_size, uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
     I2C_HandleTypeDef *hi2c = cfg->hw_handle;
 
-    HAL_StatusTypeDef status = HAL_I2C_Mem_Write_IT(hi2c, (uint16_t)(addr << 1U), reg,
-                                                    I2C_MEMADD_SIZE_8BIT, (uint8_t *)data, len);
+    HAL_StatusTypeDef status = HAL_I2C_Mem_Read_IT(hi2c, (uint16_t)(addr << 1U), reg,
+                                                   to_hal_reg_size(reg_size), data, len);
+
+    return to_io_status(status, hi2c->ErrorCode);
+}
+
+static enum io_status stm32_mem_write_async(const void *config, uint8_t addr, uint16_t reg,
+                                            uint8_t reg_size, const uint8_t *data, uint16_t len)
+{
+    const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
+
+    I2C_HandleTypeDef *hi2c = cfg->hw_handle;
+
+    HAL_StatusTypeDef status = HAL_I2C_Mem_Write_IT(
+        hi2c, (uint16_t)(addr << 1U), reg, to_hal_reg_size(reg_size), (uint8_t *)data, len);
 
     return to_io_status(status, hi2c->ErrorCode);
 }
@@ -96,8 +107,8 @@ static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint8
 /** @brief Shared operations */
 static const struct io_i2c_bus_ops stm32_i2c_ops = {.mem_read = stm32_mem_read,
                                                     .mem_write = stm32_mem_write,
-                                                    .mem_read_it = stm32_mem_read_it,
-                                                    .mem_write_it = stm32_mem_write_it};
+                                                    .mem_read_async = stm32_mem_read_async,
+                                                    .mem_write_async = stm32_mem_write_async};
 
 static void stm32_transfer_complete_handler(void *user_data)
 {
