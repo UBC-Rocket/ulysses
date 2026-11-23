@@ -115,8 +115,9 @@ Additional rules:
 - **No dynamic allocation.** `malloc`, `calloc`, `realloc`, and `free` are banned. Use static or
   caller-provided storage.
 - **Errors:** use `ULYSSES_ASSERT` for caller bugs and violated preconditions (NULL pointers,
-  invalid arguments, misuse of the API). Return `enum io_status` for runtime failures the caller
-  can handle (bus errors, timeouts, busy peripherals).
+  invalid arguments, misuse of the API). Return `enum uls_status` from `ulysses/status.h` for
+  runtime failures the caller can handle (bus errors, timeouts, busy peripherals), using the
+  `ULS_STATUS_*` values.
 - **Interrupt context:** async completion callbacks run in an ISR. Keep them short, never block,
   and use only the `FromISR` FreeRTOS APIs there. Mark ISR-shared state `volatile`.
 - **Header guards** follow the path: `ULYSSES_IO_I2C` for public headers,
