@@ -31,10 +31,8 @@ struct io_bdshot_stm32_channel_data {
     const io_bdshot_t *bdshot; //< BDShot instance for the current channel
     uint8_t channel_index;     //< Index of the current channel
 
-    bool is_active;      //< Is the channel active to transceiving?
-    bool is_frame_dirty; //< Is the transmitted frame updated?
+    bool is_active; //< Is the channel active to transceiving?
 
-    uint16_t frame;                      //< Frame being transmitted
     struct io_bdshot_response *response; //< Location to store response
 
     volatile enum io_bdshot_stm32_channel_direction direction; //< Direction of data flow

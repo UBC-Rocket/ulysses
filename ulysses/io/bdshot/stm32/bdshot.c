@@ -234,12 +234,10 @@ static void on_dma_transfer_complete_isr(void *user_data)
 static void set_frame(const io_bdshot_t *bdshot, uint8_t channel, uint16_t frame)
 {
     const struct io_bdshot_stm32_config *config = bdshot->config;
-    struct io_bdshot_stm32_data *data = bdshot->data;
 
     ULYSSES_ASSERT(channel < config->channel_count, "BDShot channel index is out of range");
 
-    data->channels[channel].frame = frame;
-    data->channels[channel].is_frame_dirty = true;
+    frame_build_dma_tx_buffer(config->channels[channel].tx_buffer, frame);
 }
 
 static void set_response(const io_bdshot_t *bdshot, uint8_t channel,
@@ -313,11 +311,6 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
         }
 
         const struct io_bdshot_stm32_channel_config *channel_config = &config->channels[i];
-
-        if (channel_data->is_frame_dirty) {
-            channel_data->is_frame_dirty = false;
-            frame_build_dma_tx_buffer(channel_config->tx_buffer, channel_data->frame);
-        }
 
         // Write to the compare register for this timer channel to generate DShot PWM signal
         volatile uint32_t *ccrx =
@@ -443,7 +436,6 @@ void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_conf
         channel_data->channel_index = i;
 
         channel_data->is_active = false;
-        channel_data->is_frame_dirty = false;
         channel_data->direction = IO_BDSHOT_STM32_CHANNEL_DIRECTION_OUTPUT;
         channel_data->original_gpio_af = ll_gpio_get_af(channel_config->gpio, ll_gpio_pin);
 
