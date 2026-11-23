@@ -122,13 +122,8 @@ cmake --version
 ## Regenerating controls code
 
 Install [uv][uv_package_manager] and make sure it is on your PATH before configuring
-the build. CMake runs both generators on every firmware and native build. To run a
-single generator, use its command from the repository root.
-
-```shell
-uv run --locked --directory ulysses/lib/eskf python -m codegen.generate
-uv run --locked --directory ulysses/lib/flight_controller python -m codegen.generate
-```
+the build. CMake automatically runs each generator when its build-directory stamp is missing or
+its Python inputs are added, modified, or removed.
 
 ## Setting up VS Code
 
