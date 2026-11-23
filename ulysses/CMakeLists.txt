@@ -36,9 +36,9 @@ target_compile_features(ulysses_layer_interface
         c_std_11
 )
 
-add_subdirectory(lib)
+set(ULYSSES_CODEGEN_TOOLS_DIR "${ULYSSES_REPO_ROOT}/tools/codegen")
 
-set(ULYSSES_CODEGEN_TOOLS_DIR "${CMAKE_CURRENT_LIST_DIR}/../tools/codegen")
+add_subdirectory(lib)
 
 if(NOT ULYSSES_BUILD_NATIVE)
     add_subdirectory(io)
