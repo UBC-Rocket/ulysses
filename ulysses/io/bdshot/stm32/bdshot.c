@@ -10,7 +10,7 @@
 
 #include "ulysses/io/bdshot.h"
 #include "ulysses/io/irq.h"
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/lib/assert.h"
 #include "ulysses/lib/bdshot/protocol.h"
 
@@ -251,7 +251,7 @@ static void set_response(const io_bdshot_t *bdshot, uint8_t channel,
     data->channels[channel].response = response;
 }
 
-static enum io_status set_active(const io_bdshot_t *bdshot, uint8_t channel, bool is_active)
+static enum uls_status set_active(const io_bdshot_t *bdshot, uint8_t channel, bool is_active)
 {
     const struct io_bdshot_stm32_config *config = bdshot->config;
     struct io_bdshot_stm32_data *data = bdshot->data;
@@ -280,12 +280,12 @@ static enum io_status set_active(const io_bdshot_t *bdshot, uint8_t channel, boo
         channel_data->is_active = is_active;
     }
 
-    return status == HAL_OK ? IO_STATUS_OK : IO_STATUS_ERROR;
+    return status == HAL_OK ? ULS_STATUS_OK : ULS_STATUS_ERROR;
 }
 
-static enum io_status transceive_start(const io_bdshot_t *bdshot)
+static enum uls_status transceive_start(const io_bdshot_t *bdshot)
 {
-    enum io_status status = IO_STATUS_OK;
+    enum uls_status status = ULS_STATUS_OK;
 
     const struct io_bdshot_stm32_config *config = bdshot->config;
     struct io_bdshot_stm32_data *data = bdshot->data;
@@ -317,7 +317,7 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
             hal_get_tim_channel_ccrx_reg(timer, channel_config->timer_channel);
 
         if (ccrx == NULL) {
-            status = IO_STATUS_ERROR;
+            status = ULS_STATUS_ERROR;
             break;
         }
 
@@ -330,7 +330,7 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
     // Enable DMA transfers from the timers.
     // Do this separately from the DMA controller configuration
     // to ensure that transmissions on the same TIM instance are synchronized.
-    if (status == IO_STATUS_OK && data->active_dma_mask != 0) {
+    if (status == ULS_STATUS_OK && data->active_dma_mask != 0) {
         // Restore the free running timer ARR used for telemetry RX to a value for TX.
         // Must disable ARR preload here since the free running timer used for RX will
         // never have a UEV.
@@ -347,9 +347,9 @@ static enum io_status transceive_start(const io_bdshot_t *bdshot)
     return status;
 }
 
-static enum io_status transceive_stop(const io_bdshot_t *bdshot)
+static enum uls_status transceive_stop(const io_bdshot_t *bdshot)
 {
-    enum io_status status = IO_STATUS_OK;
+    enum uls_status status = ULS_STATUS_OK;
 
     const struct io_bdshot_stm32_config *config = bdshot->config;
     struct io_bdshot_stm32_data *data = bdshot->data;
@@ -392,7 +392,7 @@ static enum io_status transceive_stop(const io_bdshot_t *bdshot)
         bool is_success = wire_frame_decode_from_signal(&channel_data->response->wire_frame,
                                                         channel_config->rx_buffer, received_edges);
 
-        channel_data->response->status = is_success ? IO_STATUS_OK : IO_STATUS_ERROR;
+        channel_data->response->status = is_success ? ULS_STATUS_OK : ULS_STATUS_ERROR;
     }
 
     return status;

@@ -1,7 +1,7 @@
 #ifndef ULYSSES_IO_BDSHOT_PRIVATE
 #define ULYSSES_IO_BDSHOT_PRIVATE
 
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/io/bdshot.h"
 
 typedef void (*io_bdshot_set_frame_t)(const io_bdshot_t *bdshot, uint8_t channel, uint16_t frame);
@@ -9,12 +9,12 @@ typedef void (*io_bdshot_set_frame_t)(const io_bdshot_t *bdshot, uint8_t channel
 typedef void (*io_bdshot_set_response_t)(const io_bdshot_t *bdshot, uint8_t channel,
                                          struct io_bdshot_response *response);
 
-typedef enum io_status (*io_bdshot_set_active_t)(const io_bdshot_t *bdshot, uint8_t channel,
-                                                 bool is_active);
+typedef enum uls_status (*io_bdshot_set_active_t)(const io_bdshot_t *bdshot, uint8_t channel,
+                                                  bool is_active);
 
-typedef enum io_status (*io_bdshot_transceive_start_t)(const io_bdshot_t *bdshot);
+typedef enum uls_status (*io_bdshot_transceive_start_t)(const io_bdshot_t *bdshot);
 
-typedef enum io_status (*io_bdshot_transceive_stop_t)(const io_bdshot_t *bdshot);
+typedef enum uls_status (*io_bdshot_transceive_stop_t)(const io_bdshot_t *bdshot);
 
 struct io_bdshot_ops {
     io_bdshot_set_frame_t set_frame;

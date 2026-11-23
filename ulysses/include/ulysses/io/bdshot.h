@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 
 typedef struct io_bdshot io_bdshot_t;
 
@@ -12,8 +12,8 @@ typedef struct io_bdshot io_bdshot_t;
  * @brief Response for a transceive transaction
  */
 struct io_bdshot_response {
-    enum io_status status; ///< Status of the transaction
-    uint32_t wire_frame;   ///< Wire response received if status is ok
+    enum uls_status status; ///< Status of the transaction
+    uint32_t wire_frame;    ///< Wire response received if status is ok
 };
 
 /**
@@ -57,7 +57,7 @@ void io_bdshot_set_response(const io_bdshot_t *bdshot, uint8_t channel,
  *
  * @return Status of the set active operation
  */
-enum io_status io_bdshot_set_active(const io_bdshot_t *bdshot, uint8_t channel, bool is_active);
+enum uls_status io_bdshot_set_active(const io_bdshot_t *bdshot, uint8_t channel, bool is_active);
 
 /**
  * @brief Starts a Bidirectional DShot transmit and receive transaction
@@ -66,7 +66,7 @@ enum io_status io_bdshot_set_active(const io_bdshot_t *bdshot, uint8_t channel, 
  *
  * @return Status of the start operation
  */
-enum io_status io_bdshot_transceive_start(const io_bdshot_t *bdshot);
+enum uls_status io_bdshot_transceive_start(const io_bdshot_t *bdshot);
 
 /**
  * @brief Completes a Bidirectional DShot transmit and receive transaction
@@ -79,6 +79,6 @@ enum io_status io_bdshot_transceive_start(const io_bdshot_t *bdshot);
  *
  * @return Status of the stop operation
  */
-enum io_status io_bdshot_transceive_stop(const io_bdshot_t *bdshot);
+enum uls_status io_bdshot_transceive_stop(const io_bdshot_t *bdshot);
 
 #endif // ULYSSES_IO_BDSHOT
