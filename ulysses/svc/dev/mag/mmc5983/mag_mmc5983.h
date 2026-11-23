@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "ulysses/io/spi.h"
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/svc/dev/mag.h"
 
 #include "dev/mag/mag.h"
@@ -31,10 +31,10 @@ struct dev_mag_mmc5983_data {
  * @param config Wiring of the sensor, must stay valid while the magnetometer is used
  * @param[out] data State of the sensor, must stay valid while the magnetometer is used
  *
- * @return IO_STATUS_OK on success, IO_STATUS_ERROR if the sensor is not an MMC5983MA, otherwise an
- *         IO_STATUS_* error code
+ * @return ULS_STATUS_OK on success, ULS_STATUS_ERROR if the sensor is not an MMC5983MA, otherwise an
+ *         ULS_STATUS_* error code
  */
-enum io_status dev_mag_mmc5983_init(dev_mag_t *mag, const struct dev_mag_mmc5983_config *config,
-                                    struct dev_mag_mmc5983_data *data);
+enum uls_status dev_mag_mmc5983_init(dev_mag_t *mag, const struct dev_mag_mmc5983_config *config,
+                                     struct dev_mag_mmc5983_data *data);
 
 #endif // ULYSSES_SVC_DEV_MAG_MMC5983

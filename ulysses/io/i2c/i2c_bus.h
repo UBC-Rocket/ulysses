@@ -22,8 +22,8 @@ struct io_i2c_bus_ops {
      *
      * @return Transfer status
      */
-    enum io_status (*mem_read)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
-                               uint16_t len, uint32_t timeout_ms);
+    enum uls_status (*mem_read)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
+                                uint16_t len, uint32_t timeout_ms);
 
     /**
      * @brief Writes device registers through the backend
@@ -37,24 +37,24 @@ struct io_i2c_bus_ops {
      *
      * @return Transfer status
      */
-    enum io_status (*mem_write)(const void *config, uint8_t addr, uint8_t reg, const uint8_t *data,
-                                uint16_t len, uint32_t timeout_ms);
+    enum uls_status (*mem_write)(const void *config, uint8_t addr, uint8_t reg, const uint8_t *data,
+                                 uint16_t len, uint32_t timeout_ms);
 
     /**
      * @brief Starts a register read; the backend calls io_i2c_bus_complete() when it ends
      *
      * A failed start must not produce a completion notification.
      */
-    enum io_status (*mem_read_it)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
-                                  uint16_t len);
+    enum uls_status (*mem_read_it)(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
+                                   uint16_t len);
 
     /**
      * @brief Starts a register write; the backend calls io_i2c_bus_complete() when it ends
      *
      * A failed start must not produce a completion notification.
      */
-    enum io_status (*mem_write_it)(const void *config, uint8_t addr, uint8_t reg,
-                                   const uint8_t *data, uint16_t len);
+    enum uls_status (*mem_write_it)(const void *config, uint8_t addr, uint8_t reg,
+                                    const uint8_t *data, uint16_t len);
 };
 
 /** @brief I2C bus retaining references to its backend configuration and operations */
@@ -80,8 +80,8 @@ struct io_i2c_bus {
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
-                                   uint16_t len, uint32_t timeout_ms);
+enum uls_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
+                                    uint16_t len, uint32_t timeout_ms);
 
 /**
  * @brief Dispatches a synchronous register write to the bus backend
@@ -97,17 +97,17 @@ enum io_status io_i2c_bus_mem_read(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
  *
  * @return Status returned by the backend without modification
  */
-enum io_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
-                                    const uint8_t *data, uint16_t len, uint32_t timeout_ms);
+enum uls_status io_i2c_bus_mem_write(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+                                     const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 /** @brief Starts an async register read; see io_i2c_mem_read_it() */
-enum io_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
-                                      uint16_t len, io_i2c_cb_t cb, void *user_data);
+enum uls_status io_i2c_bus_mem_read_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg, uint8_t *data,
+                                       uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 /** @brief Starts an async register write; see io_i2c_mem_write_it() */
-enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
-                                       const uint8_t *data, uint16_t len, io_i2c_cb_t cb,
-                                       void *user_data);
+enum uls_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t reg,
+                                        const uint8_t *data, uint16_t len, io_i2c_cb_t cb,
+                                        void *user_data);
 
 /**
  * @brief Clears the active async transfer, then invokes its callback with status
@@ -116,6 +116,6 @@ enum io_status io_i2c_bus_mem_write_it(io_i2c_bus_t *bus, uint8_t addr, uint8_t 
  * The backend must notify only for the current transfer; notifications do not carry a transfer ID.
  * Callback state is cleared before invocation so the callback can start another transfer.
  */
-void io_i2c_bus_complete(io_i2c_bus_t *bus, enum io_status status);
+void io_i2c_bus_complete(io_i2c_bus_t *bus, enum uls_status status);
 
 #endif // ULYSSES_IO_I2C_I2C_BUS_H

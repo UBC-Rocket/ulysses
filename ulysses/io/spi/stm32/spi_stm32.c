@@ -9,22 +9,22 @@
 
 #include "spi/stm32/spi_stm32.h"
 
-static enum io_status to_io_status(HAL_StatusTypeDef hal_status)
+static enum uls_status to_uls_status(HAL_StatusTypeDef hal_status)
 {
     switch (hal_status) {
     case HAL_OK:
-        return IO_STATUS_OK;
+        return ULS_STATUS_OK;
     case HAL_TIMEOUT:
-        return IO_STATUS_TIMEOUT;
+        return ULS_STATUS_TIMEOUT;
     case HAL_BUSY:
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     default:
-        return IO_STATUS_ERROR;
+        return ULS_STATUS_ERROR;
     }
 }
 
-static enum io_status stm32_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
-                                     uint16_t len, uint32_t timeout_ms)
+static enum uls_status stm32_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
+                                      uint16_t len, uint32_t timeout_ms)
 {
     const struct io_spi_stm32_config *config = dev->config;
 
@@ -33,11 +33,11 @@ static enum io_status stm32_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, 
         HAL_SPI_TransmitReceive(config->hw_handle, tx_data, rx_data, len, timeout_ms);
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 
-    return to_io_status(hal_status);
+    return to_uls_status(hal_status);
 }
 
-static enum io_status stm32_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
-                                     uint32_t timeout_ms)
+static enum uls_status stm32_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
+                                      uint32_t timeout_ms)
 {
     const struct io_spi_stm32_config *config = dev->config;
 
@@ -45,11 +45,11 @@ static enum io_status stm32_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, 
     HAL_StatusTypeDef hal_status = HAL_SPI_Transmit(config->hw_handle, tx_data, len, timeout_ms);
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 
-    return to_io_status(hal_status);
+    return to_uls_status(hal_status);
 }
 
-static enum io_status stm32_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
-                                    uint32_t timeout_ms)
+static enum uls_status stm32_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
+                                     uint32_t timeout_ms)
 {
     const struct io_spi_stm32_config *config = dev->config;
 
@@ -57,11 +57,11 @@ static enum io_status stm32_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_
     HAL_StatusTypeDef hal_status = HAL_SPI_Receive(config->hw_handle, rx_data, len, timeout_ms);
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 
-    return to_io_status(hal_status);
+    return to_uls_status(hal_status);
 }
 
-static enum io_status stm32_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
-                                        uint16_t len)
+static enum uls_status stm32_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data,
+                                         uint8_t *rx_data, uint16_t len)
 {
     const struct io_spi_stm32_config *config = dev->config;
 
@@ -72,10 +72,10 @@ static enum io_status stm32_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_dat
         HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
     }
 
-    return to_io_status(hal_status);
+    return to_uls_status(hal_status);
 }
 
-static enum io_status stm32_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len)
+static enum uls_status stm32_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len)
 {
     const struct io_spi_stm32_config *config = dev->config;
 
@@ -85,10 +85,10 @@ static enum io_status stm32_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_dat
         HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
     }
 
-    return to_io_status(hal_status);
+    return to_uls_status(hal_status);
 }
 
-static enum io_status stm32_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len)
+static enum uls_status stm32_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len)
 {
     const struct io_spi_stm32_config *config = dev->config;
 
@@ -98,7 +98,7 @@ static enum io_status stm32_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint
         HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
     }
 
-    return to_io_status(hal_status);
+    return to_uls_status(hal_status);
 }
 
 static const struct io_spi_ops stm32_spi_ops = {
@@ -116,7 +116,7 @@ static void stm32_complete_handler(void *user_data)
     const struct io_spi_stm32_config *config = dev->config;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
-    io_spi_complete(dev, IO_STATUS_OK);
+    io_spi_complete(dev, ULS_STATUS_OK);
 }
 
 static void stm32_error_handler(void *user_data)
@@ -125,7 +125,7 @@ static void stm32_error_handler(void *user_data)
     const struct io_spi_stm32_config *config = dev->config;
 
     HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
-    io_spi_complete(dev, IO_STATUS_ERROR);
+    io_spi_complete(dev, ULS_STATUS_ERROR);
 }
 
 void io_spi_stm32_init(io_spi_dev_t *dev, const struct io_spi_stm32_config *config)
