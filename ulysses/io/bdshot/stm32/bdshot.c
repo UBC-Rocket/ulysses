@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "stm32h7xx.h" // IWYU pragma: keep
+#include "stm32h7xx_hal_def.h"
 #include "stm32h7xx_hal_dma.h"
 #include "stm32h7xx_ll_gpio.h"
 #include "stm32h7xx_ll_tim.h"
@@ -253,6 +254,8 @@ static void set_response(const io_bdshot_t *bdshot, uint8_t channel,
 
 static enum uls_status set_active(const io_bdshot_t *bdshot, uint8_t channel, bool is_active)
 {
+    enum uls_status status = ULS_STATUS_ERROR;
+
     const struct io_bdshot_stm32_config *config = bdshot->config;
     struct io_bdshot_stm32_data *data = bdshot->data;
 
@@ -260,27 +263,42 @@ static enum uls_status set_active(const io_bdshot_t *bdshot, uint8_t channel, bo
 
     const struct io_bdshot_stm32_channel_config *channel_config = &config->channels[channel];
     struct io_bdshot_stm32_channel_data *channel_data = &data->channels[channel];
+
     GPIO_TypeDef *gpio = channel_config->gpio;
     const uint32_t ll_gpio_pin = hal_to_ll_gpio_pin(channel_config->gpio_pin);
-    HAL_StatusTypeDef status;
 
     if (is_active) {
-        ll_gpio_set_af(gpio, ll_gpio_pin, channel_data->original_gpio_af);
-        LL_GPIO_SetPinMode(gpio, ll_gpio_pin, LL_GPIO_MODE_ALTERNATE);
+        if (channel_data->is_active) {
+            // Already active, no need to do it again otherwise HAL will error
+            status = ULS_STATUS_OK;
+        } else {
+            ll_gpio_set_af(gpio, ll_gpio_pin, channel_data->original_gpio_af);
+            LL_GPIO_SetPinMode(gpio, ll_gpio_pin, LL_GPIO_MODE_ALTERNATE);
 
-        status = HAL_TIM_PWM_Start(config->timer, channel_config->timer_channel);
+            HAL_StatusTypeDef hal_status =
+                HAL_TIM_PWM_Start(config->timer, channel_config->timer_channel);
+
+            if (hal_status == HAL_OK) {
+                status = ULS_STATUS_OK;
+            }
+        }
     } else {
-        status = HAL_TIM_PWM_Stop(config->timer, channel_config->timer_channel);
+        HAL_StatusTypeDef hal_status =
+            HAL_TIM_PWM_Stop(config->timer, channel_config->timer_channel);
+
+        if (hal_status == HAL_OK) {
+            status = ULS_STATUS_OK;
+        }
 
         LL_GPIO_ResetOutputPin(gpio, ll_gpio_pin);
         LL_GPIO_SetPinMode(gpio, ll_gpio_pin, LL_GPIO_MODE_OUTPUT);
     }
 
-    if (status == HAL_OK) {
+    if (status == ULS_STATUS_OK) {
         channel_data->is_active = is_active;
     }
 
-    return status == HAL_OK ? ULS_STATUS_OK : ULS_STATUS_ERROR;
+    return status;
 }
 
 static enum uls_status transceive_start(const io_bdshot_t *bdshot)
