@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 
 /** @brief I2C bus backed by platform-specific operations */
 typedef struct io_i2c_bus io_i2c_bus_t;
@@ -12,7 +12,7 @@ typedef struct io_i2c_bus io_i2c_bus_t;
 typedef struct io_i2c_dev io_i2c_dev_t;
 
 /** @brief Async transfer completion callback; runs in interrupt context */
-typedef void (*io_i2c_cb_t)(enum io_status status, void *user_data);
+typedef void (*io_i2c_cb_t)(enum uls_status status, void *user_data);
 
 /**
  * @brief Reads bytes starting at an 8-bit device register
@@ -27,8 +27,8 @@ typedef void (*io_i2c_cb_t)(enum io_status status, void *user_data);
  *
  * @return Status returned by the bus backend
  */
-enum io_status io_i2c_mem_read(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
-                               uint32_t timeout_ms);
+enum uls_status io_i2c_mem_read(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
+                                uint32_t timeout_ms);
 
 /**
  * @brief Writes bytes starting at an 8-bit device register
@@ -43,8 +43,8 @@ enum io_status io_i2c_mem_read(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *da
  *
  * @return Status returned by the bus backend
  */
-enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
-                                uint16_t len, uint32_t timeout_ms);
+enum uls_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
+                                 uint16_t len, uint32_t timeout_ms);
 
 /**
  * @brief Starts a non-blocking I2C register read.
@@ -61,11 +61,11 @@ enum io_status io_i2c_mem_write(const io_i2c_dev_t *dev, uint8_t reg, const uint
  * @param cb Non-NULL completion callback
  * @param user_data Context passed to cb
  *
- * @return IO_STATUS_OK if started, IO_STATUS_BUSY if
+ * @return ULS_STATUS_OK if started, ULS_STATUS_BUSY if
  *         the bus is occupied, or another error status
  */
-enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data, uint16_t len,
-                                  io_i2c_cb_t cb, void *user_data);
+enum uls_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t *data,
+                                   uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 /**
  * @brief Starts a non-blocking I2C register write.
@@ -82,10 +82,10 @@ enum io_status io_i2c_mem_read_it(const io_i2c_dev_t *dev, uint8_t reg, uint8_t 
  * @param cb Non-NULL completion callback
  * @param user_data Context passed to cb
  *
- * @return IO_STATUS_OK if started, IO_STATUS_BUSY if
+ * @return ULS_STATUS_OK if started, ULS_STATUS_BUSY if
  *         the bus is occupied, or another error status
  */
-enum io_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
-                                   uint16_t len, io_i2c_cb_t cb, void *user_data);
+enum uls_status io_i2c_mem_write_it(const io_i2c_dev_t *dev, uint8_t reg, const uint8_t *data,
+                                    uint16_t len, io_i2c_cb_t cb, void *user_data);
 
 #endif // ULYSSES_IO_I2C

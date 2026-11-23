@@ -3,12 +3,13 @@
 
 #include <stdbool.h>
 
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/svc/dev/mag.h"
 
 // Sensor-specific functions, see the matching dev_mag_*() functions
-typedef enum io_status (*dev_mag_read_fn_t)(dev_mag_t *mag, struct dev_mag_sample *sample);
-typedef enum io_status (*dev_mag_read_async_fn_t)(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data);
+typedef enum uls_status (*dev_mag_read_fn_t)(dev_mag_t *mag, struct dev_mag_sample *sample);
+typedef enum uls_status (*dev_mag_read_async_fn_t)(dev_mag_t *mag, dev_mag_cb_t cb,
+                                                   void *user_data);
 typedef bool (*dev_mag_is_data_ready_fn_t)(dev_mag_t *mag);
 
 struct dev_mag_ops {
