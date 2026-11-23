@@ -6,7 +6,7 @@
 
 #include "dev/mag/mag.h"
 
-enum io_status dev_mag_read(dev_mag_t *mag, struct dev_mag_sample *sample)
+enum uls_status dev_mag_read(dev_mag_t *mag, struct dev_mag_sample *sample)
 {
     ULYSSES_ASSERT(mag != NULL, "Magnetometer must be non NULL");
     ULYSSES_ASSERT(mag->ops != NULL, "Magnetometer must be initialized");
@@ -16,7 +16,7 @@ enum io_status dev_mag_read(dev_mag_t *mag, struct dev_mag_sample *sample)
     return mag->ops->read(mag, sample);
 }
 
-enum io_status dev_mag_read_async(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data)
+enum uls_status dev_mag_read_async(dev_mag_t *mag, dev_mag_cb_t cb, void *user_data)
 {
     ULYSSES_ASSERT(mag != NULL, "Magnetometer must be non NULL");
     ULYSSES_ASSERT(mag->ops != NULL, "Magnetometer must be initialized");

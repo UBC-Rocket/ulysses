@@ -5,7 +5,7 @@
 
 #include "dev/baro/baro.h"
 
-enum io_status dev_baro_read_blocking(dev_baro_t *baro, struct dev_baro_sample *sample)
+enum uls_status dev_baro_read_blocking(dev_baro_t *baro, struct dev_baro_sample *sample)
 {
     ULYSSES_ASSERT(baro != NULL, "Barometer must not be NULL");
     ULYSSES_ASSERT(baro->ops != NULL, "Barometer must be initialized");
@@ -14,7 +14,7 @@ enum io_status dev_baro_read_blocking(dev_baro_t *baro, struct dev_baro_sample *
     return baro->ops->read_blocking(baro, sample);
 }
 
-enum io_status dev_baro_read_async(dev_baro_t *baro, dev_baro_cb_t cb, void *user_data)
+enum uls_status dev_baro_read_async(dev_baro_t *baro, dev_baro_cb_t cb, void *user_data)
 {
     ULYSSES_ASSERT(baro != NULL, "Barometer must not be NULL");
     ULYSSES_ASSERT(baro->ops != NULL, "Barometer must be initialized");

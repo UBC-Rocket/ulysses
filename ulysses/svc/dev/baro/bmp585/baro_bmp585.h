@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "ulysses/io/i2c.h"
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/svc/dev/baro.h"
 
 /** @brief Wiring of a BMP585 barometer */
@@ -30,9 +30,9 @@ struct dev_baro_bmp585_data {
  * @param config Wiring of the sensor, must stay valid while the barometer is used
  * @param[out] data State of the sensor, must stay valid while the barometer is used
  *
- * @return Transfer status, or IO_STATUS_ERROR if a check fails
+ * @return Transfer status, or ULS_STATUS_ERROR if a check fails
  */
-enum io_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config,
-                                    struct dev_baro_bmp585_data *data);
+enum uls_status dev_baro_bmp585_init(dev_baro_t *baro, const struct dev_baro_bmp585_config *config,
+                                     struct dev_baro_bmp585_data *data);
 
 #endif // ULYSSES_SVC_DEV_BARO_BMP585_BARO_BMP585_H
