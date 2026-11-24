@@ -18,6 +18,7 @@ extern "C" {
 #endif
 
 int nominal_propagate(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
+int nominal_propagate_unrolled(const casadi_real* x, const casadi_real* u, const casadi_real* g, const casadi_real* dt, casadi_real* x_next, const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
 int nominal_propagate_checkout(void);
 void nominal_propagate_release(int mem);
 void nominal_propagate_incref(void);
@@ -36,6 +37,7 @@ int nominal_propagate_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, casadi_
 #define nominal_propagate_SZ_IW 0
 #define nominal_propagate_SZ_W 0
 int error_state_jacobians(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
+int error_state_jacobians_unrolled(const casadi_real* x, const casadi_real* u, const casadi_real* dt, casadi_real* F, casadi_real* G, const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
 int error_state_jacobians_checkout(void);
 void error_state_jacobians_release(int mem);
 void error_state_jacobians_incref(void);
@@ -54,6 +56,7 @@ int error_state_jacobians_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, cas
 #define error_state_jacobians_SZ_IW 0
 #define error_state_jacobians_SZ_W 0
 int error_state_inject(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
+int error_state_inject_unrolled(const casadi_real* x, const casadi_real* dx, casadi_real* x_injected, casadi_real* G_reset, const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
 int error_state_inject_checkout(void);
 void error_state_inject_release(int mem);
 void error_state_inject_incref(void);

@@ -13,7 +13,10 @@ from .state import IMU, ErrorState, ProcessNoise, State
 from .tangent import tangent_state_model
 
 CODEGEN_OPTIONS = {
+    "include_math": False, # include <tgmath.h> instead
     "with_header": True,
+    "with_export": False,
+    "unroll_args": True,
     "casadi_real": "float",
     "casadi_int": "int",
 }
@@ -76,11 +79,12 @@ def generate_index(output_dir: Path, filename: str = "eskf_indices"):
 def generate_model(output_dir: Path, filename: str = "eskf_model"):
     filename_with_suffix = filename + ".c"
     
-    eskf = ca.CodeGenerator(filename_with_suffix, CODEGEN_OPTIONS)
-    eskf.add(nominal_state_model())
-    eskf.add(tangent_state_model())
-    eskf.add(injection_model())
-    source = Path(eskf.generate(str(output_dir) + os.sep))
+    cg = ca.CodeGenerator(filename_with_suffix, CODEGEN_OPTIONS)
+    cg.add_include("tgmath.h")
+    cg.add(nominal_state_model())
+    cg.add(tangent_state_model())
+    cg.add(injection_model())
+    source = Path(cg.generate(str(output_dir) + os.sep))
     
     return source, source.with_suffix(".h")
     

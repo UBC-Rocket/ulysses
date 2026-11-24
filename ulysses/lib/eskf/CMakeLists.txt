@@ -66,9 +66,13 @@ add_dependencies(ulysses_lib ulysses_eskf_codegen)
 
 
 set_property(
-    SOURCE "${eskf_source_dir}/eskf_model.c"
+    SOURCE "${eskf_generated_c}"
     TARGET_DIRECTORY ulysses_lib
-    APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter
+    APPEND PROPERTY 
+        COMPILE_OPTIONS 
+            -Wno-unused-parameter 
+            -fsingle-precision-constant
+            -Wdouble-promotion
 )
 
 target_sources(ulysses_lib
