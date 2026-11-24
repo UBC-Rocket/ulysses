@@ -21,6 +21,8 @@ struct uart_config {
     enum io_uart_receive_mode receive_mode;     ///< Requested receive mode
     volatile io_uart_transmit_cb_t transmit_cb; ///< Callback for transmit-complete events
     volatile io_uart_receive_cb_t receive_cb;   ///< Callback for receive-complete events
+    void *volatile transmit_user_data;          ///< Context passed to transmit_cb
+    void *volatile receive_user_data;           ///< Context passed to receive_cb
     volatile bool transmit_pending;             ///< Async transmit awaiting completion
     volatile bool receive_pending;              ///< Async receive awaiting completion
 };

@@ -14,8 +14,8 @@ enum io_uart_receive_mode {
 };
 
 struct io_uart_ops {
-    void (*set_transmit_cb)(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb);
-    void (*set_receive_cb)(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
+    void (*set_transmit_cb)(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb, void *user_data);
+    void (*set_receive_cb)(const io_uart_dev_t *uart, io_uart_receive_cb_t cb, void *user_data);
     enum uls_status (*transmit)(const io_uart_dev_t *uart, const uint8_t *data, uint16_t length,
                                 uint32_t timeout_ms);
     enum uls_status (*receive)(const io_uart_dev_t *uart, uint8_t *data, uint16_t length,
