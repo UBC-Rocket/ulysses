@@ -22,7 +22,4 @@ struct dev_imu_icm40609d_data {
 enum io_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm40609d_config *config,
                                       struct dev_imu_icm40609d_data *data);
 
-
-
 #endif // ULYSSES_SVC_DEV_IMU_ICM40609D_IMU_ICM40609D_H
-
