@@ -21,8 +21,8 @@ static void release(io_spi_dev_t *dev)
     atomic_store(&dev->busy, false);
 }
 
-enum io_status io_spi_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
-                               uint16_t len, uint32_t timeout_ms)
+enum uls_status io_spi_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
+                                uint16_t len, uint32_t timeout_ms)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
@@ -32,18 +32,18 @@ enum io_status io_spi_transfer(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_
     ULYSSES_ASSERT(len != 0, "SPI transfer length must be non zero");
 
     if (!claim(dev)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
-    enum io_status status = dev->ops->transfer(dev, tx_data, rx_data, len, timeout_ms);
+    enum uls_status status = dev->ops->transfer(dev, tx_data, rx_data, len, timeout_ms);
 
     release(dev);
 
     return status;
 }
 
-enum io_status io_spi_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
-                               uint32_t timeout_ms)
+enum uls_status io_spi_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
+                                uint32_t timeout_ms)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
@@ -52,18 +52,18 @@ enum io_status io_spi_transmit(io_spi_dev_t *dev, const uint8_t *tx_data, uint16
     ULYSSES_ASSERT(len != 0, "SPI transmit length must be non zero");
 
     if (!claim(dev)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
-    enum io_status status = dev->ops->transmit(dev, tx_data, len, timeout_ms);
+    enum uls_status status = dev->ops->transmit(dev, tx_data, len, timeout_ms);
 
     release(dev);
 
     return status;
 }
 
-enum io_status io_spi_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
-                              uint32_t timeout_ms)
+enum uls_status io_spi_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
+                               uint32_t timeout_ms)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
@@ -72,18 +72,18 @@ enum io_status io_spi_receive(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
     ULYSSES_ASSERT(len != 0, "SPI receive length must be non zero");
 
     if (!claim(dev)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
-    enum io_status status = dev->ops->receive(dev, rx_data, len, timeout_ms);
+    enum uls_status status = dev->ops->receive(dev, rx_data, len, timeout_ms);
 
     release(dev);
 
     return status;
 }
 
-enum io_status io_spi_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
-                                  uint16_t len, io_spi_cb_t cb, void *user_data)
+enum uls_status io_spi_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint8_t *rx_data,
+                                   uint16_t len, io_spi_cb_t cb, void *user_data)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
@@ -94,23 +94,23 @@ enum io_status io_spi_transfer_it(io_spi_dev_t *dev, const uint8_t *tx_data, uin
     ULYSSES_ASSERT(cb != NULL, "SPI callback must be non NULL");
 
     if (!claim(dev)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
     dev->cb = cb;
     dev->cb_user_data = user_data;
 
-    enum io_status status = dev->ops->transfer_it(dev, tx_data, rx_data, len);
+    enum uls_status status = dev->ops->transfer_it(dev, tx_data, rx_data, len);
 
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         release(dev);
     }
 
     return status;
 }
 
-enum io_status io_spi_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
-                                  io_spi_cb_t cb, void *user_data)
+enum uls_status io_spi_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uint16_t len,
+                                   io_spi_cb_t cb, void *user_data)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
@@ -120,23 +120,23 @@ enum io_status io_spi_transmit_it(io_spi_dev_t *dev, const uint8_t *tx_data, uin
     ULYSSES_ASSERT(cb != NULL, "SPI callback must be non NULL");
 
     if (!claim(dev)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
     dev->cb = cb;
     dev->cb_user_data = user_data;
 
-    enum io_status status = dev->ops->transmit_it(dev, tx_data, len);
+    enum uls_status status = dev->ops->transmit_it(dev, tx_data, len);
 
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         release(dev);
     }
 
     return status;
 }
 
-enum io_status io_spi_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len, io_spi_cb_t cb,
-                                 void *user_data)
+enum uls_status io_spi_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len, io_spi_cb_t cb,
+                                  void *user_data)
 {
     ULYSSES_ASSERT(dev != NULL, "SPI device must be non NULL");
     ULYSSES_ASSERT(dev->ops != NULL, "SPI device must be initialized");
@@ -146,22 +146,22 @@ enum io_status io_spi_receive_it(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t l
     ULYSSES_ASSERT(cb != NULL, "SPI callback must be non NULL");
 
     if (!claim(dev)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
     dev->cb = cb;
     dev->cb_user_data = user_data;
 
-    enum io_status status = dev->ops->receive_it(dev, rx_data, len);
+    enum uls_status status = dev->ops->receive_it(dev, rx_data, len);
 
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         release(dev);
     }
 
     return status;
 }
 
-void io_spi_complete(io_spi_dev_t *dev, enum io_status status)
+void io_spi_complete(io_spi_dev_t *dev, enum uls_status status)
 {
     io_spi_cb_t cb = dev->cb;
     void *user_data = dev->cb_user_data;

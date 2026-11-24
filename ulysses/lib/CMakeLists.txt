@@ -14,3 +14,6 @@ target_sources(ulysses_lib
         checksum/crc16.c
         dynamixel/protocol2.c
 )
+
+add_subdirectory(eskf)
+add_subdirectory(flight_controller)

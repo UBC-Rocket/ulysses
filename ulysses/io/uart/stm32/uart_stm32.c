@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "ulysses/io/irq.h"
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/lib/assert.h"
 
 #include "uart/stm32/uart_stm32.h"
@@ -29,64 +29,64 @@ static void stm32_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t
     config->receive_cb = cb;
 }
 
-enum io_status io_uart_stm32_to_io_status(HAL_StatusTypeDef hal_status)
+enum uls_status io_uart_stm32_to_uls_status(HAL_StatusTypeDef hal_status)
 {
     switch (hal_status) {
     case HAL_OK:
-        return IO_STATUS_OK;
+        return ULS_STATUS_OK;
     case HAL_TIMEOUT:
-        return IO_STATUS_TIMEOUT;
+        return ULS_STATUS_TIMEOUT;
     case HAL_BUSY:
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     default:
-        return IO_STATUS_ERROR;
+        return ULS_STATUS_ERROR;
     }
 }
 
-enum io_status io_uart_stm32_prepare_transfer(const struct uart_config *config,
-                                              enum io_uart_stm32_transfer_direction direction)
+enum uls_status io_uart_stm32_prepare_transfer(const struct uart_config *config,
+                                               enum io_uart_stm32_transfer_direction direction)
 {
     const bool pending =
         direction == UART_STM32_TRANSMIT ? config->transmit_pending : config->receive_pending;
     if (pending || io_uart_stm32_dma_abort_pending(config)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
-    return IO_STATUS_OK;
+    return ULS_STATUS_OK;
 }
 
-static enum io_status stm32_transmit_blocking(const io_uart_dev_t *uart, const uint8_t *data,
-                                              uint16_t length, uint32_t timeout_ms)
+static enum uls_status stm32_transmit_blocking(const io_uart_dev_t *uart, const uint8_t *data,
+                                               uint16_t length, uint32_t timeout_ms)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
 
     if (length == 0) {
-        return IO_STATUS_OK;
+        return ULS_STATUS_OK;
     }
 
-    enum io_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_TRANSMIT);
-    if (status != IO_STATUS_OK) {
+    enum uls_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_TRANSMIT);
+    if (status != ULS_STATUS_OK) {
         return status;
     }
-    return io_uart_stm32_to_io_status(
+    return io_uart_stm32_to_uls_status(
         HAL_UART_Transmit(config->hw_handle, data, length, timeout_ms));
 }
 
-static enum io_status stm32_receive_blocking(const io_uart_dev_t *uart, uint8_t *data,
-                                             uint16_t length, uint32_t timeout_ms)
+static enum uls_status stm32_receive_blocking(const io_uart_dev_t *uart, uint8_t *data,
+                                              uint16_t length, uint32_t timeout_ms)
 {
     const struct uart_config *config = (const struct uart_config *)uart->config;
     ULYSSES_ASSERT(config->receive_mode == IO_UART_PACKET, "uart must be in packet receive mode");
 
     if (length == 0) {
-        return IO_STATUS_OK;
+        return ULS_STATUS_OK;
     }
 
-    enum io_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_RECEIVE);
-    if (status != IO_STATUS_OK) {
+    enum uls_status status = io_uart_stm32_prepare_transfer(config, UART_STM32_RECEIVE);
+    if (status != ULS_STATUS_OK) {
         return status;
     }
-    return io_uart_stm32_to_io_status(
+    return io_uart_stm32_to_uls_status(
         HAL_UART_Receive(config->hw_handle, data, length, timeout_ms));
 }
 
@@ -110,7 +110,7 @@ static const struct io_uart_ops stm32_irq_ops = {
     .receive_continuous = io_uart_stm32_receive_continuous_irq,
 };
 
-void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum io_status status)
+void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum uls_status status)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
     config->transmit_pending = false;
@@ -120,7 +120,7 @@ void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum io_status sta
     }
 }
 
-void io_uart_stm32_finish_receive(const io_uart_dev_t *uart, enum io_status status)
+void io_uart_stm32_finish_receive(const io_uart_dev_t *uart, enum uls_status status)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
     config->receive_pending = false;
@@ -157,10 +157,10 @@ static void stm32_abort_complete_handler(void *_uart)
     const bool transmit_pending = config->transmit_pending;
     const bool receive_pending = config->receive_pending;
     if (transmit_pending) {
-        io_uart_stm32_finish_transmit(uart, IO_STATUS_ERROR);
+        io_uart_stm32_finish_transmit(uart, ULS_STATUS_ERROR);
     }
     if (receive_pending) {
-        io_uart_stm32_finish_receive(uart, IO_STATUS_ERROR);
+        io_uart_stm32_finish_receive(uart, ULS_STATUS_ERROR);
     }
 }
 

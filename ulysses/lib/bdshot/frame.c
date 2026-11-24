@@ -127,6 +127,10 @@ enum bdshot_decode_status bdshot_frame_decode_from_wire(uint16_t *frame, uint32_
     }
 
     if (status == BDSHOT_DECODE_STATUS_OK) {
+        // Documentation based on the original Brushless Whoop article (https://brushlesswhoop.com/dshot-and-bidirectional-dshot/)
+        // such as Betaflight, incorrectly states that the checksum for an eRPM telemetry frame
+        // is uninverted. If you look at actual ESC responses and existing BDShot implementations,
+        // the eRPM frame checksum is inverted.
         uint8_t received_checksum = bdshot_frame_get_checksum(*frame);
         uint8_t expected_checksum = bdshot_frame_checksum(*frame);
 

@@ -44,6 +44,14 @@ add_unity_test(
 )
 
 add_unity_test(
+    NAME "buffer"
+    SOURCES
+        test_buffer.c
+    LIBRARIES
+        ulysses_public_headers
+)
+
+add_unity_test(
     NAME "dynamixel_protocol2_encode"
     SOURCES
         dynamixel/test_protocol2_encode.c
