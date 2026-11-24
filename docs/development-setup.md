@@ -15,6 +15,7 @@ building the Ulysses firmware.
     - [Installing ARM GNU Toolchain](#installing-arm-gnu-toolchain)
     - [Installing Ninja](#installing-ninja)
     - [Installing CMake](#installing-cmake)
+  - [Regenerating controls code](#regenerating-controls-code)
   - [Setting up VS Code](#setting-up-vs-code)
     - [Installing VS Code](#installing-vs-code)
     - [Installing extensions](#installing-extensions)
@@ -117,6 +118,12 @@ cmake --version
 ```
 
 [cmake]: https://cmake.org
+
+## Regenerating controls code
+
+Install [uv][uv_package_manager] and make sure it is on your PATH before configuring
+the build. CMake automatically runs each generator when its build-directory stamp is missing or
+its Python inputs are added, modified, or removed.
 
 ## Setting up VS Code
 

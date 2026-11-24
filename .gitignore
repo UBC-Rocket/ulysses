@@ -2,6 +2,9 @@
 .cache/
 compile_commands.json
 
+# Python
+__pycache__/
+
 # Ignore personal VSCode configuration
 .vscode/*
 !.vscode/extensions.json
