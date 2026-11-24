@@ -19,8 +19,8 @@ class ErrorState:
     ATT = slice(6, 9)
     GYRO_BIAS = slice(9, 12)
     ACCEL_BIAS = slice(12, 15)
-    BARO_BIAS = 16
-    GND_HEIGHT = 17
+    BARO_BIAS = 15
+    GND_HEIGHT = 16
 
     DIM = 17
 
