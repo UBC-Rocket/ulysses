@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 
 /** @brief GNSS reciever backed by a vendor specific driver */
 typedef struct dev_gnss dev_gnss_t;
@@ -67,7 +67,7 @@ struct dev_gnss_sample {
  *
  * @return Status returned by the backend
  */
-enum io_status dev_gnss_update(dev_gnss_t *gnss);
+enum uls_status dev_gnss_update(dev_gnss_t *gnss);
 
 /**
  * @brief Checks whether a soltuion newer than the last call is avilable
@@ -87,10 +87,10 @@ bool dev_gnss_is_sample_ready(const dev_gnss_t *gnss);
  * @param gnss Non-NULL intialized receiver
  * @param[out] sample Non-NULL output for the latest solution, unchanged if no sample data is available
  *
- * @retval IO_STATUS_OK sample data was written
- * @retval IO_STATUS_ERROR no solution is newer than the last call; sample data is unchanged
+ * @retval ULS_STATUS_OK sample data was written
+ * @retval ULS_STATUS_ERROR no solution is newer than the last call; sample data is unchanged
  */
-enum io_status dev_gnss_get_sample(dev_gnss_t *gnss, struct dev_gnss_sample *sample);
+enum uls_status dev_gnss_get_sample(dev_gnss_t *gnss, struct dev_gnss_sample *sample);
 
 /**
  * @brief Forwards RTCM correction bytes to the receiver
@@ -99,19 +99,19 @@ enum io_status dev_gnss_get_sample(dev_gnss_t *gnss, struct dev_gnss_sample *sam
  * @param corrections Non-NULL input buffer containing at least len bytes
  * @param len Number of bytes to send; must be greater than 0
  *
- * @retval IO_STATUS_ERROR The backend does not support corrections
+ * @retval ULS_STATUS_ERROR The backend does not support corrections
  * @return Status returned by the backend otherwise
  */
-enum io_status dev_gnss_send_corrections(dev_gnss_t *gnss, const uint8_t *corrections, size_t len);
+enum uls_status dev_gnss_send_corrections(dev_gnss_t *gnss, const uint8_t *corrections, size_t len);
 
 /**
  * @brief Resets the receiver
  *
  * @param gnss Non-NULL intialized receiver
  *
- * @retval IO_STATUS_ERROR The backend does not support reset
+ * @retval ULS_STATUS_ERROR The backend does not support reset
  * @return Status returned by the backend otherwise
  */
-enum io_status dev_gnss_reset(dev_gnss_t *gnss);
+enum uls_status dev_gnss_reset(dev_gnss_t *gnss);
 
 #endif // ULYSSES_SVC_GNSS

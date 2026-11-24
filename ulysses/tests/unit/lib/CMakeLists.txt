@@ -42,3 +42,11 @@ add_unity_test(
         ulysses_lib
         ulysses_public_headers
 )
+
+add_unity_test(
+    NAME "buffer"
+    SOURCES
+        test_buffer.c
+    LIBRARIES
+        ulysses_public_headers
+)

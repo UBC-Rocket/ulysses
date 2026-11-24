@@ -7,17 +7,19 @@
 #include "ulysses/io/spi.h"
 
 // Platform functions, see the matching io_spi_*() functions
-typedef enum io_status (*io_spi_transfer_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
-                                               uint8_t *rx_data, uint16_t len, uint32_t timeout_ms);
-typedef enum io_status (*io_spi_transmit_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
-                                               uint16_t len, uint32_t timeout_ms);
-typedef enum io_status (*io_spi_receive_fn_t)(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
-                                              uint32_t timeout_ms);
-typedef enum io_status (*io_spi_transfer_it_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
-                                                  uint8_t *rx_data, uint16_t len);
-typedef enum io_status (*io_spi_transmit_it_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
+typedef enum uls_status (*io_spi_transfer_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
+                                                uint8_t *rx_data, uint16_t len,
+                                                uint32_t timeout_ms);
+typedef enum uls_status (*io_spi_transmit_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
+                                                uint16_t len, uint32_t timeout_ms);
+typedef enum uls_status (*io_spi_receive_fn_t)(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len,
+                                               uint32_t timeout_ms);
+typedef enum uls_status (*io_spi_transfer_it_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
+                                                   uint8_t *rx_data, uint16_t len);
+typedef enum uls_status (*io_spi_transmit_it_fn_t)(io_spi_dev_t *dev, const uint8_t *tx_data,
+                                                   uint16_t len);
+typedef enum uls_status (*io_spi_receive_it_fn_t)(io_spi_dev_t *dev, uint8_t *rx_data,
                                                   uint16_t len);
-typedef enum io_status (*io_spi_receive_it_fn_t)(io_spi_dev_t *dev, uint8_t *rx_data, uint16_t len);
 
 struct io_spi_ops {
     io_spi_transfer_fn_t transfer;       ///< Platform transfer function
@@ -45,6 +47,6 @@ struct io_spi_dev {
  * @param dev Device whose transfer finished
  * @param status Result of the transfer
  */
-void io_spi_complete(io_spi_dev_t *dev, enum io_status status);
+void io_spi_complete(io_spi_dev_t *dev, enum uls_status status);
 
 #endif // ULYSSES_IO_SPI_PRIVATE

@@ -42,13 +42,13 @@ void io_uart_stm32_init(io_uart_dev_t *uart, const struct uart_config *uart_conf
 
 bool io_uart_stm32_dma_abort_pending(const struct uart_config *config);
 
-enum io_status io_uart_stm32_prepare_transfer(const struct uart_config *config,
-                                              enum io_uart_stm32_transfer_direction direction);
+enum uls_status io_uart_stm32_prepare_transfer(const struct uart_config *config,
+                                               enum io_uart_stm32_transfer_direction direction);
 
-enum io_status io_uart_stm32_to_io_status(HAL_StatusTypeDef status);
+enum uls_status io_uart_stm32_to_uls_status(HAL_StatusTypeDef status);
 
-void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum io_status status);
+void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum uls_status status);
 
-void io_uart_stm32_finish_receive(const io_uart_dev_t *uart, enum io_status status);
+void io_uart_stm32_finish_receive(const io_uart_dev_t *uart, enum uls_status status);
 
 #endif // ULYSSES_IO_UART_STM32

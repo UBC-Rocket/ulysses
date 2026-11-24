@@ -19,30 +19,30 @@
  * @param status HAL transfer result
  * @param hal_error HAL handle error flags after the transfer
  *
- * @retval IO_STATUS_OK HAL reported success
- * @retval IO_STATUS_BUSY HAL reported busy
- * @retval IO_STATUS_TIMEOUT HAL reported a timeout or set HAL_I2C_ERROR_TIMEOUT
- * @retval IO_STATUS_ERROR Any other HAL failure
+ * @retval ULS_STATUS_OK HAL reported success
+ * @retval ULS_STATUS_BUSY HAL reported busy
+ * @retval ULS_STATUS_TIMEOUT HAL reported a timeout or set HAL_I2C_ERROR_TIMEOUT
+ * @retval ULS_STATUS_ERROR Any other HAL failure
  */
-static enum io_status to_io_status(HAL_StatusTypeDef status, uint32_t hal_error)
+static enum uls_status to_uls_status(HAL_StatusTypeDef status, uint32_t hal_error)
 {
     if (status == HAL_OK) {
-        return IO_STATUS_OK;
+        return ULS_STATUS_OK;
     }
 
     if (status == HAL_BUSY) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
     if (status == HAL_TIMEOUT || (hal_error & HAL_I2C_ERROR_TIMEOUT) != 0U) {
-        return IO_STATUS_TIMEOUT;
+        return ULS_STATUS_TIMEOUT;
     }
 
-    return IO_STATUS_ERROR;
+    return ULS_STATUS_ERROR;
 }
 
-static enum io_status stm32_mem_read(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
-                                     uint16_t len, uint32_t timeout_ms)
+static enum uls_status stm32_mem_read(const void *config, uint8_t addr, uint8_t reg, uint8_t *data,
+                                      uint16_t len, uint32_t timeout_ms)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -51,11 +51,11 @@ static enum io_status stm32_mem_read(const void *config, uint8_t addr, uint8_t r
     HAL_StatusTypeDef status = HAL_I2C_Mem_Read(hi2c, (uint16_t)(addr << 1U), reg,
                                                 I2C_MEMADD_SIZE_8BIT, data, len, timeout_ms);
 
-    return to_io_status(status, hi2c->ErrorCode);
+    return to_uls_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint8_t reg,
-                                      const uint8_t *data, uint16_t len, uint32_t timeout_ms)
+static enum uls_status stm32_mem_write(const void *config, uint8_t addr, uint8_t reg,
+                                       const uint8_t *data, uint16_t len, uint32_t timeout_ms)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -64,11 +64,11 @@ static enum io_status stm32_mem_write(const void *config, uint8_t addr, uint8_t 
     HAL_StatusTypeDef status = HAL_I2C_Mem_Write(
         hi2c, (uint16_t)(addr << 1U), reg, I2C_MEMADD_SIZE_8BIT, (uint8_t *)data, len, timeout_ms);
 
-    return to_io_status(status, hi2c->ErrorCode);
+    return to_uls_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_t reg,
-                                        uint8_t *data, uint16_t len)
+static enum uls_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_t reg,
+                                         uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -77,11 +77,11 @@ static enum io_status stm32_mem_read_it(const void *config, uint8_t addr, uint8_
     HAL_StatusTypeDef status =
         HAL_I2C_Mem_Read_IT(hi2c, (uint16_t)(addr << 1U), reg, I2C_MEMADD_SIZE_8BIT, data, len);
 
-    return to_io_status(status, hi2c->ErrorCode);
+    return to_uls_status(status, hi2c->ErrorCode);
 }
 
-static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint8_t reg,
-                                         const uint8_t *data, uint16_t len)
+static enum uls_status stm32_mem_write_it(const void *config, uint8_t addr, uint8_t reg,
+                                          const uint8_t *data, uint16_t len)
 {
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)config;
 
@@ -90,7 +90,7 @@ static enum io_status stm32_mem_write_it(const void *config, uint8_t addr, uint8
     HAL_StatusTypeDef status = HAL_I2C_Mem_Write_IT(hi2c, (uint16_t)(addr << 1U), reg,
                                                     I2C_MEMADD_SIZE_8BIT, (uint8_t *)data, len);
 
-    return to_io_status(status, hi2c->ErrorCode);
+    return to_uls_status(status, hi2c->ErrorCode);
 }
 
 /** @brief Shared operations */
@@ -101,7 +101,7 @@ static const struct io_i2c_bus_ops stm32_i2c_ops = {.mem_read = stm32_mem_read,
 
 static void stm32_transfer_complete_handler(void *user_data)
 {
-    io_i2c_bus_complete((io_i2c_bus_t *)user_data, IO_STATUS_OK);
+    io_i2c_bus_complete((io_i2c_bus_t *)user_data, ULS_STATUS_OK);
 }
 
 static void stm32_transfer_error_handler(void *user_data)
@@ -109,7 +109,7 @@ static void stm32_transfer_error_handler(void *user_data)
     io_i2c_bus_t *bus = (io_i2c_bus_t *)user_data;
     const struct io_i2c_stm32_config *cfg = (const struct io_i2c_stm32_config *)bus->config;
 
-    io_i2c_bus_complete(bus, to_io_status(HAL_ERROR, cfg->hw_handle->ErrorCode));
+    io_i2c_bus_complete(bus, to_uls_status(HAL_ERROR, cfg->hw_handle->ErrorCode));
 }
 
 void io_i2c_stm32_init(io_i2c_bus_t *bus, const struct io_i2c_stm32_config *config)

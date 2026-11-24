@@ -13,3 +13,6 @@ target_sources(ulysses_lib
         bdshot/frame.c
         checksum/crc16.c
 )
+
+add_subdirectory(eskf)
+add_subdirectory(flight_controller)
