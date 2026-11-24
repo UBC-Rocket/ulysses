@@ -68,3 +68,12 @@ add_unity_test(
         ulysses_lib
         ulysses_public_headers
 )
+
+add_unity_test(
+    NAME "dynamixel_protocol2_instructions"
+    SOURCES
+        dynamixel/test_protocol2_instructions.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)
