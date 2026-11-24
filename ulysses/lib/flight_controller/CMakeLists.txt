@@ -38,8 +38,8 @@ add_custom_command(
         # "${flight_controller_generated_h}"
     COMMAND "${UV_EXECUTABLE}" run --locked
         --directory "${ULYSSES_CODEGEN_TOOLS_DIR}" python -m flight_controller.generate
-        --header-dir ${flight_controller_header_dir}
-        --source-dir ${flight_controller_source_dir}
+        --header-dir "${flight_controller_header_dir}"
+        --source-dir "${flight_controller_source_dir}"
     COMMAND "${CMAKE_COMMAND}" -E touch "${codegen_stamp}"
     DEPENDS 
         ${codegen_inputs} 
@@ -60,5 +60,5 @@ add_dependencies(ulysses_lib ulysses_flight_controller_codegen)
 target_sources(ulysses_lib
     PRIVATE
         flight_controller.c
-        "${flight_controller_generated_c}"
+        # "${flight_controller_generated_c}"
 )

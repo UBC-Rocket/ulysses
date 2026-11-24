@@ -38,8 +38,8 @@ add_custom_command(
         # "${eskf_generated_h}"
     COMMAND "${UV_EXECUTABLE}" run --locked
         --directory "${ULYSSES_CODEGEN_TOOLS_DIR}" python -m eskf.generate
-        --header-dir ${eskf_header_dir}
-        --source-dir ${eskf_source_dir}
+        --header-dir "${eskf_header_dir}"
+        --source-dir "${eskf_source_dir}"
     COMMAND "${CMAKE_COMMAND}" -E touch "${codegen_stamp}"
     DEPENDS
         ${codegen_inputs}
@@ -60,5 +60,5 @@ add_dependencies(ulysses_lib ulysses_eskf_codegen)
 target_sources(ulysses_lib
     PRIVATE
         eskf.c
-        "${eskf_generated_c}"
+        # "${eskf_generated_c}"
 )
