@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 3.22)
 
+get_filename_component(ULYSSES_REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+
 option(ULYSSES_BUILD_NATIVE "Build for the current host" OFF)
 option(ULYSSES_BUILD_TESTS "Build unit tests" OFF)
 
 # Interface library to link against for accessing public headers
+set(ULYSSES_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include")
+
 add_library(ulysses_public_headers INTERFACE)
 
 target_include_directories(ulysses_public_headers
     INTERFACE
-        ${CMAKE_CURRENT_LIST_DIR}/include
+        ${ULYSSES_INCLUDE_DIR}
 )
 
 # Interface library to link against for generic layer build requirements
@@ -31,6 +35,8 @@ target_compile_features(ulysses_layer_interface
     INTERFACE
         c_std_11
 )
+
+set(ULYSSES_CODEGEN_TOOLS_DIR "${ULYSSES_REPO_ROOT}/tools/codegen")
 
 add_subdirectory(lib)
 
