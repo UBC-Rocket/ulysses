@@ -17,15 +17,19 @@ bool io_uart_stm32_dma_abort_pending(const struct uart_config *config)
             (handle->hdmarx != NULL && HAL_DMA_GetState(handle->hdmarx) == HAL_DMA_STATE_ABORT));
 }
 
-static void stm32_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb)
+static void stm32_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb,
+                                  void *user_data)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
+    config->transmit_user_data = user_data;
     config->transmit_cb = cb;
 }
 
-static void stm32_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb)
+static void stm32_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb,
+                                 void *user_data)
 {
     struct uart_config *config = (struct uart_config *)uart->config;
+    config->receive_user_data = user_data;
     config->receive_cb = cb;
 }
 
@@ -116,7 +120,7 @@ void io_uart_stm32_finish_transmit(const io_uart_dev_t *uart, enum uls_status st
     config->transmit_pending = false;
 
     if (config->transmit_cb != NULL) {
-        config->transmit_cb(status, uart);
+        config->transmit_cb(status, config->transmit_user_data);
     }
 }
 
@@ -128,7 +132,7 @@ void io_uart_stm32_finish_receive(const io_uart_dev_t *uart, enum uls_status sta
     // TODO: handle CM events
 
     if (config->receive_cb != NULL) {
-        config->receive_cb(status, uart);
+        config->receive_cb(status, config->receive_user_data);
     }
 }
 
