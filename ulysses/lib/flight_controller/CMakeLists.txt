@@ -20,7 +20,7 @@ file(GENERATE
 set(codegen_stamp "${CMAKE_CURRENT_BINARY_DIR}/codegen.stamp") 
 
 # run the codegen tool
-set(flight_controller_header_dir "${ULYSSES_INCLUDE_DIR}/lib/flight_controller/generated")
+set(flight_controller_header_dir "${ULYSSES_PROJECT_INCLUDE_DIR}/lib/flight_controller/generated")
 set(flight_controller_source_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 # set(flight_controller_generated_h
