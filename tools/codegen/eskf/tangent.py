@@ -1,7 +1,7 @@
 import casadi as ca
 
-from .geometry.quaternion import quat2rot, quatconj, quatexp, quatlog, quatmul
-from .geometry.so3 import right_jacobian, skewsym
+from .geometry import so3
+from .geometry.quaternion import quat2rot, quatconj, quatmul
 from .state import IMU, ErrorState, ProcessNoise, State, dt, dx, n, u, x
 
 
@@ -13,7 +13,7 @@ def boxplus(x: ca.SX, dx: ca.SX) -> ca.SX:
 
     out[State.POS] = x[State.POS] + dx[ErrorState.POS]
     out[State.VEL] = x[State.VEL] + dx[ErrorState.VEL]
-    out[State.QUAT] = quatmul(x[State.QUAT], quatexp(dx[ErrorState.ATT]))
+    out[State.QUAT] = quatmul(x[State.QUAT], so3.exp_map(dx[ErrorState.ATT]))
     out[State.GYRO_BIAS] = x[State.GYRO_BIAS] + dx[ErrorState.GYRO_BIAS]
     out[State.ACCEL_BIAS] = x[State.ACCEL_BIAS] + dx[ErrorState.ACCEL_BIAS]
     out[State.BARO_BIAS] = x[State.BARO_BIAS] + dx[ErrorState.BARO_BIAS]
@@ -31,7 +31,7 @@ def boxminus(x1: ca.SX, x2: ca.SX) -> ca.SX:
 
     out[ErrorState.POS] = x1[State.POS] - x2[State.POS]
     out[ErrorState.VEL] = x1[State.VEL] - x2[State.VEL]
-    out[ErrorState.ATT] = quatlog(quatmul(quatconj(x2[State.QUAT]), x1[State.QUAT]))
+    out[ErrorState.ATT] = so3.log_map(quatmul(quatconj(x2[State.QUAT]), x1[State.QUAT]))
     out[ErrorState.GYRO_BIAS] = x1[State.GYRO_BIAS] - x2[State.GYRO_BIAS]
     out[ErrorState.ACCEL_BIAS] = x1[State.ACCEL_BIAS] - x2[State.ACCEL_BIAS]
     out[ErrorState.BARO_BIAS] = x1[State.BARO_BIAS] - x2[State.BARO_BIAS]
@@ -68,21 +68,21 @@ def tangent_state_model() -> ca.Function:
     phi = w_nom * dt
 
     # Midpoint rotation
-    q_mid = quatmul(q, quatexp(phi / 2))
+    q_mid = quatmul(q, so3.exp_map(phi / 2))
     R_mid = quat2rot(q_mid)
 
     # SO(3) Jacobians
-    R_half_inv = quat2rot(quatexp(-phi / 2))
-    R_full_inv = quat2rot(quatexp(-phi))
+    R_half_inv = quat2rot(so3.exp_map(-phi / 2))
+    R_full_inv = quat2rot(so3.exp_map(-phi))
 
-    Jr_half = right_jacobian(phi / 2)
-    Jr_full = right_jacobian(phi)
+    Jr_half = so3.right_jacobian(phi / 2)
+    Jr_full = so3.right_jacobian(phi)
 
     # Midpoint attitude error
     dtheta_mid = R_half_inv @ dtheta - Jr_half @ (dbw + nw) * dt / 2
 
     # World-frame acceleration error
-    da_world = -R_mid @ (skewsym(a_nom) @ dtheta_mid + dba + na)
+    da_world = -R_mid @ (so3.skew_sym(a_nom) @ dtheta_mid + dba + na)
 
     # Error-state propagation
     dx_next = ca.SX.zeros(ErrorState.DIM, 1)

@@ -1,6 +1,7 @@
 import casadi as ca
 
-from .geometry.quaternion import quat2rot, quatexp, quatmul, quatnormalize
+from .geometry import so3
+from .geometry.quaternion import quat2rot, quatmul, quatnormalize
 from .state import IMU, State, dt, g, u, x
 
 
@@ -19,8 +20,8 @@ def nominal_state_model() -> ca.Function:
     w_nom = w_meas - bw
     a_nom = a_meas - ba
 
-    q_mid = quatmul(q, quatexp(w_nom * dt / 2))
-    q_next = quatnormalize(quatmul(q, quatexp(w_nom * dt)))
+    q_mid = quatmul(q, so3.exp_map(w_nom * dt / 2))
+    q_next = quatnormalize(quatmul(q, so3.exp_map(w_nom * dt)))
 
     a_world_mid = quat2rot(q_mid) @ a_nom + g
 
