@@ -18,6 +18,7 @@ target_sources(ulysses_svc
         dev/status_led/status_led.c
         dev/status_led/gpio/status_led_gpio.c
         dev/servo/servo.c
+        dev/servo/dynamixel/servo_dynamixel.c
 )
 
 target_include_directories(ulysses_svc
