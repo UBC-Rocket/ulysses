@@ -1,5 +1,8 @@
 # STM32CubeMX generated code and libraries
 cfp/**
 
+# ESKF CasADi codegen
+include/ulysses/lib/eskf/generated/*.h
+
 # Third party code
 third_party/**
