@@ -6,6 +6,7 @@
 #include "ulysses/lib/assert.h"
 #include "ulysses/io/delay.h"
 #include "ulysses/io/spi.h"
+#include "ulysses/lib/buffer.h"
 #include "ulysses/svc/dev/mag.h"
 
 #include "dev/mag/mag.h"
@@ -68,9 +69,9 @@ static enum uls_status read_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t *value)
 static void parse_raw(const uint8_t out[RAW_LEN], int32_t raw[3])
 {
     // 18-bit value per axis: 8 bits in out0, 8 bits in out1, 2 bits in XYZout2
-    raw[0] = ((int32_t)out[0] << 10) | ((int32_t)out[1] << 2) | ((out[6] >> 6) & 0x3);
-    raw[1] = ((int32_t)out[2] << 10) | ((int32_t)out[3] << 2) | ((out[6] >> 4) & 0x3);
-    raw[2] = ((int32_t)out[4] << 10) | ((int32_t)out[5] << 2) | ((out[6] >> 2) & 0x3);
+    raw[0] = ((int32_t)buffer_read_uint16_be(&out[0]) << 2) | ((out[6] >> 6) & 0x3);
+    raw[1] = ((int32_t)buffer_read_uint16_be(&out[2]) << 2) | ((out[6] >> 4) & 0x3);
+    raw[2] = ((int32_t)buffer_read_uint16_be(&out[4]) << 2) | ((out[6] >> 2) & 0x3);
 }
 
 static void to_sample(const struct dev_mag_mmc5983_data *data, const int32_t raw[3],
