@@ -1,4 +1,4 @@
-#include "ulysses/lib/dynamixel/protocol2_packet.h"
+#include "ulysses/lib/dynamixel/protocol2/packet.h"
 
 #include <stdbool.h>
 #include <string.h>

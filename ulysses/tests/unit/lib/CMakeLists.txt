@@ -54,7 +54,7 @@ add_unity_test(
 add_unity_test(
     NAME "dynamixel_protocol2_encode"
     SOURCES
-        dynamixel/test_protocol2_encode.c
+        dynamixel/protocol2/test_encode.c
     LIBRARIES
         ulysses_lib
         ulysses_public_headers
@@ -63,7 +63,7 @@ add_unity_test(
 add_unity_test(
     NAME "dynamixel_protocol2_decode"
     SOURCES
-        dynamixel/test_protocol2_decode.c
+        dynamixel/protocol2/test_decode.c
     LIBRARIES
         ulysses_lib
         ulysses_public_headers
@@ -72,7 +72,7 @@ add_unity_test(
 add_unity_test(
     NAME "dynamixel_protocol2_parameters"
     SOURCES
-        dynamixel/test_protocol2_parameters.c
+        dynamixel/protocol2/test_parameters.c
     LIBRARIES
         ulysses_lib
         ulysses_public_headers
