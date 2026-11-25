@@ -70,9 +70,9 @@ add_unity_test(
 )
 
 add_unity_test(
-    NAME "dynamixel_protocol2_instructions"
+    NAME "dynamixel_protocol2_parameters"
     SOURCES
-        dynamixel/test_protocol2_instructions.c
+        dynamixel/test_protocol2_parameters.c
     LIBRARIES
         ulysses_lib
         ulysses_public_headers
