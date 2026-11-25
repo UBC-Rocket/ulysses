@@ -1,4 +1,4 @@
-#include "ulysses/lib/dynamixel/protocol2_instructions.h"
+#include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
 #include <string.h>
 

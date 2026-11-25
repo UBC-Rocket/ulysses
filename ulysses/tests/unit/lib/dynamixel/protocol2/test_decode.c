@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ulysses/lib/dynamixel/protocol2_packet.h"
+#include "ulysses/lib/dynamixel/protocol2/packet.h"
 
 // Reference packets: https://emanual.robotis.com/docs/en/dxl/protocol2/#instruction-details
 static const uint8_t STATUS_OK[] = {0xFF, 0xFF, 0xFD, 0x00, 0x01, 0x04,

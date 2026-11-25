@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ulysses/lib/dynamixel/protocol2_packet.h"
+#include "ulysses/lib/dynamixel/protocol2/packet.h"
 
 // Ping and Sync Write reference packets: https://emanual.robotis.com/docs/en/dxl/protocol2/#instruction-details
 

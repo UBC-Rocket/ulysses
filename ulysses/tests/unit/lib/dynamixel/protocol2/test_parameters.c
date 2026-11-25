@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-#include "ulysses/lib/dynamixel/protocol2_instructions.h"
+#include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
 // Reference payloads: https://emanual.robotis.com/docs/en/dxl/protocol2/#instruction-details
 // Reference payloads omit packet headers, opcodes, and final CRCs.

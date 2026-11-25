@@ -1,4 +1,4 @@
-#include "ulysses/lib/dynamixel/protocol2_packet.h"
+#include "ulysses/lib/dynamixel/protocol2/packet.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -36,8 +36,8 @@ static inline bool is_valid_instruction(uint8_t instruction)
     case DYNAMIXEL_PROTOCOL2_INST_BULK_WRITE:
     case DYNAMIXEL_PROTOCOL2_INST_FAST_BULK_READ:
         return true;
-    default:
     case DYNAMIXEL_PROTOCOL2_INST_STATUS:
+    default:
         return false;
     }
 }

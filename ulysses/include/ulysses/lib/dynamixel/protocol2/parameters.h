@@ -1,5 +1,5 @@
-#ifndef ULYSSES_LIB_DYNAMIXEL_PROTOCOL2_INSTRUCTIONS
-#define ULYSSES_LIB_DYNAMIXEL_PROTOCOL2_INSTRUCTIONS
+#ifndef ULYSSES_LIB_DYNAMIXEL_PROTOCOL2_PARAMETERS
+#define ULYSSES_LIB_DYNAMIXEL_PROTOCOL2_PARAMETERS
 
 #include <stdint.h>
 
@@ -89,4 +89,4 @@ enum uls_status dynamixel_protocol2_deserialize_fast_sync_read_response(
     const uint8_t *parameters, uint16_t parameters_length, uint16_t data_length,
     struct dynamixel_protocol2_fast_sync_read_response *response, uint16_t *bytes_consumed);
 
-#endif // ULYSSES_LIB_DYNAMIXEL_PROTOCOL2_INSTRUCTIONS
+#endif // ULYSSES_LIB_DYNAMIXEL_PROTOCOL2_PARAMETERS
