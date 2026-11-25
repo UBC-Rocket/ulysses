@@ -7,6 +7,7 @@ option(ULYSSES_BUILD_TESTS "Build unit tests" OFF)
 
 # Interface library to link against for accessing public headers
 set(ULYSSES_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include")
+set(ULYSSES_PROJECT_INCLUDE_DIR "${ULYSSES_INCLUDE_DIR}/ulysses")
 
 add_library(ulysses_public_headers INTERFACE)
 
