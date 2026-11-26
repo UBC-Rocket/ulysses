@@ -13,18 +13,23 @@ enum uls_status dev_servo_dynamixel_receive_status(const dev_servo_t *servo)
     enum uls_status status =
         io_uart_receive(config->uart, data->packet, DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE,
                         DYNAMIXEL_UART_TIMEOUT_MS);
-    if (status != ULS_STATUS_OK) {
-        return status;
+
+    uint16_t length = 0;
+    if (status == ULS_STATUS_OK) {
+        length = dynamixel_protocol2_read_packet_length(data->packet);
+        const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + length;
+
+        if (packet_size > config->packet_capacity) {
+            status = ULS_STATUS_INVALID_INPUT;
+        }
     }
 
-    const uint16_t length = dynamixel_protocol2_read_packet_length(data->packet);
-    const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + length;
-    if (packet_size > config->packet_capacity) {
-        return ULS_STATUS_INVALID_INPUT;
+    if (status == ULS_STATUS_OK) {
+        status =
+            io_uart_receive(config->uart, data->packet + DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE,
+                            length, DYNAMIXEL_UART_TIMEOUT_MS);
     }
-
-    return io_uart_receive(config->uart, data->packet + DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE,
-                           length, DYNAMIXEL_UART_TIMEOUT_MS);
+    return status;
 }
 
 static void on_prefix_received(enum uls_status status, void *user_data)
@@ -34,30 +39,25 @@ static void on_prefix_received(enum uls_status status, void *user_data)
     struct dev_servo_dynamixel_data *data = servo->data;
     io_uart_receive_cb_t cb = data->receive_status_cb;
 
-    if (status != ULS_STATUS_OK) {
-        goto cleanup;
+    uint16_t length = 0;
+    if (status == ULS_STATUS_OK) {
+        length = dynamixel_protocol2_read_packet_length(data->packet);
+        const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + length;
+
+        if (packet_size > config->packet_capacity) {
+            status = ULS_STATUS_INVALID_INPUT;
+        }
     }
 
-    const uint16_t length = dynamixel_protocol2_read_packet_length(data->packet);
-    const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + length;
-    if (packet_size > config->packet_capacity) {
-        status = ULS_STATUS_INVALID_INPUT;
-        goto cleanup;
-    }
-    if (length == 0) {
-        goto cleanup;
+    if (status == ULS_STATUS_OK && length != 0) {
+        io_uart_set_receive_cb(config->uart, cb, servo);
+        status = io_uart_receive_async(
+            config->uart, data->packet + DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE, length);
     }
 
-    io_uart_set_receive_cb(config->uart, cb, servo);
-    status = io_uart_receive_async(config->uart,
-                                   data->packet + DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE, length);
-    if (status != ULS_STATUS_OK) {
-        goto cleanup;
+    if (status != ULS_STATUS_OK || length == 0) {
+        cb(status, servo);
     }
-    return;
-
-cleanup:
-    cb(status, servo);
 }
 
 enum uls_status dev_servo_dynamixel_receive_status_async(dev_servo_t *servo,

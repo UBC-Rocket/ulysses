@@ -39,6 +39,7 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
     struct dev_servo_dynamixel_data *data = servo->data;
 
     const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
+
     if (reply_length != dynamixel_protocol2_fast_sync_read_response_length(config->count, 4)) {
         return ULS_STATUS_INVALID_INPUT;
     }
@@ -48,6 +49,7 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
     uint16_t remaining;
     enum uls_status status = dynamixel_protocol2_decode_response(
         data->packet, packet_size, &id, data->parameters, config->parameters_capacity, &remaining);
+
     if (status != ULS_STATUS_OK) {
         return status;
     }
@@ -61,6 +63,7 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
         uint16_t consumed;
         status = dynamixel_protocol2_deserialize_fast_sync_read_response(entry, remaining, 4,
                                                                          &response, &consumed);
+
         if (status != ULS_STATUS_OK || response.id != config->ids[i]) {
             return ULS_STATUS_INVALID_INPUT;
         }
@@ -118,23 +121,19 @@ enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *po
     // TODO: Switch the direction GPIO to TX before transmitting.
     enum uls_status status =
         io_uart_transmit(config->uart, data->packet, length, DYNAMIXEL_UART_TIMEOUT_MS);
-    if (status != ULS_STATUS_OK) {
-        goto cleanup;
+
+    if (status == ULS_STATUS_OK) {
+        status = dev_servo_dynamixel_receive_status(servo);
     }
 
-    status = dev_servo_dynamixel_receive_status(servo);
-    if (status != ULS_STATUS_OK) {
-        goto cleanup;
+    if (status == ULS_STATUS_OK) {
+        status = decode_positions(servo);
     }
 
-    status = decode_positions(servo);
-    if (status != ULS_STATUS_OK) {
-        goto cleanup;
+    if (status == ULS_STATUS_OK) {
+        memcpy(positions, data->positions, config->count * sizeof(*positions));
     }
 
-    memcpy(positions, data->positions, config->count * sizeof(*positions));
-
-cleanup:
     data->busy = false;
     return status;
 }

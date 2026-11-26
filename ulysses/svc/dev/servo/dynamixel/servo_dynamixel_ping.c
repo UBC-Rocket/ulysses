@@ -18,17 +18,20 @@ static enum uls_status ping_servo(const dev_servo_t *servo, uint8_t id)
     // TODO: Switch the direction GPIO to TX before transmitting.
     enum uls_status status =
         io_uart_transmit(config->uart, data->packet, packet_size, DYNAMIXEL_UART_TIMEOUT_MS);
+
     if (status != ULS_STATUS_OK) {
         return status;
     }
 
     status = dev_servo_dynamixel_receive_status(servo);
+
     if (status != ULS_STATUS_OK) {
         return status;
     }
 
     const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
     const uint32_t reply_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + reply_length;
+
     if (reply_size > dynamixel_protocol2_required_packet_capacity(4)) {
         return ULS_STATUS_INVALID_INPUT;
     }
@@ -38,6 +41,7 @@ static enum uls_status ping_servo(const dev_servo_t *servo, uint8_t id)
     status =
         dynamixel_protocol2_decode_response(data->packet, reply_size, &reply_id, data->parameters,
                                             config->parameters_capacity, &parameters_length);
+
     if (status != ULS_STATUS_OK) {
         return status;
     }
@@ -48,6 +52,7 @@ static enum uls_status ping_servo(const dev_servo_t *servo, uint8_t id)
     struct dynamixel_protocol2_ping_response response;
     status = dynamixel_protocol2_deserialize_ping_response(data->parameters, parameters_length,
                                                            &response);
+
     if (status != ULS_STATUS_OK) {
         return status;
     }
