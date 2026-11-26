@@ -15,7 +15,7 @@ static enum uls_status ping_servo(const dev_servo_t *servo, uint8_t id)
     dynamixel_protocol2_encode_request(id, DYNAMIXEL_PROTOCOL2_INST_PING, NULL, 0, data->packet,
                                        config->packet_capacity, &packet_size);
 
-    // TODO: Switch the direction GPIO to TX before transmitting.
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
     enum uls_status status =
         io_uart_transmit(config->uart, data->packet, packet_size, DYNAMIXEL_UART_TIMEOUT_MS);
 

@@ -119,7 +119,7 @@ enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *po
     data->busy = true;
 
     const uint16_t length = prepare_transmit(servo);
-    // TODO: Switch the direction GPIO to TX before transmitting.
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
     enum uls_status status =
         io_uart_transmit(config->uart, data->packet, length, DYNAMIXEL_UART_TIMEOUT_MS);
 
@@ -155,9 +155,9 @@ enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, dev
 
     io_uart_set_transmit_cb(config->uart, on_transmit_finish, servo);
 
-    // TODO: Switch the direction GPIO to TX before starting the transmit.
-    enum uls_status status =
-        io_uart_transmit_async(config->uart, data->packet, prepare_transmit(servo));
+    const uint16_t length = prepare_transmit(servo);
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
+    enum uls_status status = io_uart_transmit_async(config->uart, data->packet, length);
     if (status != ULS_STATUS_OK) {
         data->busy = false;
     }

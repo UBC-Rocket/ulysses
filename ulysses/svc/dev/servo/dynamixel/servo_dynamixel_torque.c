@@ -37,7 +37,7 @@ enum uls_status dev_servo_dynamixel_set_torque(dev_servo_t *servo, enum dev_serv
         DYNAMIXEL_PROTOCOL2_BROADCAST_ID, DYNAMIXEL_PROTOCOL2_INST_SYNC_WRITE, data->parameters,
         parameters_length, data->packet, config->packet_capacity, &packet_size);
 
-    // TODO: Switch the direction GPIO to TX before transmitting.
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
     enum uls_status status =
         io_uart_transmit(config->uart, data->packet, packet_size, DYNAMIXEL_UART_TIMEOUT_MS);
 
@@ -57,7 +57,7 @@ enum uls_status dev_servo_dynamixel_set_torque(dev_servo_t *servo, enum dev_serv
                                            data->parameters, parameters_length, data->packet,
                                            config->packet_capacity, &packet_size);
 
-        // TODO: Switch the direction GPIO to TX before transmitting.
+        io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
         status =
             io_uart_transmit(config->uart, data->packet, packet_size, DYNAMIXEL_UART_TIMEOUT_MS);
     }

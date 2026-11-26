@@ -9,7 +9,7 @@ enum uls_status dev_servo_dynamixel_receive_status(const dev_servo_t *servo)
     const struct dev_servo_dynamixel_config *config = servo->config;
     struct dev_servo_dynamixel_data *data = servo->data;
 
-    // TODO: Switch the direction GPIO to RX before receiving.
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_RESET);
     enum uls_status status =
         io_uart_receive(config->uart, data->packet, DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE,
                         DYNAMIXEL_UART_TIMEOUT_MS);
@@ -69,7 +69,7 @@ enum uls_status dev_servo_dynamixel_receive_status_async(dev_servo_t *servo,
     data->receive_status_cb = cb;
     io_uart_set_receive_cb(config->uart, on_prefix_received, servo);
 
-    // TODO: Switch the direction GPIO to RX before arming reception.
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_RESET);
     // TODO: Use timed async receive when UART supports timeout and cancellation.
     return io_uart_receive_async(config->uart, data->packet,
                                  DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE);

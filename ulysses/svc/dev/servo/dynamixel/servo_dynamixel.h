@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "ulysses/io/gpio.h"
 #include "ulysses/io/uart.h"
 #include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
@@ -14,7 +15,8 @@
 
 /** @brief Fixed configuration for a Dynamixel servo bus */
 struct dev_servo_dynamixel_config {
-    const io_uart_dev_t *uart; ///< Dedicated, initialized packet-mode UART
+    const io_uart_dev_t *uart;                 ///< Dedicated, initialized packet-mode UART
+    const io_gpio_dev_t *transmit_enable_gpio; ///< High for TX, low for RX
     const uint8_t *ids; ///< Static array of unique servo IDs (0 through 252) in position order
     uint32_t count;     ///< Nonzero servo count that fits a position Sync Write
     uint32_t sync_write_max_length; ///< Maximum Sync Write data bytes per servo, at least 4
@@ -38,7 +40,7 @@ struct dev_servo_dynamixel_data {
 /**
  * @brief Initializes a Dynamixel servo bus
  *
- * The UART must already be initialized.
+ * The UART and transmit-enable GPIO must already be initialized.
  * The servos must support Fast Sync Read and be configured for position control. The full
  * driver goal range requires Extended Position Control or Current-based Position Control.
  * The calling task and UART interrupts must run on the same core.
@@ -48,7 +50,7 @@ struct dev_servo_dynamixel_data {
  * parameters buffers must fit the bus requests and replies. Init checks the capacities in config.
  *
  * @param[out] servo Static servo bus object to initialize
- * @param config Static UART, servo IDs, and buffer capacities
+ * @param config Static UART, transmit-enable GPIO, servo IDs, and buffer capacities
  * @param[in,out] data Static bus storage with the buffer pointers set
  */
 void dev_servo_dynamixel_init(dev_servo_t *servo, const struct dev_servo_dynamixel_config *config,
