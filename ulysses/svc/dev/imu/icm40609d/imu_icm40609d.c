@@ -19,17 +19,17 @@
 // ICM40609D specific constants
 #define ICM_WHO_AM_I_VALUE (0x3BU)
 #define ICM_TIMEOUT_MS (10U)
-#define ICM_STARTUP_DELAY_MS    (50U)
+#define ICM_STARTUP_DELAY_MS (50U)
 #define ICM_RAW_MIN_VALID (-32766)
 
 // Measurement conversion constants
-#define ICM_ACCEL_MAX_FSR_G    (32.0f)
-#define ICM_GYRO_MAX_FSR_DPS   (2000.0f)
-#define ICM_RAW_HALF_RANGE     (32768.0f)
+#define ICM_ACCEL_MAX_FSR_G (32.0f)
+#define ICM_GYRO_MAX_FSR_DPS (2000.0f)
+#define ICM_RAW_HALF_RANGE (32768.0f)
 
 // Physical conversion constants
-#define GRAVITY_MPS2           (9.80665f)
-#define DEG_TO_RAD             (3.141592653589793f / 180.0f)
+#define GRAVITY_MPS2 (9.80665f)
+#define DEG_TO_RAD (3.141592653589793f / 180.0f)
 
 // Register addresses
 #define ICM_REG_DEVICE_CONFIG (0x11U)
@@ -41,31 +41,29 @@
 #define ICM_REG_WHO_AM_I (0x75U)
 
 // Sensor configuration values
-#define ICM_FSR_SHIFT      (5U)   
-#define ICM_FSR_MASK       (0x07U << ICM_FSR_SHIFT)
-#define ICM_ODR_MASK       (0x0FU)
-#define ICM_FSR_ODR_MASK   (ICM_FSR_MASK | ICM_ODR_MASK)
+#define ICM_FSR_SHIFT (5U)
+#define ICM_FSR_MASK (0x07U << ICM_FSR_SHIFT)
+#define ICM_ODR_MASK (0x0FU)
+#define ICM_FSR_ODR_MASK (ICM_FSR_MASK | ICM_ODR_MASK)
 
 // Power management configuration values
-#define ICM_PWR_MGMT0_MASK      (0x2FU)
-// Temperature sensor 
-#define ICM_TEMP_ENABLE         (0x00U << 5)
-#define ICM_TEMP_DISABLE        (0x01U << 5)
+#define ICM_PWR_MGMT0_MASK (0x2FU)
+// Temperature sensor
+#define ICM_TEMP_ENABLE (0x00U << 5)
+#define ICM_TEMP_DISABLE (0x01U << 5)
 // Gyroscope power mode
-#define ICM_GYRO_MODE_OFF       (0x00U << 2)
-#define ICM_GYRO_MODE_STANDBY   (0x01U << 2)
-#define ICM_GYRO_MODE_LN        (0x03U << 2)
+#define ICM_GYRO_MODE_OFF (0x00U << 2)
+#define ICM_GYRO_MODE_STANDBY (0x01U << 2)
+#define ICM_GYRO_MODE_LN (0x03U << 2)
 // Accelerometer power mode
-#define ICM_ACCEL_MODE_OFF      (0x00U << 0)
-#define ICM_ACCEL_MODE_LP       (0x02U << 0)
-#define ICM_ACCEL_MODE_LN       (0x03U << 0)
+#define ICM_ACCEL_MODE_OFF (0x00U << 0)
+#define ICM_ACCEL_MODE_LP (0x02U << 0)
+#define ICM_ACCEL_MODE_LN (0x03U << 0)
 
 // =====================================================
 
 // Async measurement read command
-static const uint8_t sample_tx[ICM_TRANSFER_LEN] = {
-    SPI_READ(ICM_REG_ACCEL_DATA_X1)
-};
+static const uint8_t sample_tx[ICM_TRANSFER_LEN] = {SPI_READ(ICM_REG_ACCEL_DATA_X1)};
 
 // =====================================================
 
@@ -114,11 +112,12 @@ static enum uls_status write_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t data)
     return write_regs(spi, reg, &data, 1);
 }
 
-static enum uls_status verify_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t expected_value, uint8_t mask)
+static enum uls_status verify_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t expected_value,
+                                  uint8_t mask)
 {
-    uint8_t actual_value; 
+    uint8_t actual_value;
 
-    enum uls_status status = read_reg(spi, reg, &actual_value); 
+    enum uls_status status = read_reg(spi, reg, &actual_value);
     if (status != ULS_STATUS_OK) {
         return status;
     }
@@ -146,7 +145,7 @@ static enum uls_status verify_identity(io_spi_dev_t *spi)
     return verify_reg(spi, ICM_REG_WHO_AM_I, ICM_WHO_AM_I_VALUE, 0xFFU);
 }
 
-// Reset the device 
+// Reset the device
 static enum uls_status reset_device(io_spi_dev_t *spi)
 {
     enum uls_status status = write_reg(spi, ICM_REG_DEVICE_CONFIG, 0x01U);
@@ -161,30 +160,28 @@ static enum uls_status reset_device(io_spi_dev_t *spi)
 }
 
 static int16_t combine_bytes(uint8_t high, uint8_t low)
-{   
-    uint16_t result = (uint16_t)high << 8; 
+{
+    uint16_t result = (uint16_t)high << 8;
     result |= low;
 
     return (int16_t)result;
 }
 
-static void init_scale(
-    const struct dev_imu_icm40609d_config *config, 
-    struct dev_imu_icm40609d_data *data)
+static void init_scale(const struct dev_imu_icm40609d_config *config,
+                       struct dev_imu_icm40609d_data *data)
 {
     float accel_fsr_g = ICM_ACCEL_MAX_FSR_G / (1U << config->accel_fsr); // Full scale range in g
-    float gyro_fsr_dps = ICM_GYRO_MAX_FSR_DPS / (1U << config->gyro_fsr); // Full scale range in degrees per second
+    float gyro_fsr_dps =
+        ICM_GYRO_MAX_FSR_DPS / (1U << config->gyro_fsr); // Full scale range in degrees per second
 
     data->accel_scale = accel_fsr_g * GRAVITY_MPS2 / ICM_RAW_HALF_RANGE;
     data->gyro_scale = gyro_fsr_dps * DEG_TO_RAD / ICM_RAW_HALF_RANGE;
 }
 
 // Data parsing
-static enum uls_status parse_sample(
-    const struct dev_imu_icm40609d_data *data, 
-    const uint8_t *payload, 
-    struct dev_imu_sample *sample)
-{   
+static enum uls_status parse_sample(const struct dev_imu_icm40609d_data *data,
+                                    const uint8_t *payload, struct dev_imu_sample *sample)
+{
     struct dev_imu_sample temp_sample;
 
     for (size_t i = 0; i < 3; i++) {
@@ -195,7 +192,7 @@ static enum uls_status parse_sample(
         if (raw_accel < ICM_RAW_MIN_VALID || raw_gyro < ICM_RAW_MIN_VALID) {
             return ULS_STATUS_ERROR;
         }
-        
+
         temp_sample.accel_m_s2[i] = raw_accel * data->accel_scale;
 
         temp_sample.gyro_rad_s[i] = raw_gyro * data->gyro_scale;
@@ -211,7 +208,7 @@ static enum uls_status icm40609d_read(dev_imu_t *imu, struct dev_imu_sample *sam
     const struct dev_imu_icm40609d_config *config = imu->config;
     struct dev_imu_icm40609d_data *data = imu->data;
 
-    // Acquire ownership atomically 
+    // Acquire ownership atomically
     if (atomic_exchange(&data->busy, true)) {
         return ULS_STATUS_BUSY;
     }
@@ -220,7 +217,7 @@ static enum uls_status icm40609d_read(dev_imu_t *imu, struct dev_imu_sample *sam
 
     // Read measurement registers
     enum uls_status status = read_regs(config->spi, ICM_REG_ACCEL_DATA_X1, payload, ICM_SAMPLE_LEN);
-    
+
     // Parse the raw data into physical units if read was successful
     if (status == ULS_STATUS_OK) {
         status = parse_sample(data, payload, sample);
@@ -242,11 +239,11 @@ static void spi_read_callback(enum uls_status status, void *user_data)
 
     struct dev_imu_sample sample;
 
-    // Parse sample 
+    // Parse sample
     if (status == ULS_STATUS_OK) {
         status = parse_sample(data, &data->rx_data[1], &sample);
     }
-    
+
     // Clear callback
     data->cb = NULL;
     data->cb_user_data = NULL;
@@ -264,7 +261,7 @@ static enum uls_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, voi
     const struct dev_imu_icm40609d_config *config = imu->config;
     struct dev_imu_icm40609d_data *data = imu->data;
 
-    // Acquire ownership atomically 
+    // Acquire ownership atomically
     if (atomic_exchange(&data->busy, true)) {
         return ULS_STATUS_BUSY;
     }
@@ -274,9 +271,10 @@ static enum uls_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, voi
     data->cb_user_data = user_data;
 
     // Start async SPI transfer
-    enum uls_status status = io_spi_transfer_it(config->spi, sample_tx, data->rx_data, ICM_TRANSFER_LEN, spi_read_callback, imu);
+    enum uls_status status = io_spi_transfer_it(config->spi, sample_tx, data->rx_data,
+                                                ICM_TRANSFER_LEN, spi_read_callback, imu);
 
-    // Error handler 
+    // Error handler
     if (status != ULS_STATUS_OK) {
         // Clear up
         data->cb = NULL;
@@ -301,17 +299,21 @@ static const struct dev_imu_ops icm40609d_ops = {
 // ======================================================
 
 // Public API
-enum uls_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm40609d_config *config,
-                                      struct dev_imu_icm40609d_data *data)
+enum uls_status dev_imu_icm40609d_init(dev_imu_t *imu,
+                                       const struct dev_imu_icm40609d_config *config,
+                                       struct dev_imu_icm40609d_data *data)
 {
-    ULYSSES_ASSERT(imu != NULL, "Invalid IMU instance"); 
+    ULYSSES_ASSERT(imu != NULL, "Invalid IMU instance");
     ULYSSES_ASSERT(config != NULL, "Invalid config");
-    ULYSSES_ASSERT(config->spi != NULL, "Invalid SPI device"); 
+    ULYSSES_ASSERT(config->spi != NULL, "Invalid SPI device");
     ULYSSES_ASSERT(data != NULL, "Invalid data buffer");
 
-    ULYSSES_ASSERT((unsigned)config->accel_fsr <= ICM_ACCEL_FSR_4G, "Invalid accelerometer full scale range");
-    ULYSSES_ASSERT((unsigned)config->gyro_fsr <= ICM_GYRO_FSR_15_625DPS, "Invalid gyroscope full scale range");
-    ULYSSES_ASSERT((unsigned)config->odr <= ICM_ODR_500HZ && config->odr != 0, "Invalid output data rate");
+    ULYSSES_ASSERT((unsigned)config->accel_fsr <= ICM_ACCEL_FSR_4G,
+                   "Invalid accelerometer full scale range");
+    ULYSSES_ASSERT((unsigned)config->gyro_fsr <= ICM_GYRO_FSR_15_625DPS,
+                   "Invalid gyroscope full scale range");
+    ULYSSES_ASSERT((unsigned)config->odr <= ICM_ODR_500HZ && config->odr != 0,
+                   "Invalid output data rate");
 
     // Software initialization
     imu->config = config;
@@ -351,10 +353,10 @@ enum uls_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm4
     uint8_t pwr_config = ICM_TEMP_ENABLE | ICM_GYRO_MODE_LN | ICM_ACCEL_MODE_LN;
     status = write_reg(config->spi, ICM_REG_PWR_MGMT0, pwr_config);
     if (status != ULS_STATUS_OK) {
-        return status; 
+        return status;
     }
 
-    io_spin_delay_ms(ICM_STARTUP_DELAY_MS); 
+    io_spin_delay_ms(ICM_STARTUP_DELAY_MS);
 
     status = verify_reg(config->spi, ICM_REG_PWR_MGMT0, pwr_config, ICM_PWR_MGMT0_MASK);
     if (status != ULS_STATUS_OK) {
