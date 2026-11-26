@@ -1,6 +1,9 @@
-// CubeMX handles
+// CubeMX handles and pin labels
 #include "i2c.h"
+#include "main.h"
 
+#include "gpio/gpio.h"
+#include "gpio/stm32/gpio_stm32.h"
 #include "i2c/i2c_bus.h"
 #include "i2c/i2c_dev.h"
 #include "i2c/stm32/i2c_stm32.h"
@@ -14,6 +17,14 @@
 #define FUEL_GAUGE_ADDR (0x55U)
 #define BMS_BUS (&i2c4_bus)
 #define BMS_ADDR (0x08U)
+
+// GPIO port and pin
+#define STAT_LED_RED_PORT (STAT_LEDR_GPIO_Port)
+#define STAT_LED_RED_PIN (STAT_LEDR_Pin)
+#define STAT_LED_GREEN_PORT (STAT_LEDG_GPIO_Port)
+#define STAT_LED_GREEN_PIN (STAT_LEDG_Pin)
+#define STAT_LED_ORANGE_PORT (STAT_LEDO_GPIO_Port)
+#define STAT_LED_ORANGE_PIN (STAT_LEDO_Pin)
 
 // Devices below have no IO driver yet. Uncomment when their driver lands.
 
@@ -56,12 +67,6 @@
 // #define RTK_GNSS_NRST_PIN (RTK_GNSS_NRST_Pin)
 // #define RTK_GNSS_INT_PORT (RTK_GNSS_INT_GPIO_Port)
 // #define RTK_GNSS_INT_PIN (RTK_GNSS_INT_Pin)
-// #define STAT_LED_RED_PORT (STAT_LEDR_GPIO_Port)
-// #define STAT_LED_RED_PIN (STAT_LEDR_Pin)
-// #define STAT_LED_GREEN_PORT (STAT_LEDG_GPIO_Port)
-// #define STAT_LED_GREEN_PIN (STAT_LEDG_Pin)
-// #define STAT_LED_ORANGE_PORT (STAT_LEDO_GPIO_Port)
-// #define STAT_LED_ORANGE_PIN (STAT_LEDO_Pin)
 
 static struct io_i2c_bus i2c3_bus;
 static struct io_i2c_bus i2c4_bus;
@@ -71,8 +76,22 @@ static const struct io_i2c_stm32_config i2c4_config = {.hw_handle = &hi2c4};
 const io_i2c_dev_t IO_FUEL_GAUGE = {.bus = FUEL_GAUGE_BUS, .addr = FUEL_GAUGE_ADDR};
 const io_i2c_dev_t IO_BMS = {.bus = BMS_BUS, .addr = BMS_ADDR};
 
+static const struct io_gpio_stm32_config stat_led_red_config = {.port = STAT_LED_RED_PORT,
+                                                                .pin = STAT_LED_RED_PIN};
+static const struct io_gpio_stm32_config stat_led_green_config = {.port = STAT_LED_GREEN_PORT,
+                                                                  .pin = STAT_LED_GREEN_PIN};
+static const struct io_gpio_stm32_config stat_led_orange_config = {.port = STAT_LED_ORANGE_PORT,
+                                                                   .pin = STAT_LED_ORANGE_PIN};
+
+io_gpio_dev_t IO_STAT_LED_RED;
+io_gpio_dev_t IO_STAT_LED_GREEN;
+io_gpio_dev_t IO_STAT_LED_ORANGE;
+
 void io_board_init(void)
 {
     io_i2c_stm32_init(&i2c3_bus, &i2c3_config);
     io_i2c_stm32_init(&i2c4_bus, &i2c4_config);
+    io_gpio_stm32_init(&IO_STAT_LED_RED, &stat_led_red_config);
+    io_gpio_stm32_init(&IO_STAT_LED_GREEN, &stat_led_green_config);
+    io_gpio_stm32_init(&IO_STAT_LED_ORANGE, &stat_led_orange_config);
 }
