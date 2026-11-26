@@ -13,9 +13,9 @@ struct dev_servo_ops {
 };
 
 struct dev_servo {
-    const void *config;
-    void *data;
-    const struct dev_servo_ops *ops;
+    const void *config;              ///< Caller-provided backend configuration
+    void *data;                      ///< Caller-provided backend data storage
+    const struct dev_servo_ops *ops; ///< Shared backend operation table
 };
 
 #endif // ULYSSES_SVC_DEV_SERVO_PRIVATE

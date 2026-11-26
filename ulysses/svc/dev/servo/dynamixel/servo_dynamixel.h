@@ -34,20 +34,17 @@ struct dev_servo_dynamixel_data {
     uint8_t *parameters; ///< Static buffer for request and reply parameters
 };
 
-
 /**
- * @brief Binds a servo bus to a Dynamixel Protocol 2.0 UART transport
+ * @brief Initializes a Dynamixel servo bus
  *
- * Call once per bus during initialization, before starting servo transactions. This function
- * takes ownership of the UART callbacks. The UART must already handle half-duplex bus turnaround
- * and the XM430s must be configured for the intended operating mode and support Fast Sync Read.
- * The owning task and UART interrupts must run on the same core.
+ * The UART must already be initialized.
+ * The servos must support Fast Sync Read and be configured for position control. The full
+ * driver goal range requires Extended Position Control or Current-based Position Control.
+ * The calling task and UART interrupts must run on the same core.
  *
- * The ids, positions, and write_devices arrays each have config->count entries. The caller sets
- * each write_devices[i].data pointer to its own writable, static buffer with at least
- * config->sync_write_max_length bytes. Init fills the write descriptor IDs from ids.
- * The packet and parameters buffers must be separate and fit requests and replies for the bus.
- * Set their capacities in config. The Protocol 2.0 packet header publishes buffer sizing limits.
+ * The ids, positions, and write_devices arrays must have count entries. Each write device must
+ * point to its own writable static buffer of sync_write_max_length bytes. The separate packet and
+ * parameters buffers must fit the bus requests and replies, with capacities set in config.
  *
  * @param[out] servo Static servo bus object to initialize
  * @param config Static UART, servo IDs, and buffer capacities
@@ -56,11 +53,13 @@ struct dev_servo_dynamixel_data {
 void dev_servo_dynamixel_init(dev_servo_t *servo, const struct dev_servo_dynamixel_config *config,
                               struct dev_servo_dynamixel_data *data);
 
-// Backend entry points used by the servo ops table.
 enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *positions);
+
 enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, dev_servo_read_cb_t cb,
                                                          void *user_data);
+
 enum uls_status dev_servo_dynamixel_write_positions(dev_servo_t *servo, const float *positions);
+
 enum uls_status dev_servo_dynamixel_write_positions_async(dev_servo_t *servo,
                                                           const float *positions,
                                                           dev_servo_write_cb_t cb, void *user_data);
