@@ -12,6 +12,8 @@ target_sources(ulysses_lib
         assert/default_handler.c
         bdshot/frame.c
         checksum/crc16.c
+        dynamixel/protocol2/parameters.c
+        dynamixel/protocol2/packet.c
 )
 
 add_subdirectory(eskf)

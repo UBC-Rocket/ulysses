@@ -50,3 +50,30 @@ add_unity_test(
     LIBRARIES
         ulysses_public_headers
 )
+
+add_unity_test(
+    NAME "dynamixel_protocol2_encode"
+    SOURCES
+        dynamixel/protocol2/test_encode.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)
+
+add_unity_test(
+    NAME "dynamixel_protocol2_decode"
+    SOURCES
+        dynamixel/protocol2/test_decode.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)
+
+add_unity_test(
+    NAME "dynamixel_protocol2_parameters"
+    SOURCES
+        dynamixel/protocol2/test_parameters.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)
