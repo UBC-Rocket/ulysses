@@ -20,6 +20,7 @@
 #define ICM_WHO_AM_I_VALUE (0x3BU)
 #define ICM_TIMEOUT_MS (10U)
 #define ICM_STARTUP_DELAY_MS    (50U)
+#define ICM_RAW_MIN_VALID (-32766)
 
 // Measurement conversion constants
 #define ICM_ACCEL_MAX_FSR_G    (32.0f)
@@ -179,20 +180,29 @@ static void init_scale(
 }
 
 // Data parsing
-static void parse_sample(
+static enum io_status parse_sample(
     const struct dev_imu_icm40609d_data *data, 
     const uint8_t *payload, 
     struct dev_imu_sample *sample)
-{
-    for (size_t i = 0; i < 3; i++) {
-        sample->accel_m_s2[i] =
-            combine_bytes(payload[2 * i], payload[2 * i + 1])
-            * data->accel_scale;
+{   
+    struct dev_imu_sample temp_sample;
 
-        sample->gyro_rad_s[i] =
-            combine_bytes(payload[6 + 2 * i], payload[7 + 2 * i])
-            * data->gyro_scale;
+    for (size_t i = 0; i < 3; i++) {
+
+        // Combine bytes and check for invalid readings
+        int16_t raw_accel = combine_bytes(payload[2 * i], payload[2 * i + 1]);
+        int16_t raw_gyro = combine_bytes(payload[2 * i + 6], payload[2 * i + 7]);
+        if (raw_accel < ICM_RAW_MIN_VALID || raw_gyro < ICM_RAW_MIN_VALID) {
+            return IO_STATUS_ERROR;
+        }
+        
+        temp_sample.accel_m_s2[i] = raw_accel * data->accel_scale;
+
+        temp_sample.gyro_rad_s[i] = raw_gyro * data->gyro_scale;
     }
+
+    *sample = temp_sample;
+    return IO_STATUS_OK;
 }
 
 // Blocking read
@@ -213,7 +223,7 @@ static enum io_status icm40609d_read(dev_imu_t *imu, struct dev_imu_sample *samp
     
     // Parse the raw data into physical units if read was successful
     if (status == IO_STATUS_OK) {
-        parse_sample(data, payload, sample);
+        status = parse_sample(data, payload, sample);
     }
 
     // Release ownership regardless of read success or failure
@@ -234,7 +244,7 @@ static void spi_read_callback(enum io_status status, void *user_data)
 
     // Parse sample 
     if (status == IO_STATUS_OK) {
-        parse_sample(data, &data->rx_data[1], &sample);
+        status = parse_sample(data, &data->rx_data[1], &sample);
     }
     
     // Clear callback
