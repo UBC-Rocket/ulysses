@@ -13,7 +13,8 @@ typedef struct dev_servo dev_servo_t;
 /**
  * @brief Completion callback for an asynchronous position read
  * @param status ULS_STATUS_OK on success, ULS_STATUS_INVALID_INPUT for a malformed reply,
- *               ULS_STATUS_ERROR for a servo or UART failure
+ *               ULS_STATUS_BUSY if the UART is busy when reception starts, ULS_STATUS_TIMEOUT if
+ *               reception times out, or ULS_STATUS_ERROR for a servo or UART failure
  * @param positions Positions in rotations, in configured ID order. Valid until the next read
  *                  updates the array. NULL on failure.
  * @param user_data User data passed to the read operation
@@ -29,13 +30,50 @@ typedef void (*dev_servo_read_cb_t)(enum uls_status status, const float *positio
 typedef void (*dev_servo_write_cb_t)(enum uls_status status, void *user_data);
 
 /**
+ * @brief Pings each configured servo synchronously
+ *
+ * Stops at the first failed ping or device error.
+ *
+ * @param servo Initialized servo bus
+ *
+ * @retval ULS_STATUS_OK Every servo sent a valid ping reply with no device error
+ * @retval ULS_STATUS_BUSY The bus or transport is busy
+ * @retval ULS_STATUS_TIMEOUT A transport operation timed out
+ * @retval ULS_STATUS_ERROR A transport error occurred or a servo reported an error
+ * @retval ULS_STATUS_INVALID_INPUT The reply is malformed or has an unexpected ID
+ */
+enum uls_status dev_servo_ping_all(dev_servo_t *servo);
+
+enum dev_servo_torque_mode {
+    DEV_SERVO_TORQUE_DISABLED = 0,
+    DEV_SERVO_TORQUE_ENABLED = 1,
+};
+
+/**
+ * @brief Sets torque mode for all configured servos synchronously
+ *
+ * Returns the first failure found in the torque readback.
+ *
+ * @param servo Initialized servo bus
+ * @param mode Torque mode to send
+ *
+ * @retval ULS_STATUS_OK Every servo reported the requested torque mode
+ * @retval ULS_STATUS_NOT_READY A servo reported a different torque mode
+ * @retval ULS_STATUS_BUSY The bus or transport is busy
+ * @retval ULS_STATUS_TIMEOUT A transport operation timed out
+ * @retval ULS_STATUS_ERROR A servo or transport reported an error
+ * @retval ULS_STATUS_INVALID_INPUT The readback reply is malformed
+ */
+enum uls_status dev_servo_set_torque(dev_servo_t *servo, enum dev_servo_torque_mode mode);
+
+/**
  * @brief Reads positions synchronously
  *
  * @param servo Initialized servo bus
  * @param[out] positions Array of one float per servo, in rotations and configured ID order
  *
  * @retval ULS_STATUS_OK Positions read successfully
- * @retval ULS_STATUS_BUSY The bus is busy
+ * @retval ULS_STATUS_BUSY The bus or UART is busy
  * @retval ULS_STATUS_INVALID_INPUT The reply is malformed
  * @retval ULS_STATUS_TIMEOUT The UART operation timed out
  * @retval ULS_STATUS_ERROR A servo or UART reported an error

@@ -33,15 +33,13 @@ static uint16_t prepare_transmit(const dev_servo_t *servo, const float *position
     };
 
     uint16_t parameters_length;
-    enum uls_status status = dynamixel_protocol2_serialize_sync_write_request(
+    dynamixel_protocol2_serialize_sync_write_request(
         &request, data->parameters, config->parameters_capacity, &parameters_length);
-    ULYSSES_ASSERT(status == ULS_STATUS_OK, "Dynamixel parameters must fit the write request");
 
     uint32_t packet_size;
-    status = dynamixel_protocol2_encode_request(
+    dynamixel_protocol2_encode_request(
         DYNAMIXEL_PROTOCOL2_BROADCAST_ID, DYNAMIXEL_PROTOCOL2_INST_SYNC_WRITE, data->parameters,
         parameters_length, data->packet, config->packet_capacity, &packet_size);
-    ULYSSES_ASSERT(status == ULS_STATUS_OK, "Dynamixel packet buffer must fit the request");
 
     return packet_size;
 }

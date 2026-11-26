@@ -38,6 +38,18 @@ struct dynamixel_protocol2_sync_write_request {
 };
 
 /**
+ * @brief Calculate the serialized Sync Write parameter size.
+ * @param device_count Number of devices
+ * @param data_length Number of data bytes per device
+ * @return Parameter bytes before byte stuffing
+ */
+static inline uint32_t dynamixel_protocol2_sync_write_parameters_size(uint8_t device_count,
+                                                                      uint16_t data_length)
+{
+    return 2 + 2 + device_count * (1 + data_length);
+}
+
+/**
  * @brief Serialize Sync Write parameters for dynamixel_protocol2_encode_request().
  * @param request At least one device, all with the same nonzero number of data bytes
  * @param[out] parameters Serialized parameters
@@ -73,6 +85,41 @@ struct dynamixel_protocol2_fast_sync_read_response {
     uint8_t id;
     const uint8_t *data;
 };
+
+/**
+ * @brief Calculate the on-wire size of one Fast Sync Read response entry.
+ * @param data_length Number of data bytes per device
+ * @return Entry size including its CRC
+ */
+static inline uint32_t dynamixel_protocol2_fast_sync_read_entry_size(uint16_t data_length)
+{
+    return 1 + 1 + data_length + 2;
+}
+
+/**
+ * @brief Calculate the Fast Sync Read response packet length field.
+ * @param device_count Number of devices
+ * @param data_length Number of data bytes per device
+ * @return Bytes after the packet prefix, including the Status opcode
+ */
+static inline uint32_t dynamixel_protocol2_fast_sync_read_response_length(uint8_t device_count,
+                                                                          uint16_t data_length)
+{
+    return 1 + device_count * dynamixel_protocol2_fast_sync_read_entry_size(data_length);
+}
+
+/**
+ * @brief Calculate the decoded Fast Sync Read response parameter size.
+ * @param device_count Number of devices, at least one
+ * @param data_length Number of data bytes per device
+ * @return Parameter bytes, excluding the final CRC
+ */
+static inline uint32_t
+dynamixel_protocol2_fast_sync_read_response_parameters_size(uint8_t device_count,
+                                                            uint16_t data_length)
+{
+    return device_count * dynamixel_protocol2_fast_sync_read_entry_size(data_length) - 2;
+}
 
 /**
  * @brief Deserialize the next device from a combined Fast Sync Read reply.

@@ -19,7 +19,10 @@ target_sources(ulysses_svc
         dev/status_led/gpio/status_led_gpio.c
         dev/servo/servo.c
         dev/servo/dynamixel/servo_dynamixel.c
+        dev/servo/dynamixel/servo_dynamixel_ping.c
         dev/servo/dynamixel/servo_dynamixel_read_positions.c
+        dev/servo/dynamixel/servo_dynamixel_receive_status.c
+        dev/servo/dynamixel/servo_dynamixel_torque.c
         dev/servo/dynamixel/servo_dynamixel_write_positions.c
 )
 

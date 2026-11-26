@@ -1,11 +1,11 @@
 #include <string.h>
 
-#include "ulysses/lib/assert.h"
 #include "ulysses/lib/buffer.h"
 #include "ulysses/lib/dynamixel/protocol2/packet.h"
 #include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
 #include "dev/servo/dynamixel/servo_dynamixel.h"
+#include "dev/servo/dynamixel/servo_dynamixel_receive_status.h"
 
 #define PRESENT_POSITION_ADDRESS (0x84)
 
@@ -22,30 +22,32 @@ static uint16_t prepare_transmit(const dev_servo_t *servo)
     };
 
     uint16_t parameters_length;
-    enum uls_status status = dynamixel_protocol2_serialize_fast_sync_read_request(
+    dynamixel_protocol2_serialize_fast_sync_read_request(
         &request, data->parameters, config->parameters_capacity, &parameters_length);
-    ULYSSES_ASSERT(status == ULS_STATUS_OK, "Dynamixel parameters must fit the read request");
 
     uint32_t packet_size;
-    status = dynamixel_protocol2_encode_request(
+    dynamixel_protocol2_encode_request(
         DYNAMIXEL_PROTOCOL2_BROADCAST_ID, DYNAMIXEL_PROTOCOL2_INST_FAST_SYNC_READ, data->parameters,
         parameters_length, data->packet, config->packet_capacity, &packet_size);
-    ULYSSES_ASSERT(status == ULS_STATUS_OK, "Dynamixel packet buffer must fit the request");
 
     return packet_size;
 }
 
-static enum uls_status decode_positions(const dev_servo_t *servo, uint16_t reply_length)
+static enum uls_status decode_positions(const dev_servo_t *servo)
 {
     const struct dev_servo_dynamixel_config *config = servo->config;
     struct dev_servo_dynamixel_data *data = servo->data;
+
+    const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
+    if (reply_length != dynamixel_protocol2_fast_sync_read_response_length(config->count, 4)) {
+        return ULS_STATUS_INVALID_INPUT;
+    }
 
     const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + reply_length;
     uint8_t id;
     uint16_t remaining;
     enum uls_status status = dynamixel_protocol2_decode_response(
         data->packet, packet_size, &id, data->parameters, config->parameters_capacity, &remaining);
-    ULYSSES_ASSERT(status != ULS_STATUS_NO_SPACE, "Dynamixel parameters must fit the reply");
     if (status != ULS_STATUS_OK) {
         return status;
     }
@@ -73,70 +75,32 @@ static enum uls_status decode_positions(const dev_servo_t *servo, uint16_t reply
         remaining -= consumed;
     }
 
-    return remaining == 0 ? ULS_STATUS_OK : ULS_STATUS_INVALID_INPUT;
+    return ULS_STATUS_OK;
 }
 
-static bool valid_reply_length(const struct dev_servo_dynamixel_config *config, uint16_t length)
-{
-    const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + length;
-    return length >= 4 && packet_size <= config->packet_capacity;
-}
-
-static void on_full_reply(enum uls_status status, void *user_data)
+static void complete_read(enum uls_status status, void *user_data)
 {
     dev_servo_t *servo = user_data;
     struct dev_servo_dynamixel_data *data = servo->data;
 
     if (status == ULS_STATUS_OK) {
-        const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
-        status = decode_positions(servo, reply_length);
+        status = decode_positions(servo);
     }
 
     data->busy = false;
     data->read_cb(status, status == ULS_STATUS_OK ? data->positions : NULL, data->user_data);
 }
 
-static void on_prefix_reply(enum uls_status status, void *user_data)
-{
-    dev_servo_t *servo = user_data;
-    const struct dev_servo_dynamixel_config *config = servo->config;
-    struct dev_servo_dynamixel_data *data = servo->data;
-
-    if (status == ULS_STATUS_OK) {
-        const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
-        if (valid_reply_length(config, reply_length)) {
-            io_uart_set_receive_cb(config->uart, on_full_reply, servo);
-            status = io_uart_receive_async(
-                config->uart, data->packet + DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE, reply_length);
-        } else {
-            status = ULS_STATUS_INVALID_INPUT;
-        }
-    }
-
-    if (status != ULS_STATUS_OK) {
-        data->busy = false;
-        data->read_cb(status, NULL, data->user_data);
-    }
-}
-
 static void on_transmit_finish(enum uls_status status, void *user_data)
 {
     dev_servo_t *servo = user_data;
-    const struct dev_servo_dynamixel_config *config = servo->config;
-    struct dev_servo_dynamixel_data *data = servo->data;
 
     if (status == ULS_STATUS_OK) {
-        io_uart_set_receive_cb(config->uart, on_prefix_reply, servo);
-
-        // TODO: Switch the direction GPIO to RX before arming reception.
-        // TODO: Use timed async receive when UART supports timeout and cancellation.
-        status = io_uart_receive_async(config->uart, data->packet,
-                                       DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE);
+        status = dev_servo_dynamixel_receive_status_async(servo, complete_read);
     }
 
     if (status != ULS_STATUS_OK) {
-        data->busy = false;
-        data->read_cb(status, NULL, data->user_data);
+        complete_read(status, servo);
     }
 }
 
@@ -154,30 +118,23 @@ enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *po
     // TODO: Switch the direction GPIO to TX before transmitting.
     enum uls_status status =
         io_uart_transmit(config->uart, data->packet, length, DYNAMIXEL_UART_TIMEOUT_MS);
-    if (status == ULS_STATUS_OK) {
-        // TODO: Switch the direction GPIO to RX before receiving.
-        status = io_uart_receive(config->uart, data->packet, DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE,
-                                 DYNAMIXEL_UART_TIMEOUT_MS);
-    }
-    if (status == ULS_STATUS_OK) {
-        const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
-        if (valid_reply_length(config, reply_length)) {
-            status =
-                io_uart_receive(config->uart, data->packet + DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE,
-                                reply_length, DYNAMIXEL_UART_TIMEOUT_MS);
-        } else {
-            status = ULS_STATUS_INVALID_INPUT;
-        }
+    if (status != ULS_STATUS_OK) {
+        goto cleanup;
     }
 
-    if (status == ULS_STATUS_OK) {
-        const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
-        status = decode_positions(servo, reply_length);
-    }
-    if (status == ULS_STATUS_OK) {
-        memcpy(positions, data->positions, config->count * sizeof(*positions));
+    status = dev_servo_dynamixel_receive_status(servo);
+    if (status != ULS_STATUS_OK) {
+        goto cleanup;
     }
 
+    status = decode_positions(servo);
+    if (status != ULS_STATUS_OK) {
+        goto cleanup;
+    }
+
+    memcpy(positions, data->positions, config->count * sizeof(*positions));
+
+cleanup:
     data->busy = false;
     return status;
 }

@@ -4,6 +4,22 @@
 
 #include "ulysses/lib/assert.h"
 
+enum uls_status dev_servo_ping_all(dev_servo_t *servo)
+{
+    ULYSSES_ASSERT(servo != NULL && servo->ops != NULL, "servo bus must be initialized");
+
+    return servo->ops->ping_all(servo);
+}
+
+enum uls_status dev_servo_set_torque(dev_servo_t *servo, enum dev_servo_torque_mode mode)
+{
+    ULYSSES_ASSERT(servo != NULL && servo->ops != NULL, "servo bus must be initialized");
+    ULYSSES_ASSERT(mode == DEV_SERVO_TORQUE_DISABLED || mode == DEV_SERVO_TORQUE_ENABLED,
+                   "invalid servo torque mode");
+
+    return servo->ops->set_torque(servo, mode);
+}
+
 enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions)
 {
     ULYSSES_ASSERT(servo != NULL && servo->ops != NULL, "servo bus must be initialized");

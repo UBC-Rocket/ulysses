@@ -11,7 +11,6 @@
 
 #define STATUS_PAYLOAD_OFFSET (8)
 #define CRC_LENGTH (2)
-#define MAX_DEVICE_ID (0xFC)
 
 static const uint8_t header[] = {0xFF, 0xFF, 0xFD, 0x00};
 
@@ -48,7 +47,8 @@ enum uls_status dynamixel_protocol2_encode_request(uint8_t id, uint8_t instructi
                                                    uint8_t *restrict packet, uint32_t capacity,
                                                    uint32_t *packet_size)
 {
-    ULYSSES_ASSERT(id <= MAX_DEVICE_ID || id == DYNAMIXEL_PROTOCOL2_BROADCAST_ID,
+    ULYSSES_ASSERT(id <= DYNAMIXEL_PROTOCOL2_MAX_DEVICE_ID ||
+                       id == DYNAMIXEL_PROTOCOL2_BROADCAST_ID,
                    "invalid dynamixel instruction ID");
     ULYSSES_ASSERT(is_valid_instruction(instruction), "invalid dynamixel instruction");
     if (instruction == DYNAMIXEL_PROTOCOL2_INST_SYNC_READ ||
@@ -59,6 +59,10 @@ enum uls_status dynamixel_protocol2_encode_request(uint8_t id, uint8_t instructi
         instruction == DYNAMIXEL_PROTOCOL2_INST_FAST_BULK_READ) {
         ULYSSES_ASSERT(id == DYNAMIXEL_PROTOCOL2_BROADCAST_ID,
                        "dynamixel sync and bulk instructions require the broadcast ID");
+    } else if (instruction == DYNAMIXEL_PROTOCOL2_INST_PING ||
+               instruction == DYNAMIXEL_PROTOCOL2_INST_READ) {
+        ULYSSES_ASSERT(id != DYNAMIXEL_PROTOCOL2_BROADCAST_ID,
+                       "dynamixel ping and read require an individual device ID");
     }
     ULYSSES_ASSERT(parameters_length <= DYNAMIXEL_PROTOCOL2_MAX_PARAMETERS_COUNT,
                    "dynamixel parameters exceed the supported limit");
@@ -116,7 +120,7 @@ enum uls_status dynamixel_protocol2_decode_response(const uint8_t *restrict pack
     uint16_t wire_parameters_length = crc_offset - STATUS_PAYLOAD_OFFSET;
     uint8_t packet_id = packet[4];
     bool fast_instruction = packet_id == DYNAMIXEL_PROTOCOL2_BROADCAST_ID;
-    if ((!fast_instruction && packet_id > MAX_DEVICE_ID) ||
+    if ((!fast_instruction && packet_id > DYNAMIXEL_PROTOCOL2_MAX_DEVICE_ID) ||
         (fast_instruction && wire_parameters_length < 2)) {
         return ULS_STATUS_INVALID_INPUT;
     }
