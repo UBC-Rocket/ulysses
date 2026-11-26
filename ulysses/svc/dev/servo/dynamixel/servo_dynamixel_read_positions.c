@@ -40,45 +40,46 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
 
     const uint16_t reply_length = dynamixel_protocol2_read_packet_length(data->packet);
 
-    if (reply_length != dynamixel_protocol2_fast_sync_read_response_length(config->count, 4)) {
-        return ULS_STATUS_INVALID_INPUT;
-    }
-
-    const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + reply_length;
+    enum uls_status status = ULS_STATUS_INVALID_INPUT;
     uint8_t id;
     uint16_t remaining;
-    enum uls_status status = dynamixel_protocol2_decode_response(
-        data->packet, packet_size, &id, data->parameters, config->parameters_capacity, &remaining);
-
-    if (status != ULS_STATUS_OK) {
-        return status;
-    }
-    if (id != DYNAMIXEL_PROTOCOL2_BROADCAST_ID) {
-        return ULS_STATUS_INVALID_INPUT;
+    if (reply_length == dynamixel_protocol2_fast_sync_read_response_length(config->count, 4)) {
+        const uint32_t packet_size = DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE + reply_length;
+        status =
+            dynamixel_protocol2_decode_response(data->packet, packet_size, &id, data->parameters,
+                                                config->parameters_capacity, &remaining);
     }
 
-    const uint8_t *entry = data->parameters;
-    for (uint32_t i = 0; i < config->count; i++) {
-        struct dynamixel_protocol2_fast_sync_read_response response;
-        uint16_t consumed;
-        status = dynamixel_protocol2_deserialize_fast_sync_read_response(entry, remaining, 4,
-                                                                         &response, &consumed);
+    if (status == ULS_STATUS_OK && id != DYNAMIXEL_PROTOCOL2_BROADCAST_ID) {
+        status = ULS_STATUS_INVALID_INPUT;
+    }
 
-        if (status != ULS_STATUS_OK || response.id != config->ids[i]) {
-            return ULS_STATUS_INVALID_INPUT;
+    if (status == ULS_STATUS_OK) {
+        const uint8_t *entry = data->parameters;
+        for (uint32_t i = 0; i < config->count; i++) {
+            struct dynamixel_protocol2_fast_sync_read_response response;
+            uint16_t consumed;
+            status = dynamixel_protocol2_deserialize_fast_sync_read_response(entry, remaining, 4,
+                                                                             &response, &consumed);
+
+            if (status != ULS_STATUS_OK || response.id != config->ids[i]) {
+                status = ULS_STATUS_INVALID_INPUT;
+                break;
+            }
+            if (response.error != 0) {
+                status = ULS_STATUS_ERROR;
+                break;
+            }
+
+            const float position_ticks = buffer_read_int32_le(response.data);
+            data->positions[i] = position_ticks / DYNAMIXEL_TICKS_PER_ROTATION;
+
+            entry += consumed;
+            remaining -= consumed;
         }
-        if (response.error != 0) {
-            return ULS_STATUS_ERROR;
-        }
-
-        const float position_ticks = buffer_read_int32_le(response.data);
-        data->positions[i] = position_ticks / DYNAMIXEL_TICKS_PER_ROTATION;
-
-        entry += consumed;
-        remaining -= consumed;
     }
 
-    return ULS_STATUS_OK;
+    return status;
 }
 
 static void complete_read(enum uls_status status, void *user_data)
