@@ -9,8 +9,16 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
+AllowShortRecordOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-BreakBeforeBraces: Linux
+BreakAfterOpenBracketBracedList: true
+BreakBeforeCloseBracketBracedList: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterControlStatement: MultiLine
 InsertBraces: true
 IndentGotoLabels: false
 SortIncludes:
