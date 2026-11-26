@@ -1,7 +1,7 @@
 #include "ulysses/io/bdshot.h"
 #include "ulysses/lib/assert.h"
 #include "ulysses/lib/bdshot/frame.h"
-#include "ulysses/math.h"
+#include "ulysses/lib/math.h"
 #include "ulysses/svc/dev/esc.h"
 #include "dev/esc/bdshot/esc.h"
 #include "dev/esc/esc.h"
