@@ -1,7 +1,7 @@
 #ifndef ULYSSES_SVC_DEV_IMU_IMU_H
 #define ULYSSES_SVC_DEV_IMU_IMU_H
 
-#include "ulysses/include/ulysses/svc/dev/imu.h"
+#include "ulysses/svc/dev/imu.h"
 
 struct dev_imu_ops {
     enum io_status (*read)(dev_imu_t *imu, struct dev_imu_sample *sample);
