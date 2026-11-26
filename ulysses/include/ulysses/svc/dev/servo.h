@@ -12,11 +12,16 @@ typedef struct dev_servo dev_servo_t;
 
 /**
  * @brief Completion callback for an asynchronous position read
- * @param status ULS_STATUS_OK on success, ULS_STATUS_INVALID_INPUT for a malformed reply,
- *               ULS_STATUS_BUSY if the UART is busy when reception starts, ULS_STATUS_TIMEOUT if
- *               reception times out, or ULS_STATUS_ERROR for a servo or UART failure
- * @param positions Positions in rotations, in configured ID order. Valid until the next read
- *                  updates the array. NULL on failure.
+ *
+ * - ULS_STATUS_OK Positions read successfully
+ * - ULS_STATUS_BUSY The transport was busy when the driver tried to start reception
+ * - ULS_STATUS_TIMEOUT Reception timed out
+ * - ULS_STATUS_INVALID_INPUT The reply is malformed or has an unexpected ID
+ * - ULS_STATUS_ERROR A servo or transport reported an error
+ *
+ * @param status Read result
+ * @param positions Driver-owned array of positions in rotations, in configured ID order. Valid
+ *                  until the next read updates it. NULL on failure.
  * @param user_data User data passed to the read operation
  */
 typedef void (*dev_servo_read_cb_t)(enum uls_status status, const float *positions,
@@ -24,7 +29,11 @@ typedef void (*dev_servo_read_cb_t)(enum uls_status status, const float *positio
 
 /**
  * @brief Completion callback for an asynchronous position write
- * @param status ULS_STATUS_OK when transmission finishes, or ULS_STATUS_ERROR on UART failure
+ *
+ * - ULS_STATUS_OK The command was transmitted
+ * - ULS_STATUS_ERROR The transport failed to transmit the command
+ *
+ * @param status Write result
  * @param user_data User data passed to the write operation
  */
 typedef void (*dev_servo_write_cb_t)(enum uls_status status, void *user_data);
@@ -57,7 +66,7 @@ enum dev_servo_torque_mode {
  * @param servo Initialized servo bus
  * @param mode Torque mode to send
  *
- * @retval ULS_STATUS_OK Every servo reported the requested torque mode
+ * @retval ULS_STATUS_OK Every servo reported the requested torque mode with no device error
  * @retval ULS_STATUS_NOT_READY A servo reported a different torque mode
  * @retval ULS_STATUS_BUSY The bus or transport is busy
  * @retval ULS_STATUS_TIMEOUT A transport operation timed out
@@ -70,13 +79,14 @@ enum uls_status dev_servo_set_torque(dev_servo_t *servo, enum dev_servo_torque_m
  * @brief Reads positions synchronously
  *
  * @param servo Initialized servo bus
- * @param[out] positions Array of one float per servo, in rotations and configured ID order
+ * @param[out] positions Array of one float per servo, in rotations and configured ID order.
+ *                       Filled on success.
  *
  * @retval ULS_STATUS_OK Positions read successfully
- * @retval ULS_STATUS_BUSY The bus or UART is busy
+ * @retval ULS_STATUS_BUSY The bus or transport is busy
  * @retval ULS_STATUS_INVALID_INPUT The reply is malformed
- * @retval ULS_STATUS_TIMEOUT The UART operation timed out
- * @retval ULS_STATUS_ERROR A servo or UART reported an error
+ * @retval ULS_STATUS_TIMEOUT A transport operation timed out
+ * @retval ULS_STATUS_ERROR A servo or transport reported an error
  */
 enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions);
 
@@ -84,15 +94,15 @@ enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions);
  * @brief Starts an asynchronous position read
  *
  * When a started read finishes, cb runs once in interrupt context. The bus is available when cb
- * runs. Starting another read can overwrite the positions supplied to cb.
+ * runs. A failed start does not call cb.
  *
  * @param servo Initialized servo bus
  * @param cb Read completion callback
  * @param user_data Context passed to cb. May be NULL.
  *
  * @retval ULS_STATUS_OK The read was started
- * @retval ULS_STATUS_BUSY The bus or UART is busy
- * @retval ULS_STATUS_ERROR The UART transmit could not be started
+ * @retval ULS_STATUS_BUSY The bus or transport is busy
+ * @retval ULS_STATUS_ERROR The transmit could not be started
  */
 enum uls_status dev_servo_read_positions_async(dev_servo_t *servo, dev_servo_read_cb_t cb,
                                                void *user_data);
@@ -100,15 +110,13 @@ enum uls_status dev_servo_read_positions_async(dev_servo_t *servo, dev_servo_rea
 /**
  * @brief Writes goal positions synchronously
  *
- * Success means the command was transmitted.
- *
  * @param servo Initialized servo bus
  * @param positions Array of one float per servo, in rotations and configured ID order
  *
  * @retval ULS_STATUS_OK The command was transmitted
- * @retval ULS_STATUS_BUSY The bus or UART is busy
- * @retval ULS_STATUS_TIMEOUT The UART transmit timed out
- * @retval ULS_STATUS_ERROR The UART transmit failed
+ * @retval ULS_STATUS_BUSY The bus or transport is busy
+ * @retval ULS_STATUS_TIMEOUT The transmit timed out
+ * @retval ULS_STATUS_ERROR The transmit failed
  */
 enum uls_status dev_servo_write_positions(dev_servo_t *servo, const float *positions);
 
@@ -116,7 +124,7 @@ enum uls_status dev_servo_write_positions(dev_servo_t *servo, const float *posit
  * @brief Starts an asynchronous goal position write
  *
  * When a started write finishes, cb runs once in interrupt context. The bus is available when cb
- * runs.
+ * runs. A failed start does not call cb.
  *
  * @param servo Initialized servo bus
  * @param positions Array of one float per servo, in rotations and configured ID order. May be
@@ -125,8 +133,8 @@ enum uls_status dev_servo_write_positions(dev_servo_t *servo, const float *posit
  * @param user_data Context passed to cb. May be NULL.
  *
  * @retval ULS_STATUS_OK The write was started
- * @retval ULS_STATUS_BUSY The bus or UART is busy
- * @retval ULS_STATUS_ERROR The UART transmit could not be started
+ * @retval ULS_STATUS_BUSY The bus or transport is busy
+ * @retval ULS_STATUS_ERROR The transmit could not be started
  */
 enum uls_status dev_servo_write_positions_async(dev_servo_t *servo, const float *positions,
                                                 dev_servo_write_cb_t cb, void *user_data);
