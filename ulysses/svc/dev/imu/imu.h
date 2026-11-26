@@ -4,8 +4,8 @@
 #include "ulysses/svc/dev/imu.h"
 
 struct dev_imu_ops {
-    enum io_status (*read)(dev_imu_t *imu, struct dev_imu_sample *sample);
-    enum io_status (*read_async)(dev_imu_t *imu, dev_imu_cb_t cb, void *user_data);
+    enum uls_status (*read)(dev_imu_t *imu, struct dev_imu_sample *sample);
+    enum uls_status (*read_async)(dev_imu_t *imu, dev_imu_cb_t cb, void *user_data);
 };
 
 struct dev_imu {

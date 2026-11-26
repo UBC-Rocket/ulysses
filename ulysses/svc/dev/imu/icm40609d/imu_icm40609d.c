@@ -2,7 +2,7 @@
 #include "dev/imu/imu.h"
 #include "ulysses/io/delay.h"
 #include "ulysses/io/spi.h"
-#include "ulysses/io/status.h"
+#include "ulysses/status.h"
 #include "ulysses/lib/assert.h"
 #include "ulysses/svc/dev/imu.h"
 
@@ -72,7 +72,7 @@ static const uint8_t sample_tx[ICM_TRANSFER_LEN] = {
 // Private helper functions
 
 // Multi register access
-static enum io_status read_regs(io_spi_dev_t *spi, uint8_t reg, uint8_t *data, uint16_t len)
+static enum uls_status read_regs(io_spi_dev_t *spi, uint8_t reg, uint8_t *data, uint16_t len)
 {
     ULYSSES_ASSERT(data != NULL, "Invalid buffer");
     ULYSSES_ASSERT(len > 0 && len <= ICM_SAMPLE_LEN, "Invalid payload length");
@@ -81,16 +81,16 @@ static enum io_status read_regs(io_spi_dev_t *spi, uint8_t reg, uint8_t *data, u
     uint8_t rx[ICM_TRANSFER_LEN];
     tx[0] = SPI_READ(reg);
 
-    enum io_status status = io_spi_transfer(spi, tx, rx, len + 1, ICM_TIMEOUT_MS);
+    enum uls_status status = io_spi_transfer(spi, tx, rx, len + 1, ICM_TIMEOUT_MS);
 
-    if (status == IO_STATUS_OK) {
+    if (status == ULS_STATUS_OK) {
         memcpy(data, &rx[1], len);
     }
 
     return status;
 }
 
-static enum io_status write_regs(io_spi_dev_t *spi, uint8_t reg, const uint8_t *data, uint16_t len)
+static enum uls_status write_regs(io_spi_dev_t *spi, uint8_t reg, const uint8_t *data, uint16_t len)
 {
     ULYSSES_ASSERT(data != NULL, "Invalid buffer");
     ULYSSES_ASSERT(len > 0 && len <= ICM_SAMPLE_LEN, "Invalid payload length");
@@ -104,36 +104,36 @@ static enum io_status write_regs(io_spi_dev_t *spi, uint8_t reg, const uint8_t *
 }
 
 // Single register access
-static enum io_status read_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t *data)
+static enum uls_status read_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t *data)
 {
     return read_regs(spi, reg, data, 1);
 }
 
-static enum io_status write_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t data)
+static enum uls_status write_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t data)
 {
     return write_regs(spi, reg, &data, 1);
 }
 
-static enum io_status verify_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t expected_value, uint8_t mask)
+static enum uls_status verify_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t expected_value, uint8_t mask)
 {
     uint8_t actual_value; 
 
-    enum io_status status = read_reg(spi, reg, &actual_value); 
-    if (status != IO_STATUS_OK) {
+    enum uls_status status = read_reg(spi, reg, &actual_value); 
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
     if ((expected_value & mask) != (actual_value & mask)) {
-        return IO_STATUS_ERROR;
+        return ULS_STATUS_ERROR;
     }
 
-    return IO_STATUS_OK;
+    return ULS_STATUS_OK;
 }
 
-static enum io_status configure_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t value, uint8_t mask)
+static enum uls_status configure_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t value, uint8_t mask)
 {
-    enum io_status status = write_reg(spi, reg, value);
-    if (status != IO_STATUS_OK) {
+    enum uls_status status = write_reg(spi, reg, value);
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
@@ -141,23 +141,23 @@ static enum io_status configure_reg(io_spi_dev_t *spi, uint8_t reg, uint8_t valu
 }
 
 // Check for identity, and functionality of read_reg()
-static enum io_status verify_identity(io_spi_dev_t *spi)
+static enum uls_status verify_identity(io_spi_dev_t *spi)
 {
     return verify_reg(spi, ICM_REG_WHO_AM_I, ICM_WHO_AM_I_VALUE, 0xFFU);
 }
 
 // Reset the device 
-static enum io_status reset_device(io_spi_dev_t *spi)
+static enum uls_status reset_device(io_spi_dev_t *spi)
 {
-    enum io_status status = write_reg(spi, ICM_REG_DEVICE_CONFIG, 0x01U);
+    enum uls_status status = write_reg(spi, ICM_REG_DEVICE_CONFIG, 0x01U);
 
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
     io_spin_delay_ms(1);
 
-    return IO_STATUS_OK;
+    return ULS_STATUS_OK;
 }
 
 static int16_t combine_bytes(uint8_t high, uint8_t low)
@@ -180,7 +180,7 @@ static void init_scale(
 }
 
 // Data parsing
-static enum io_status parse_sample(
+static enum uls_status parse_sample(
     const struct dev_imu_icm40609d_data *data, 
     const uint8_t *payload, 
     struct dev_imu_sample *sample)
@@ -193,7 +193,7 @@ static enum io_status parse_sample(
         int16_t raw_accel = combine_bytes(payload[2 * i], payload[2 * i + 1]);
         int16_t raw_gyro = combine_bytes(payload[2 * i + 6], payload[2 * i + 7]);
         if (raw_accel < ICM_RAW_MIN_VALID || raw_gyro < ICM_RAW_MIN_VALID) {
-            return IO_STATUS_ERROR;
+            return ULS_STATUS_ERROR;
         }
         
         temp_sample.accel_m_s2[i] = raw_accel * data->accel_scale;
@@ -202,27 +202,27 @@ static enum io_status parse_sample(
     }
 
     *sample = temp_sample;
-    return IO_STATUS_OK;
+    return ULS_STATUS_OK;
 }
 
 // Blocking read
-static enum io_status icm40609d_read(dev_imu_t *imu, struct dev_imu_sample *sample)
+static enum uls_status icm40609d_read(dev_imu_t *imu, struct dev_imu_sample *sample)
 {
     const struct dev_imu_icm40609d_config *config = imu->config;
     struct dev_imu_icm40609d_data *data = imu->data;
 
     // Acquire ownership atomically 
     if (atomic_exchange(&data->busy, true)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
     uint8_t payload[ICM_SAMPLE_LEN];
 
     // Read measurement registers
-    enum io_status status = read_regs(config->spi, ICM_REG_ACCEL_DATA_X1, payload, ICM_SAMPLE_LEN);
+    enum uls_status status = read_regs(config->spi, ICM_REG_ACCEL_DATA_X1, payload, ICM_SAMPLE_LEN);
     
     // Parse the raw data into physical units if read was successful
-    if (status == IO_STATUS_OK) {
+    if (status == ULS_STATUS_OK) {
         status = parse_sample(data, payload, sample);
     }
 
@@ -232,7 +232,7 @@ static enum io_status icm40609d_read(dev_imu_t *imu, struct dev_imu_sample *samp
     return status;
 }
 
-static void spi_read_callback(enum io_status status, void *user_data)
+static void spi_read_callback(enum uls_status status, void *user_data)
 {
     dev_imu_t *imu = user_data;
     struct dev_imu_icm40609d_data *data = imu->data;
@@ -243,7 +243,7 @@ static void spi_read_callback(enum io_status status, void *user_data)
     struct dev_imu_sample sample;
 
     // Parse sample 
-    if (status == IO_STATUS_OK) {
+    if (status == ULS_STATUS_OK) {
         status = parse_sample(data, &data->rx_data[1], &sample);
     }
     
@@ -255,18 +255,18 @@ static void spi_read_callback(enum io_status status, void *user_data)
     atomic_store(&data->busy, false);
 
     // Notify caller
-    cb(status, status == IO_STATUS_OK ? &sample : NULL, cb_user_data);
+    cb(status, status == ULS_STATUS_OK ? &sample : NULL, cb_user_data);
 }
 
 // Non-blocking read
-static enum io_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, void *user_data)
+static enum uls_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, void *user_data)
 {
     const struct dev_imu_icm40609d_config *config = imu->config;
     struct dev_imu_icm40609d_data *data = imu->data;
 
     // Acquire ownership atomically 
     if (atomic_exchange(&data->busy, true)) {
-        return IO_STATUS_BUSY;
+        return ULS_STATUS_BUSY;
     }
 
     // Store callback and user data
@@ -274,10 +274,10 @@ static enum io_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, void
     data->cb_user_data = user_data;
 
     // Start async SPI transfer
-    enum io_status status = io_spi_transfer_it(config->spi, sample_tx, data->rx_data, ICM_TRANSFER_LEN, spi_read_callback, imu);
+    enum uls_status status = io_spi_transfer_it(config->spi, sample_tx, data->rx_data, ICM_TRANSFER_LEN, spi_read_callback, imu);
 
     // Error handler 
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         // Clear up
         data->cb = NULL;
         data->cb_user_data = NULL;
@@ -301,7 +301,7 @@ static const struct dev_imu_ops icm40609d_ops = {
 // ======================================================
 
 // Public API
-enum io_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm40609d_config *config,
+enum uls_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm40609d_config *config,
                                       struct dev_imu_icm40609d_data *data)
 {
     ULYSSES_ASSERT(imu != NULL, "Invalid IMU instance"); 
@@ -323,41 +323,41 @@ enum io_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm40
     data->cb_user_data = NULL;
 
     // Hardware initialization
-    enum io_status status = reset_device(config->spi);
-    if (status != IO_STATUS_OK) {
+    enum uls_status status = reset_device(config->spi);
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
     status = verify_identity(config->spi);
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
     // Configure accelerometer FSR and ODR
     uint8_t accel_config = (config->accel_fsr << ICM_FSR_SHIFT) | config->odr;
     status = configure_reg(config->spi, ICM_REG_ACCEL_CONFIG0, accel_config, ICM_FSR_ODR_MASK);
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
     // Configure gyroscope FSR and ODR
     uint8_t gyro_config = (config->gyro_fsr << ICM_FSR_SHIFT) | config->odr;
     status = configure_reg(config->spi, ICM_REG_GYRO_CONFIG0, gyro_config, ICM_FSR_ODR_MASK);
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
     // Power management configruation: Temp enable, LN mode for both gyro and accel
     uint8_t pwr_config = ICM_TEMP_ENABLE | ICM_GYRO_MODE_LN | ICM_ACCEL_MODE_LN;
     status = write_reg(config->spi, ICM_REG_PWR_MGMT0, pwr_config);
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         return status; 
     }
 
     io_spin_delay_ms(ICM_STARTUP_DELAY_MS); 
 
     status = verify_reg(config->spi, ICM_REG_PWR_MGMT0, pwr_config, ICM_PWR_MGMT0_MASK);
-    if (status != IO_STATUS_OK) {
+    if (status != ULS_STATUS_OK) {
         return status;
     }
 
@@ -367,5 +367,5 @@ enum io_status dev_imu_icm40609d_init(dev_imu_t *imu, const struct dev_imu_icm40
     // Install device operations
     imu->ops = &icm40609d_ops;
 
-    return IO_STATUS_OK;
+    return ULS_STATUS_OK;
 }
