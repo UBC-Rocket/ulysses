@@ -19,6 +19,8 @@ target_sources(ulysses_svc
         dev/status_led/gpio/status_led_gpio.c
         dev/servo/servo.c
         dev/servo/dynamixel/servo_dynamixel.c
+        dev/servo/dynamixel/servo_dynamixel_read_positions.c
+        dev/servo/dynamixel/servo_dynamixel_write_positions.c
 )
 
 target_include_directories(ulysses_svc

@@ -14,7 +14,7 @@ typedef struct dev_servo dev_servo_t;
  * @brief Completion callback for an asynchronous position read
  * @param status Read result
  * @param positions One position in rotations per configured servo, in bus configuration order.
- *                  The array is valid until the callback returns. NULL on failure.
+ *                  The array is valid until the next position read updates it. NULL on failure.
  * @param user_data User data passed to the read operation
  */
 typedef void (*dev_servo_read_cb_t)(enum uls_status status, const float *positions,
@@ -39,8 +39,8 @@ enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions);
 /**
  * @brief Starts an asynchronous read of all positions
  *
- * When a started read finishes, cb runs once in interrupt context. The bus remains busy until cb
- * returns.
+ * When a started read finishes, cb runs once in interrupt context. The bus is available when cb
+ * runs. Starting another read can overwrite the positions supplied to cb.
  *
  * @param servo Initialized servo bus
  * @param cb Read completion callback
@@ -63,8 +63,8 @@ enum uls_status dev_servo_write_positions(dev_servo_t *servo, const float *posit
 /**
  * @brief Starts an asynchronous write of all goal positions
  *
- * When a started write finishes, cb runs once in interrupt context. The bus remains busy until cb
- * returns.
+ * When a started write finishes, cb runs once in interrupt context. The bus is available when cb
+ * runs.
  *
  * @param servo Initialized servo bus
  * @param positions Array containing one float position in rotations per configured servo,
