@@ -29,6 +29,7 @@ struct dev_servo_dynamixel_data {
     float *positions; ///< Static feedback storage with one slot per servo
     struct dynamixel_protocol2_sync_write_device *write_devices; ///< Static array of count entries
     volatile bool busy;
+    float *volatile read_positions; ///< Output array for the current asynchronous read
     volatile dev_servo_read_cb_t read_cb;
     volatile dev_servo_write_cb_t write_cb;
     volatile io_uart_receive_cb_t receive_status_cb;
@@ -62,8 +63,8 @@ enum uls_status dev_servo_dynamixel_set_torque(dev_servo_t *servo, enum dev_serv
 
 enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *positions);
 
-enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, dev_servo_read_cb_t cb,
-                                                         void *user_data);
+enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, float *positions,
+                                                         dev_servo_read_cb_t cb, void *user_data);
 
 enum uls_status dev_servo_dynamixel_write_positions(dev_servo_t *servo, const float *positions);
 

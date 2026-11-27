@@ -85,14 +85,18 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
 static void complete_read(enum uls_status status, void *user_data)
 {
     dev_servo_t *servo = user_data;
+    const struct dev_servo_dynamixel_config *config = servo->config;
     struct dev_servo_dynamixel_data *data = servo->data;
 
     if (status == ULS_STATUS_OK) {
         status = decode_positions(servo);
     }
+    if (status == ULS_STATUS_OK) {
+        memcpy(data->read_positions, data->positions, config->count * sizeof(*data->positions));
+    }
 
     data->busy = false;
-    data->read_cb(status, status == ULS_STATUS_OK ? data->positions : NULL, data->user_data);
+    data->read_cb(status, data->user_data);
 }
 
 static void on_transmit_finish(enum uls_status status, void *user_data)
@@ -139,8 +143,8 @@ enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *po
     return status;
 }
 
-enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, dev_servo_read_cb_t cb,
-                                                         void *user_data)
+enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, float *positions,
+                                                         dev_servo_read_cb_t cb, void *user_data)
 {
     const struct dev_servo_dynamixel_config *config = servo->config;
     struct dev_servo_dynamixel_data *data = servo->data;
@@ -150,6 +154,7 @@ enum uls_status dev_servo_dynamixel_read_positions_async(dev_servo_t *servo, dev
     }
     data->busy = true;
 
+    data->read_positions = positions;
     data->read_cb = cb;
     data->user_data = user_data;
 

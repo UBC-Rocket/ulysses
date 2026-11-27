@@ -20,12 +20,9 @@ typedef struct dev_servo dev_servo_t;
  * - ULS_STATUS_ERROR A servo or transport reported an error
  *
  * @param status Read result
- * @param positions Driver-owned array of positions in rotations, in configured ID order. Valid
- *                  until the next read updates it. NULL on failure.
  * @param user_data User data passed to the read operation
  */
-typedef void (*dev_servo_read_cb_t)(enum uls_status status, const float *positions,
-                                    void *user_data);
+typedef void (*dev_servo_read_cb_t)(enum uls_status status, void *user_data);
 
 /**
  * @brief Completion callback for an asynchronous position write
@@ -97,6 +94,9 @@ enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions);
  * runs. A failed start does not call cb.
  *
  * @param servo Initialized servo bus
+ * @param[out] positions Array of one float per servo, in rotations and configured ID order.
+ *                       Keep it valid until cb runs. The array is filled before cb on success
+ *                       and left unchanged on failure.
  * @param cb Read completion callback
  * @param user_data Context passed to cb. May be NULL.
  *
@@ -104,8 +104,8 @@ enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions);
  * @retval ULS_STATUS_BUSY The bus or transport is busy
  * @retval ULS_STATUS_ERROR The transmit could not be started
  */
-enum uls_status dev_servo_read_positions_async(dev_servo_t *servo, dev_servo_read_cb_t cb,
-                                               void *user_data);
+enum uls_status dev_servo_read_positions_async(dev_servo_t *servo, float *positions,
+                                               dev_servo_read_cb_t cb, void *user_data);
 
 /**
  * @brief Writes goal positions synchronously
