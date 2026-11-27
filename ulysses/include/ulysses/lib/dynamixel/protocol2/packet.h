@@ -6,6 +6,7 @@
 #include "ulysses/lib/buffer.h"
 #include "ulysses/status.h"
 
+#define DYNAMIXEL_PROTOCOL2_MAX_DEVICE_ID (0xFC)
 #define DYNAMIXEL_PROTOCOL2_BROADCAST_ID (0xFE)
 #define DYNAMIXEL_PROTOCOL2_MAX_PARAMETERS_COUNT (100)
 #define DYNAMIXEL_PROTOCOL2_PACKET_PREFIX_SIZE (7)
@@ -51,7 +52,8 @@ static inline uint16_t dynamixel_protocol2_read_packet_length(const uint8_t *pac
  * @brief Encode a Protocol 2.0 instruction packet.
  *
  * @param id Target device ID or DYNAMIXEL_PROTOCOL2_BROADCAST_ID. Sync and Bulk instructions,
- *           including their Fast variants, require the broadcast ID.
+ *           including their Fast variants, require the broadcast ID. This encoder requires
+ *           an individual device ID for Ping and Read.
  * @param instruction Request opcode
  * @param parameters Serialized parameters. May be NULL for a request with no parameters.
  * @param parameters_length Number of serialized parameter bytes

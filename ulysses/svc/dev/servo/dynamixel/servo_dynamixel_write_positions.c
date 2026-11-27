@@ -1,0 +1,83 @@
+#include "ulysses/lib/buffer.h"
+#include "ulysses/lib/dynamixel/protocol2/parameters.h"
+
+#include "dev/servo/dynamixel/servo_dynamixel.h"
+#include "dev/servo/dynamixel/servo_dynamixel_prepare_instruction.h"
+
+#define GOAL_POSITION_ADDRESS (0x74)
+
+static uint16_t prepare_transmit(const dev_servo_t *servo, const float *positions)
+{
+    const struct dev_servo_dynamixel_config *config = servo->config;
+    struct dev_servo_dynamixel_data *data = servo->data;
+
+    for (uint32_t i = 0; i < config->count; i++) {
+        const int32_t goal_ticks =
+            dev_servo_dynamixel_position_to_ticks(positions[i], config->zero_ticks[i]);
+        buffer_write_int32_le((uint8_t *)data->write_devices[i].data, goal_ticks);
+    }
+
+    const struct dynamixel_protocol2_sync_write_request request = {
+        .address = GOAL_POSITION_ADDRESS,
+        .length = 4,
+        .device_count = config->count,
+        .devices = data->write_devices,
+    };
+
+    return dev_servo_dynamixel_prepare_sync_write(servo, &request);
+}
+
+static void on_transmit_finish(enum uls_status status, void *user_data)
+{
+    dev_servo_t *servo = user_data;
+    struct dev_servo_dynamixel_data *data = servo->data;
+
+    data->busy = false;
+    data->write_cb(status, data->user_data);
+}
+
+enum uls_status dev_servo_dynamixel_write_positions(dev_servo_t *servo, const float *positions)
+{
+    const struct dev_servo_dynamixel_config *config = servo->config;
+    struct dev_servo_dynamixel_data *data = servo->data;
+
+    if (data->busy) {
+        return ULS_STATUS_BUSY;
+    }
+    data->busy = true;
+
+    const uint16_t length = prepare_transmit(servo, positions);
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
+    enum uls_status status =
+        io_uart_transmit(config->uart, data->packet, length, DYNAMIXEL_UART_TIMEOUT_MS);
+
+    data->busy = false;
+    return status;
+}
+
+enum uls_status dev_servo_dynamixel_write_positions_async(dev_servo_t *servo,
+                                                          const float *positions,
+                                                          dev_servo_write_cb_t cb, void *user_data)
+{
+    const struct dev_servo_dynamixel_config *config = servo->config;
+    struct dev_servo_dynamixel_data *data = servo->data;
+
+    if (data->busy) {
+        return ULS_STATUS_BUSY;
+    }
+    data->busy = true;
+
+    data->write_cb = cb;
+    data->user_data = user_data;
+
+    io_uart_set_transmit_cb(config->uart, on_transmit_finish, servo);
+
+    const uint16_t length = prepare_transmit(servo, positions);
+    io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
+    enum uls_status status = io_uart_transmit_async(config->uart, data->packet, length);
+    if (status != ULS_STATUS_OK) {
+        data->busy = false;
+    }
+
+    return status;
+}

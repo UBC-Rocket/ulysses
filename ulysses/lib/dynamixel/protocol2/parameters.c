@@ -44,7 +44,8 @@ enum uls_status dynamixel_protocol2_serialize_sync_write_request(
     ULYSSES_ASSERT(parameters != NULL, "parameters output must not be NULL");
     ULYSSES_ASSERT(parameters_length != NULL, "parameters length output must not be NULL");
 
-    if (capacity < 4 + request->device_count * (1 + request->length)) {
+    if (capacity <
+        dynamixel_protocol2_sync_write_parameters_size(request->device_count, request->length)) {
         return ULS_STATUS_NO_SPACE;
     }
 
@@ -88,16 +89,16 @@ enum uls_status dynamixel_protocol2_deserialize_fast_sync_read_response(
     ULYSSES_ASSERT(response != NULL, "fast sync read response output must not be NULL");
     ULYSSES_ASSERT(consumed != NULL, "bytes consumed output must not be NULL");
 
-    // The packet decoder strips the final CRC, so the last device entry is two bytes shorter.
-    if ((parameters_length + CRC_LENGTH) % (2 + data_length + CRC_LENGTH) != 0) {
+    const uint32_t entry_size = dynamixel_protocol2_fast_sync_read_entry_size(data_length);
+    if ((parameters_length + CRC_LENGTH) % entry_size != 0) {
         return ULS_STATUS_INVALID_INPUT;
     }
 
-    uint16_t entry_length = 2 + data_length;
+    const uint16_t entry_length = entry_size - CRC_LENGTH;
     response->error = parameters[0];
     response->id = parameters[1];
     response->data = &parameters[2];
-    *consumed = entry_length + (parameters_length == entry_length ? 0 : CRC_LENGTH);
+    *consumed = parameters_length == entry_length ? entry_length : entry_size;
 
     return ULS_STATUS_OK;
 }
