@@ -7,7 +7,7 @@
 #include "dev/servo/dynamixel/servo_dynamixel.h"
 
 static const struct dev_servo_ops dynamixel_ops = {
-    .ping_all = dev_servo_dynamixel_ping_all,
+    .ping = dev_servo_dynamixel_ping,
     .set_torque = dev_servo_dynamixel_set_torque,
     .read_positions = dev_servo_dynamixel_read_positions,
     .read_positions_async = dev_servo_dynamixel_read_positions_async,
@@ -26,7 +26,7 @@ void dev_servo_dynamixel_init(dev_servo_t *servo, const struct dev_servo_dynamix
     ULYSSES_ASSERT(data->positions != NULL, "Dynamixel position storage must not be NULL");
     ULYSSES_ASSERT(config->count > 0 && config->count <= UINT8_MAX,
                    "Dynamixel servo count must be nonzero and fit in a byte");
-    ULYSSES_ASSERT(config->sync_write_max_length >= 4,
+    ULYSSES_ASSERT(config->max_write_length >= 4,
                    "Dynamixel goal positions require four writable bytes per servo");
 
     const uint32_t write_parameters_size =

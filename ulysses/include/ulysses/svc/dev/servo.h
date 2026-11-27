@@ -1,12 +1,17 @@
 #ifndef ULYSSES_SVC_DEV_SERVO
 #define ULYSSES_SVC_DEV_SERVO
 
+#include <stdint.h>
+
 #include "ulysses/status.h"
 
 /**
  * @brief Servo bus with a fixed list of servos
  *
  * Calls to functions on the same servo bus must be serialized.
+ *
+ * After a transmit or receive failure, a partial request or unread reply bytes can interfere with
+ * the next operation if it starts immediately.
  */
 typedef struct dev_servo dev_servo_t;
 
@@ -35,20 +40,30 @@ typedef void (*dev_servo_read_cb_t)(enum uls_status status, void *user_data);
  */
 typedef void (*dev_servo_write_cb_t)(enum uls_status status, void *user_data);
 
+enum dev_servo_hw_error {
+    DEV_SERVO_HW_ERROR_INPUT_VOLTAGE = (1 << 0),    ///< Input Voltage Error
+    DEV_SERVO_HW_ERROR_OVERHEATING = (1 << 2),      ///< Overheating Error
+    DEV_SERVO_HW_ERROR_ENCODER = (1 << 3),          ///< Motor Encoder Error
+    DEV_SERVO_HW_ERROR_ELECTRICAL_SHOCK = (1 << 4), ///< Electrical Shock Error
+    DEV_SERVO_HW_ERROR_OVERLOAD = (1 << 5),         ///< Overload Error
+    DEV_SERVO_HW_ERROR_READ_FAILED = (1 << 7),      ///< Status read failed after ping
+};
+
 /**
- * @brief Pings each configured servo synchronously
+ * @brief Pings one servo synchronously and reports hardware errors
  *
- * Stops at the first failed ping or device error.
+ * Reads the hardware error status if the servo signals a hardware fault in its ping reply.
  *
  * @param servo Initialized servo bus
+ * @param index Zero-based index of a configured servo
+ * @param[out] error_mask Non-NULL output for the hardware error mask
  *
- * @retval ULS_STATUS_OK Every servo sent a valid ping reply with no device error
- * @retval ULS_STATUS_BUSY The bus or transport is busy
- * @retval ULS_STATUS_TIMEOUT A transport operation timed out
- * @retval ULS_STATUS_ERROR A transport error occurred or a servo reported an error
- * @retval ULS_STATUS_INVALID_INPUT The reply is malformed or has an unexpected ID
+ * @retval ULS_STATUS_OK The servo reported no hardware errors. The mask is zero.
+ * @retval ULS_STATUS_BUSY The servo bus is busy. The mask is zero.
+ * @retval ULS_STATUS_ERROR The mask is zero if the ping failed, DEV_SERVO_HW_ERROR_READ_FAILED if the
+ *                          status read failed, or the reported hardware errors if the read succeeded.
  */
-enum uls_status dev_servo_ping_all(dev_servo_t *servo);
+enum uls_status dev_servo_ping(dev_servo_t *servo, uint32_t index, uint8_t *error_mask);
 
 enum dev_servo_torque_mode {
     DEV_SERVO_TORQUE_DISABLED = 0,

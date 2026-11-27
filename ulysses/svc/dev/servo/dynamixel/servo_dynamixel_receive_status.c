@@ -1,7 +1,6 @@
-#include "dev/servo/dynamixel/servo_dynamixel_receive_status.h"
-
 #include "ulysses/lib/dynamixel/protocol2/packet.h"
 
+#include "dev/servo/dynamixel/servo_dynamixel_receive_status.h"
 #include "dev/servo/dynamixel/servo_dynamixel.h"
 
 enum uls_status dev_servo_dynamixel_receive_status(const dev_servo_t *servo)

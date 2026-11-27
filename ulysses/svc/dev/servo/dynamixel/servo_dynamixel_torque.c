@@ -2,6 +2,7 @@
 #include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
 #include "dev/servo/dynamixel/servo_dynamixel.h"
+#include "dev/servo/dynamixel/servo_dynamixel_prepare_instruction.h"
 #include "dev/servo/dynamixel/servo_dynamixel_receive_status.h"
 
 #define TORQUE_ENABLE_ADDRESS (0x40)
@@ -28,14 +29,7 @@ enum uls_status dev_servo_dynamixel_set_torque(dev_servo_t *servo, enum dev_serv
         .devices = data->write_devices,
     };
 
-    uint16_t parameters_length;
-    dynamixel_protocol2_serialize_sync_write_request(
-        &write_request, data->parameters, config->parameters_capacity, &parameters_length);
-
-    uint32_t packet_size;
-    dynamixel_protocol2_encode_request(
-        DYNAMIXEL_PROTOCOL2_BROADCAST_ID, DYNAMIXEL_PROTOCOL2_INST_SYNC_WRITE, data->parameters,
-        parameters_length, data->packet, config->packet_capacity, &packet_size);
+    uint16_t packet_size = dev_servo_dynamixel_prepare_sync_write(servo, &write_request);
 
     io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
     enum uls_status status =
@@ -49,13 +43,7 @@ enum uls_status dev_servo_dynamixel_set_torque(dev_servo_t *servo, enum dev_serv
             .ids = config->ids,
         };
 
-        dynamixel_protocol2_serialize_fast_sync_read_request(
-            &read_request, data->parameters, config->parameters_capacity, &parameters_length);
-
-        dynamixel_protocol2_encode_request(DYNAMIXEL_PROTOCOL2_BROADCAST_ID,
-                                           DYNAMIXEL_PROTOCOL2_INST_FAST_SYNC_READ,
-                                           data->parameters, parameters_length, data->packet,
-                                           config->packet_capacity, &packet_size);
+        packet_size = dev_servo_dynamixel_prepare_fast_sync_read(servo, &read_request);
 
         io_gpio_write(config->transmit_enable_gpio, IO_GPIO_STATE_SET);
         status =

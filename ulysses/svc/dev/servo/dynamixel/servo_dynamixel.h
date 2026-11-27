@@ -39,11 +39,11 @@ struct dev_servo_dynamixel_config {
     const io_uart_dev_t *uart;                 ///< Dedicated, initialized packet-mode UART
     const io_gpio_dev_t *transmit_enable_gpio; ///< High for TX, low for RX
     const uint8_t *ids; ///< Static array of unique servo IDs (0 through 252) in position order
-    const int32_t *zero_ticks;      ///< Static array of raw encoder values at zero, in ID order
-    uint32_t count;                 ///< Nonzero servo count that fits a position Sync Write
-    uint32_t sync_write_max_length; ///< Maximum Sync Write data bytes per servo, at least 4
-    uint32_t packet_capacity;       ///< Packet buffer capacity in bytes
-    uint16_t parameters_capacity;   ///< Parameter buffer capacity in bytes
+    const int32_t *zero_ticks;    ///< Static array of raw encoder values at zero, in ID order
+    uint32_t count;               ///< Nonzero servo count that fits a position Sync Write
+    uint32_t max_write_length;    ///< Per-servo write buffer capacity in bytes, at least 4
+    uint32_t packet_capacity;     ///< Packet buffer capacity in bytes
+    uint16_t parameters_capacity; ///< Parameter buffer capacity in bytes
 };
 
 /** @brief Statically allocated state for a Dynamixel servo bus */
@@ -69,11 +69,9 @@ struct dev_servo_dynamixel_data {
  * The calling task and UART interrupts must run on the same core.
  *
  * The ids, zero_ticks, positions, and write_devices arrays must have count entries. Supply each
- * servo's raw Present Position value at its desired zero in zero_ticks. Reads report the angle
- * relative to that zero, wrapped to [-0.5, 0.5) rotations. Writes add the zero to the requested
- * displacement in encoder ticks and require the resulting raw value to fit the goal range.
+ * servo's raw Present Position value at its desired zero in zero_ticks.
  *
- * Each write device must point to its own writable static buffer of sync_write_max_length bytes.
+ * Each write device must point to its own writable static buffer of max_write_length bytes.
  * The separate packet and parameters buffers must fit the bus requests and replies. Init checks
  * the capacities in config.
  *
@@ -84,7 +82,7 @@ struct dev_servo_dynamixel_data {
 void dev_servo_dynamixel_init(dev_servo_t *servo, const struct dev_servo_dynamixel_config *config,
                               struct dev_servo_dynamixel_data *data);
 
-enum uls_status dev_servo_dynamixel_ping_all(dev_servo_t *servo);
+enum uls_status dev_servo_dynamixel_ping(dev_servo_t *servo, uint32_t index, uint8_t *error_mask);
 
 enum uls_status dev_servo_dynamixel_set_torque(dev_servo_t *servo, enum dev_servo_torque_mode mode);
 

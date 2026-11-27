@@ -20,6 +20,7 @@ target_sources(ulysses_svc
         dev/servo/servo.c
         dev/servo/dynamixel/servo_dynamixel.c
         dev/servo/dynamixel/servo_dynamixel_ping.c
+        dev/servo/dynamixel/servo_dynamixel_prepare_instruction.c
         dev/servo/dynamixel/servo_dynamixel_read_positions.c
         dev/servo/dynamixel/servo_dynamixel_receive_status.c
         dev/servo/dynamixel/servo_dynamixel_torque.c

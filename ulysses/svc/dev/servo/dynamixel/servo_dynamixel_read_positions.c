@@ -5,6 +5,7 @@
 #include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
 #include "dev/servo/dynamixel/servo_dynamixel.h"
+#include "dev/servo/dynamixel/servo_dynamixel_prepare_instruction.h"
 #include "dev/servo/dynamixel/servo_dynamixel_receive_status.h"
 
 #define PRESENT_POSITION_ADDRESS (0x84)
@@ -12,7 +13,6 @@
 static uint16_t prepare_transmit(const dev_servo_t *servo)
 {
     const struct dev_servo_dynamixel_config *config = servo->config;
-    struct dev_servo_dynamixel_data *data = servo->data;
 
     const struct dynamixel_protocol2_fast_sync_read_request request = {
         .address = PRESENT_POSITION_ADDRESS,
@@ -21,19 +21,10 @@ static uint16_t prepare_transmit(const dev_servo_t *servo)
         .ids = config->ids,
     };
 
-    uint16_t parameters_length;
-    dynamixel_protocol2_serialize_fast_sync_read_request(
-        &request, data->parameters, config->parameters_capacity, &parameters_length);
-
-    uint32_t packet_size;
-    dynamixel_protocol2_encode_request(
-        DYNAMIXEL_PROTOCOL2_BROADCAST_ID, DYNAMIXEL_PROTOCOL2_INST_FAST_SYNC_READ, data->parameters,
-        parameters_length, data->packet, config->packet_capacity, &packet_size);
-
-    return packet_size;
+    return dev_servo_dynamixel_prepare_fast_sync_read(servo, &request);
 }
 
-static enum uls_status decode_positions(const dev_servo_t *servo)
+static enum uls_status decode_positions(const dev_servo_t *servo, float *positions)
 {
     const struct dev_servo_dynamixel_config *config = servo->config;
     struct dev_servo_dynamixel_data *data = servo->data;
@@ -80,20 +71,20 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
         }
     }
 
+    if (status == ULS_STATUS_OK) {
+        memcpy(positions, data->positions, config->count * sizeof(*positions));
+    }
+
     return status;
 }
 
 static void complete_read(enum uls_status status, void *user_data)
 {
     dev_servo_t *servo = user_data;
-    const struct dev_servo_dynamixel_config *config = servo->config;
     struct dev_servo_dynamixel_data *data = servo->data;
 
     if (status == ULS_STATUS_OK) {
-        status = decode_positions(servo);
-    }
-    if (status == ULS_STATUS_OK) {
-        memcpy(data->read_positions, data->positions, config->count * sizeof(*data->positions));
+        status = decode_positions(servo, data->read_positions);
     }
 
     data->busy = false;
@@ -133,11 +124,7 @@ enum uls_status dev_servo_dynamixel_read_positions(dev_servo_t *servo, float *po
     }
 
     if (status == ULS_STATUS_OK) {
-        status = decode_positions(servo);
-    }
-
-    if (status == ULS_STATUS_OK) {
-        memcpy(positions, data->positions, config->count * sizeof(*positions));
+        status = decode_positions(servo, positions);
     }
 
     data->busy = false;

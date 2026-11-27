@@ -4,11 +4,12 @@
 
 #include "ulysses/lib/assert.h"
 
-enum uls_status dev_servo_ping_all(dev_servo_t *servo)
+enum uls_status dev_servo_ping(dev_servo_t *servo, uint32_t index, uint8_t *error_mask)
 {
     ULYSSES_ASSERT(servo != NULL && servo->ops != NULL, "servo bus must be initialized");
+    ULYSSES_ASSERT(error_mask != NULL, "error mask must not be NULL");
 
-    return servo->ops->ping_all(servo);
+    return servo->ops->ping(servo, index, error_mask);
 }
 
 enum uls_status dev_servo_set_torque(dev_servo_t *servo, enum dev_servo_torque_mode mode)

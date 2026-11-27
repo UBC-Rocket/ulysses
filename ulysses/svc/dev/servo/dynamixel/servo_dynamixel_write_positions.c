@@ -1,8 +1,8 @@
-#include "dev/servo/dynamixel/servo_dynamixel.h"
-
 #include "ulysses/lib/buffer.h"
-#include "ulysses/lib/dynamixel/protocol2/packet.h"
 #include "ulysses/lib/dynamixel/protocol2/parameters.h"
+
+#include "dev/servo/dynamixel/servo_dynamixel.h"
+#include "dev/servo/dynamixel/servo_dynamixel_prepare_instruction.h"
 
 #define GOAL_POSITION_ADDRESS (0x74)
 
@@ -24,16 +24,7 @@ static uint16_t prepare_transmit(const dev_servo_t *servo, const float *position
         .devices = data->write_devices,
     };
 
-    uint16_t parameters_length;
-    dynamixel_protocol2_serialize_sync_write_request(
-        &request, data->parameters, config->parameters_capacity, &parameters_length);
-
-    uint32_t packet_size;
-    dynamixel_protocol2_encode_request(
-        DYNAMIXEL_PROTOCOL2_BROADCAST_ID, DYNAMIXEL_PROTOCOL2_INST_SYNC_WRITE, data->parameters,
-        parameters_length, data->packet, config->packet_capacity, &packet_size);
-
-    return packet_size;
+    return dev_servo_dynamixel_prepare_sync_write(servo, &request);
 }
 
 static void on_transmit_finish(enum uls_status status, void *user_data)
