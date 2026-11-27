@@ -1,14 +1,10 @@
 #include "dev/servo/dynamixel/servo_dynamixel.h"
 
-#include <math.h>
-
-#include "ulysses/lib/assert.h"
 #include "ulysses/lib/buffer.h"
 #include "ulysses/lib/dynamixel/protocol2/packet.h"
 #include "ulysses/lib/dynamixel/protocol2/parameters.h"
 
 #define GOAL_POSITION_ADDRESS (0x74)
-#define MAX_GOAL_TICKS (0xFFFFF)
 
 static uint16_t prepare_transmit(const dev_servo_t *servo, const float *positions)
 {
@@ -16,13 +12,9 @@ static uint16_t prepare_transmit(const dev_servo_t *servo, const float *position
     struct dev_servo_dynamixel_data *data = servo->data;
 
     for (uint32_t i = 0; i < config->count; i++) {
-        const float position = positions[i];
-
-        ULYSSES_ASSERT(fabsf(position) < (MAX_GOAL_TICKS + 0.5f) / DYNAMIXEL_TICKS_PER_ROTATION,
-                       "position is outside the Dynamixel goal position range");
-
-        const long position_ticks = lrintf(position * DYNAMIXEL_TICKS_PER_ROTATION);
-        buffer_write_int32_le((uint8_t *)data->write_devices[i].data, position_ticks);
+        const int32_t goal_ticks =
+            dev_servo_dynamixel_position_to_ticks(positions[i], config->zero_ticks[i]);
+        buffer_write_int32_le((uint8_t *)data->write_devices[i].data, goal_ticks);
     }
 
     const struct dynamixel_protocol2_sync_write_request request = {

@@ -71,8 +71,9 @@ static enum uls_status decode_positions(const dev_servo_t *servo)
                 break;
             }
 
-            const float position_ticks = buffer_read_int32_le(response.data);
-            data->positions[i] = position_ticks / DYNAMIXEL_TICKS_PER_ROTATION;
+            const int32_t raw_ticks = buffer_read_int32_le(response.data);
+            data->positions[i] =
+                dev_servo_dynamixel_ticks_to_position(raw_ticks, config->zero_ticks[i]);
 
             entry += consumed;
             remaining -= consumed;

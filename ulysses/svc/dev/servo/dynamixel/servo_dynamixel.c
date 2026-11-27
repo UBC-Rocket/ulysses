@@ -22,6 +22,7 @@ void dev_servo_dynamixel_init(dev_servo_t *servo, const struct dev_servo_dynamix
                    "servo bus, configuration and storage must not be NULL");
     ULYSSES_ASSERT(config->ids != NULL && data->write_devices != NULL,
                    "Dynamixel servo IDs and write devices must not be NULL");
+    ULYSSES_ASSERT(config->zero_ticks != NULL, "Dynamixel encoder zero values must not be NULL");
     ULYSSES_ASSERT(data->positions != NULL, "Dynamixel position storage must not be NULL");
     ULYSSES_ASSERT(config->count > 0 && config->count <= UINT8_MAX,
                    "Dynamixel servo count must be nonzero and fit in a byte");

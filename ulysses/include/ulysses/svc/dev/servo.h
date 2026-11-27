@@ -75,6 +75,8 @@ enum uls_status dev_servo_set_torque(dev_servo_t *servo, enum dev_servo_torque_m
 /**
  * @brief Reads positions synchronously
  *
+ * Positions are relative to each servo's calibrated zero and wrap to [-0.5, 0.5) rotations.
+ *
  * @param servo Initialized servo bus
  * @param[out] positions Array of one float per servo, in rotations and configured ID order.
  *                       Filled on success.
@@ -89,6 +91,8 @@ enum uls_status dev_servo_read_positions(dev_servo_t *servo, float *positions);
 
 /**
  * @brief Starts an asynchronous position read
+ *
+ * Positions are relative to each servo's calibrated zero and wrap to [-0.5, 0.5) rotations.
  *
  * When a started read finishes, cb runs once in interrupt context. The bus is available when cb
  * runs. A failed start does not call cb.
@@ -110,6 +114,9 @@ enum uls_status dev_servo_read_positions_async(dev_servo_t *servo, float *positi
 /**
  * @brief Writes goal positions synchronously
  *
+ * Goals are positions relative to each servo's calibrated zero. They can span multiple rotations
+ * within the backend's goal range.
+ *
  * @param servo Initialized servo bus
  * @param positions Array of one float per servo, in rotations and configured ID order
  *
@@ -122,6 +129,9 @@ enum uls_status dev_servo_write_positions(dev_servo_t *servo, const float *posit
 
 /**
  * @brief Starts an asynchronous goal position write
+ *
+ * Goals are positions relative to each servo's calibrated zero. They can span multiple rotations
+ * within the backend's goal range.
  *
  * When a started write finishes, cb runs once in interrupt context. The bus is available when cb
  * runs. A failed start does not call cb.
