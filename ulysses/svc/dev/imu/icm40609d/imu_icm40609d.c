@@ -237,8 +237,6 @@ static void spi_read_callback(enum uls_status status, void *user_data)
     dev_imu_cb_t cb = data->cb;
     void *cb_user_data = data->cb_user_data;
 
-    struct dev_imu_sample sample;
-
     // Parse sample
     if (status == ULS_STATUS_OK) {
         status = parse_sample(data, &data->rx_data[1], data->sample);
@@ -282,6 +280,7 @@ static enum uls_status icm40609d_read_async(dev_imu_t *imu, struct dev_imu_sampl
         // Clear up
         data->cb = NULL;
         data->cb_user_data = NULL;
+        data->sample = NULL;
 
         // Release ownership atomically
         atomic_store(&data->busy, false);
@@ -326,6 +325,7 @@ enum uls_status dev_imu_icm40609d_init(dev_imu_t *imu,
     atomic_init(&data->busy, false);
     data->cb = NULL;
     data->cb_user_data = NULL;
+    data->sample = NULL;
 
     // Hardware initialization
     enum uls_status status = reset_device(config->spi);

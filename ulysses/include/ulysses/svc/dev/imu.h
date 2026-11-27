@@ -16,7 +16,6 @@ typedef struct dev_imu dev_imu_t;
  * @brief Completion callback for a non-blocking read, runs in interrupt context
  *
  * @param status Read status
- * @param sample Measurement, valid only until the callback returns; NULL on failure
  * @param user_data Context passed to dev_imu_read_async()
  */
 typedef void (*dev_imu_cb_t)(enum uls_status status, void *user_data);
@@ -36,9 +35,13 @@ enum uls_status dev_imu_read(dev_imu_t *imu, struct dev_imu_sample *sample);
  * @brief Starts reading the latest measurement, without blocking
  *
  * cb runs in interrupt context when the read finishes. It is not called if the read fails to
- * start. The IMU and user_data must stay valid until cb returns.
+ * start. 
+ * 
+ * The IMU, sample buffer, and user_data must stay valid until cb returns.The caller must not 
+ * access the sample buffer until cb is called. 
  *
  * @param imu Non-NULL initialized IMU
+ * @param[out] sample Non-NULL caller owned sample buffer, unchanged on failure
  * @param cb Non-NULL completion callback
  * @param user_data Context passed to cb, may be NULL
  *
