@@ -241,22 +241,24 @@ static void spi_read_callback(enum uls_status status, void *user_data)
 
     // Parse sample
     if (status == ULS_STATUS_OK) {
-        status = parse_sample(data, &data->rx_data[1], &sample);
+        status = parse_sample(data, &data->rx_data[1], data->sample);
     }
 
     // Clear callback
     data->cb = NULL;
     data->cb_user_data = NULL;
+    data->sample = NULL;
 
     // Release ownership atomically
     atomic_store(&data->busy, false);
 
     // Notify caller
-    cb(status, status == ULS_STATUS_OK ? &sample : NULL, cb_user_data);
+    cb(status, cb_user_data);
 }
 
 // Non-blocking read
-static enum uls_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, void *user_data)
+static enum uls_status icm40609d_read_async(dev_imu_t *imu, struct dev_imu_sample *sample,
+                                            dev_imu_cb_t cb, void *user_data)
 {
     const struct dev_imu_icm40609d_config *config = imu->config;
     struct dev_imu_icm40609d_data *data = imu->data;
@@ -267,6 +269,7 @@ static enum uls_status icm40609d_read_async(dev_imu_t *imu, dev_imu_cb_t cb, voi
     }
 
     // Store callback and user data
+    data->sample = sample;
     data->cb = cb;
     data->cb_user_data = user_data;
 

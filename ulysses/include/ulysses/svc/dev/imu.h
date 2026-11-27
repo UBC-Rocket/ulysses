@@ -19,8 +19,7 @@ typedef struct dev_imu dev_imu_t;
  * @param sample Measurement, valid only until the callback returns; NULL on failure
  * @param user_data Context passed to dev_imu_read_async()
  */
-typedef void (*dev_imu_cb_t)(enum uls_status status, const struct dev_imu_sample *sample,
-                             void *user_data);
+typedef void (*dev_imu_cb_t)(enum uls_status status, void *user_data);
 
 /**
  * @brief Reads the latest measurement, blocking until the transfer finishes
@@ -46,6 +45,7 @@ enum uls_status dev_imu_read(dev_imu_t *imu, struct dev_imu_sample *sample);
  * @return ULS_STATUS_OK if the read started, ULS_STATUS_BUSY if the IMU or bus is in use,
  *         otherwise an ULS_STATUS_* error code
  */
-enum uls_status dev_imu_read_async(dev_imu_t *imu, dev_imu_cb_t cb, void *user_data);
+enum uls_status dev_imu_read_async(dev_imu_t *imu, struct dev_imu_sample *sample, dev_imu_cb_t cb,
+                                   void *user_data);
 
 #endif // ULYSSES_SVC_DEV_IMU_H

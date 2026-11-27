@@ -74,6 +74,8 @@ struct dev_imu_icm40609d_data {
 
     float accel_scale; ///< m/s^2 per LSB for accelerometer readings
     float gyro_scale;  ///< rad/s per LSB for gyroscope readings
+
+    struct dev_imu_sample *sample;
 };
 
 /**
