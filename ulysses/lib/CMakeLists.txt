@@ -16,5 +16,7 @@ target_sources(ulysses_lib
         dynamixel/protocol2/packet.c
 )
 
-add_subdirectory(eskf)
-add_subdirectory(flight_controller)
+if(ULYSSES_BUILD_CONTEXT STREQUAL "CM7")
+    add_subdirectory(eskf)
+    add_subdirectory(flight_controller)
+endif()
