@@ -170,18 +170,6 @@ static inline uint32_t hal_get_tim_channel_dma_src(uint32_t hal_tim_channel)
     return dma_source;
 }
 
-static inline void hal_dma_peripheral_increment_set_enabled(DMA_HandleTypeDef *dma, bool is_enabled)
-{
-    MODIFY_REG(((DMA_Stream_TypeDef *)dma->Instance)->CR, DMA_SxCR_PINC,
-               is_enabled ? LL_DMA_PERIPH_INCREMENT : LL_DMA_PERIPH_NOINCREMENT);
-}
-
-static inline void hal_dma_memory_increment_set_enabled(DMA_HandleTypeDef *dma, bool is_enabled)
-{
-    MODIFY_REG(((DMA_Stream_TypeDef *)dma->Instance)->CR, DMA_SxCR_MINC,
-               is_enabled ? LL_DMA_MEMORY_INCREMENT : LL_DMA_MEMORY_NOINCREMENT);
-}
-
 static inline void hal_dma_data_transfer_set_direction(DMA_HandleTypeDef *dma, uint32_t direction)
 {
     uint32_t ll_direction = 0;

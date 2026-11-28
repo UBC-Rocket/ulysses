@@ -155,8 +155,6 @@ static void signal_line_set_to_tx(TIM_HandleTypeDef *timer,
 
     TIM_CCxChannelCmd(timer->Instance, hal_tim_channel, TIM_CCx_ENABLE);
 
-    hal_dma_peripheral_increment_set_enabled(dma, false);
-    hal_dma_memory_increment_set_enabled(dma, true);
     hal_dma_data_transfer_set_direction(dma, DMA_MEMORY_TO_PERIPH);
 }
 
@@ -180,8 +178,6 @@ static void signal_line_set_to_rx(TIM_HandleTypeDef *timer,
 
     TIM_CCxChannelCmd(timer->Instance, hal_tim_channel, TIM_CCx_ENABLE);
 
-    hal_dma_peripheral_increment_set_enabled(dma, false);
-    hal_dma_memory_increment_set_enabled(dma, true);
     hal_dma_data_transfer_set_direction(dma, DMA_PERIPH_TO_MEMORY);
 }
 
