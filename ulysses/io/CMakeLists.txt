@@ -26,6 +26,8 @@ target_sources(ulysses_io
         uart/stm32/uart_stm32.c
         uart/stm32/uart_dma_stm32.c
         uart/stm32/uart_irq_stm32.c
+        bdshot/bdshot.c
+        bdshot/stm32/bdshot.c
 )
 
 target_include_directories(ulysses_io
