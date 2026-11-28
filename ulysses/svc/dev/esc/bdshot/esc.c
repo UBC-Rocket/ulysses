@@ -9,12 +9,6 @@
 
 static void populate_telemetry_for_channel(uint32_t wire_frame,
                                            const struct dev_esc_bdshot_channel_config *config,
-                                           struct dev_esc_telemetry *telemetry);
-static void populate_telemetry(const dev_esc_t *esc);
-static enum uls_status process_pending_commands(const dev_esc_t *esc);
-
-static void populate_telemetry_for_channel(uint32_t wire_frame,
-                                           const struct dev_esc_bdshot_channel_config *config,
                                            struct dev_esc_telemetry *telemetry)
 {
     uint16_t frame;
