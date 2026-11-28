@@ -20,9 +20,9 @@ typedef struct io_uart_dev io_uart_dev_t;
  * been transmitted. The buffer may be reused when the callback runs.
  *
  * @param status Transmit result
- * @param uart UART object that completed the transmit
+ * @param user_data Context passed when registering the transmit callback
  */
-typedef void (*io_uart_transmit_cb_t)(enum uls_status status, const io_uart_dev_t *uart);
+typedef void (*io_uart_transmit_cb_t)(enum uls_status status, void *user_data);
 
 /**
  * @brief UART asynchronous receive callback type
@@ -32,29 +32,31 @@ typedef void (*io_uart_transmit_cb_t)(enum uls_status status, const io_uart_dev_
  * and partial data may have been received. The buffer may be reused when the callback runs.
  *
  * @param status Receive result
- * @param uart UART object that completed the receive
+ * @param user_data Context passed when registering the receive callback
  */
-typedef void (*io_uart_receive_cb_t)(enum uls_status status, const io_uart_dev_t *uart);
+typedef void (*io_uart_receive_cb_t)(enum uls_status status, void *user_data);
 
 /**
  * @brief Set or unset transmit callback
  *
- * Configure the callback before starting a transmit and keep it unchanged until completion.
+ * Set the callback and context before starting a transmit and keep both unchanged until completion.
  *
  * @param uart Initialized UART object
  * @param cb Callback function, or NULL to disable transmit callbacks
+ * @param user_data Context passed to cb. May be NULL.
  */
-void io_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb);
+void io_uart_set_transmit_cb(const io_uart_dev_t *uart, io_uart_transmit_cb_t cb, void *user_data);
 
 /**
  * @brief Set or unset receive callback
  *
- * Configure the callback before starting a receive and keep it unchanged until completion.
+ * Set the callback and context before starting a receive and keep both unchanged until completion.
  *
  * @param uart Initialized UART object
  * @param cb Callback function, or NULL to disable receive callbacks
+ * @param user_data Context passed to cb. May be NULL.
  */
-void io_uart_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb);
+void io_uart_set_receive_cb(const io_uart_dev_t *uart, io_uart_receive_cb_t cb, void *user_data);
 
 /**
  * @brief Transmits data synchronously
