@@ -442,6 +442,9 @@ void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_conf
 
         channel_data->is_active = false;
         channel_data->direction = IO_BDSHOT_STM32_CHANNEL_DIRECTION_OUTPUT;
+
+        // TODO: take a look at whether we need to save AF, or does the hardware
+        // keep its state even if we change the GPIO mode
         channel_data->original_gpio_af = ll_gpio_get_af(channel_config->gpio, ll_gpio_pin);
 
         data->active_dma_mask |= hal_get_tim_channel_dma_src(channel_config->timer_channel);
