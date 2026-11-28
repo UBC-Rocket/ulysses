@@ -6,6 +6,7 @@
 #include "ulysses/io/delay.h"
 #include "ulysses/io/i2c.h"
 #include "ulysses/lib/assert.h"
+#include "ulysses/lib/buffer.h"
 #include "ulysses/svc/dev/baro.h"
 
 #include "dev/baro/baro.h"
@@ -52,18 +53,11 @@ static enum uls_status write_reg(const io_i2c_dev_t *i2c, uint8_t reg, uint8_t v
     return io_i2c_mem_write(i2c, reg, &val, 1U, BMP585_TIMEOUT_MS);
 }
 
-/** @brief Sign-extends a little-endian 24-bit value */
-static int32_t to_int24(const uint8_t *b)
-{
-    uint32_t raw = (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16);
-    return (int32_t)(raw << 8) >> 8;
-}
-
 /** @brief Converts the 6 data bytes starting at TEMP_DATA_XLSB */
 static void to_sample(const uint8_t *raw, struct dev_baro_sample *sample)
 {
-    sample->temp_c = (float)to_int24(&raw[0]) / 65536.0f;
-    sample->pressure_pa = (float)to_int24(&raw[3]) / 64.0f;
+    sample->temp_c = (float)buffer_read_int24_le(&raw[0]) / 65536.0f;
+    sample->pressure_pa = (float)buffer_read_int24_le(&raw[3]) / 64.0f;
 }
 
 static enum uls_status bmp585_read_blocking(dev_baro_t *baro, struct dev_baro_sample *sample)

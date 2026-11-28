@@ -70,15 +70,6 @@
 static_assert(IO_BDSHOT_STM32_TX_BUFFER_SIZE >= TX_FRAME_SIZE, "TX buffer size is too small");
 static_assert(IO_BDSHOT_STM32_RX_BUFFER_SIZE >= RX_FRAME_SIZE, "RX buffer size is too small");
 
-static void frame_build_dma_tx_buffer(uint32_t *buffer, uint16_t frame);
-static bool wire_frame_decode_from_signal(uint32_t *frame, const uint32_t *edge_times,
-                                          uint32_t edge_count);
-static void signal_line_set_to_tx(TIM_HandleTypeDef *timer,
-                                  const struct io_bdshot_stm32_channel_config *channel_config);
-static void signal_line_set_to_rx(TIM_HandleTypeDef *timer,
-                                  const struct io_bdshot_stm32_channel_config *channel_config);
-static void on_dma_transfer_complete_isr(void *user_data);
-
 static void frame_build_dma_tx_buffer(uint32_t *buffer, uint16_t frame)
 {
     // Pack the frame
@@ -164,8 +155,6 @@ static void signal_line_set_to_tx(TIM_HandleTypeDef *timer,
 
     TIM_CCxChannelCmd(timer->Instance, hal_tim_channel, TIM_CCx_ENABLE);
 
-    hal_dma_peripheral_increment_set_enabled(dma, false);
-    hal_dma_memory_increment_set_enabled(dma, true);
     hal_dma_data_transfer_set_direction(dma, DMA_MEMORY_TO_PERIPH);
 }
 
@@ -189,8 +178,6 @@ static void signal_line_set_to_rx(TIM_HandleTypeDef *timer,
 
     TIM_CCxChannelCmd(timer->Instance, hal_tim_channel, TIM_CCx_ENABLE);
 
-    hal_dma_peripheral_increment_set_enabled(dma, false);
-    hal_dma_memory_increment_set_enabled(dma, true);
     hal_dma_data_transfer_set_direction(dma, DMA_PERIPH_TO_MEMORY);
 }
 
@@ -455,6 +442,9 @@ void io_bdshot_stm32_init(io_bdshot_t *bdshot, const struct io_bdshot_stm32_conf
 
         channel_data->is_active = false;
         channel_data->direction = IO_BDSHOT_STM32_CHANNEL_DIRECTION_OUTPUT;
+
+        // TODO: take a look at whether we need to save AF, or does the hardware
+        // keep its state even if we change the GPIO mode
         channel_data->original_gpio_af = ll_gpio_get_af(channel_config->gpio, ll_gpio_pin);
 
         data->active_dma_mask |= hal_get_tim_channel_dma_src(channel_config->timer_channel);
