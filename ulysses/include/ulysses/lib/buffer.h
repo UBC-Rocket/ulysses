@@ -150,6 +150,64 @@ static inline void buffer_write_uint32_be(uint8_t *data, uint32_t value)
 }
 
 /**
+ * @brief Reads an unsigned 64-bit little-endian integer.
+ * @param data Pointer to 8 readable bytes.
+ * @return The decoded value.
+ */
+static inline uint64_t buffer_read_uint64_le(const uint8_t *data)
+{
+    return data[0] | ((uint64_t)data[1] << 8) | ((uint64_t)data[2] << 16) |
+           ((uint64_t)data[3] << 24) | ((uint64_t)data[4] << 32) | ((uint64_t)data[5] << 40) |
+           ((uint64_t)data[6] << 48) | ((uint64_t)data[7] << 56);
+}
+
+/**
+ * @brief Reads an unsigned 64-bit big-endian integer.
+ * @param data Pointer to 8 readable bytes.
+ * @return The decoded value.
+ */
+static inline uint64_t buffer_read_uint64_be(const uint8_t *data)
+{
+    return ((uint64_t)data[0] << 56) | ((uint64_t)data[1] << 48) | ((uint64_t)data[2] << 40) |
+           ((uint64_t)data[3] << 32) | ((uint64_t)data[4] << 24) | ((uint64_t)data[5] << 16) |
+           ((uint64_t)data[6] << 8) | data[7];
+}
+
+/**
+ * @brief Writes an unsigned 64-bit little-endian integer.
+ * @param[out] data Pointer to 8 writable bytes.
+ * @param value The value to encode.
+ */
+static inline void buffer_write_uint64_le(uint8_t *data, uint64_t value)
+{
+    data[0] = value;
+    data[1] = value >> 8;
+    data[2] = value >> 16;
+    data[3] = value >> 24;
+    data[4] = value >> 32;
+    data[5] = value >> 40;
+    data[6] = value >> 48;
+    data[7] = value >> 56;
+}
+
+/**
+ * @brief Writes an unsigned 64-bit big-endian integer.
+ * @param[out] data Pointer to 8 writable bytes.
+ * @param value The value to encode.
+ */
+static inline void buffer_write_uint64_be(uint8_t *data, uint64_t value)
+{
+    data[0] = value >> 56;
+    data[1] = value >> 48;
+    data[2] = value >> 40;
+    data[3] = value >> 32;
+    data[4] = value >> 24;
+    data[5] = value >> 16;
+    data[6] = value >> 8;
+    data[7] = value;
+}
+
+/**
  * @brief Reads a signed 16-bit little-endian integer.
  *
  * @param data Pointer to 2 readable bytes.
@@ -290,6 +348,48 @@ static inline void buffer_write_int32_le(uint8_t *data, int32_t value)
 static inline void buffer_write_int32_be(uint8_t *data, int32_t value)
 {
     buffer_write_uint32_be(data, *(uint32_t *)&value);
+}
+
+/**
+ * @brief Reads a signed 64-bit little-endian integer.
+ * @param data Pointer to 8 readable bytes.
+ * @return The decoded value.
+ */
+static inline int64_t buffer_read_int64_le(const uint8_t *data)
+{
+    uint64_t value = buffer_read_uint64_le(data);
+    return *(int64_t *)&value;
+}
+
+/**
+ * @brief Reads a signed 64-bit big-endian integer.
+ * @param data Pointer to 8 readable bytes.
+ * @return The decoded value.
+ */
+static inline int64_t buffer_read_int64_be(const uint8_t *data)
+{
+    uint64_t value = buffer_read_uint64_be(data);
+    return *(int64_t *)&value;
+}
+
+/**
+ * @brief Writes a signed 64-bit little-endian integer.
+ * @param[out] data Pointer to 8 writable bytes.
+ * @param value The value to encode.
+ */
+static inline void buffer_write_int64_le(uint8_t *data, int64_t value)
+{
+    buffer_write_uint64_le(data, value);
+}
+
+/**
+ * @brief Writes a signed 64-bit big-endian integer.
+ * @param[out] data Pointer to 8 writable bytes.
+ * @param value The value to encode.
+ */
+static inline void buffer_write_int64_be(uint8_t *data, int64_t value)
+{
+    buffer_write_uint64_be(data, value);
 }
 
 #endif // ULYSSES_LIB_BUFFER

@@ -77,3 +77,12 @@ add_unity_test(
         ulysses_lib
         ulysses_public_headers
 )
+
+add_unity_test(
+    NAME "ulog_encode"
+    SOURCES
+        ulog/test_encode.c
+    LIBRARIES
+        ulysses_lib
+        ulysses_public_headers
+)

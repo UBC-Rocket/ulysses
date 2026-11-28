@@ -14,6 +14,7 @@ target_sources(ulysses_lib
         checksum/crc16.c
         dynamixel/protocol2/parameters.c
         dynamixel/protocol2/packet.c
+        ulog/ulog.c
 )
 
 add_subdirectory(eskf)
