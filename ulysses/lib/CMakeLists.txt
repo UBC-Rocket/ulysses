@@ -14,6 +14,12 @@ target_sources(ulysses_lib
         checksum/crc16.c
         dynamixel/protocol2/parameters.c
         dynamixel/protocol2/packet.c
+        third_party/lwgps/lwgps/src/lwgps/lwgps.c
+)
+
+target_include_directories(ulysses_lib
+    PUBLIC
+        third_party/lwgps/lwgps/src/include
 )
 
 add_subdirectory(eskf)
